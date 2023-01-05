@@ -3,4 +3,8 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 
+libs = ['node_modules', 'lib']
+test = 'test'
+cache_path  = 'cache'
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
