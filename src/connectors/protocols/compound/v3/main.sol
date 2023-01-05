@@ -17,22 +17,18 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @notice Deposit a token to Compound for lending / collaterization.
 	 * @param market The address of the market.
 	 * @param token The address of the token to be supplied. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to deposit. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens deposited.
+	 * @param amt The amount of the token to deposit. (For max: `type(uint).max`)
 	 */
 	function deposit(
 		address market,
 		address token,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 
 		require(
 			market != address(0) && token != address(0),
@@ -51,10 +47,10 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		}
 
 		if (isEth) {
-			amt_ = amt_ == uint256(-1) ? address(this).balance : amt_;
+			amt_ = amt_ == type(uint).max ? address(this).balance : amt_;
 			convertEthToWeth(isEth, tokenContract, amt_);
 		} else {
-			amt_ = amt_ == uint256(-1)
+			amt_ = amt_ == type(uint).max
 				? tokenContract.balanceOf(address(this))
 				: amt_;
 		}
@@ -62,10 +58,8 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		CometInterface(market).supply(token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogDeposit(address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, amt_, getId, setId);
+		eventName_ = "LogDeposit(address,address,uint256)";
+		eventParam_ = abi.encode(market, token, amt_);
 	}
 
 	/**
@@ -74,23 +68,19 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The address of the token to be supplied. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE).
 	 * @param to The address on behalf of which the supply is made.
-	 * @param amt The amount of the token to deposit. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens deposited.
+	 * @param amt The amount of the token to deposit. (For max: `type(uint).max`)
 	 */
 	function depositOnBehalf(
 		address market,
 		address token,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 
 		require(
 			market != address(0) && token != address(0) && to != address(0),
@@ -109,10 +99,10 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		}
 
 		if (isEth) {
-			amt_ = amt_ == uint256(-1) ? address(this).balance : amt_;
+			amt_ = amt_ == type(uint).max ? address(this).balance : amt_;
 			convertEthToWeth(isEth, tokenContract, amt_);
 		} else {
-			amt_ = amt_ == uint256(-1)
+			amt_ = amt_ == type(uint).max
 				? tokenContract.balanceOf(address(this))
 				: amt_;
 		}
@@ -120,10 +110,8 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		CometInterface(market).supplyTo(to, token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogDepositOnBehalf(address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, to, amt_, getId, setId);
+		eventName_ = "LogDepositOnBehalf(address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token, to, amt_);
 	}
 
 	/**
@@ -133,24 +121,20 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param token The address of the token to be supplied. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param from The address from where amount is to be supplied.
 	 * @param to The address on account of which the supply is made or whose positions are updated.
-	 * @param amt The amount of the token to deposit. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens deposited.
+	 * @param amt The amount of the token to deposit. (For max: `type(uint).max`)
 	 */
 	function depositFromUsingManager(
 		address market,
 		address token,
 		address from,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 
 		require(
 			market != address(0) && token != address(0) && to != address(0),
@@ -178,10 +162,9 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		);
 
 		CometInterface(market).supplyFrom(from, to, token_, amt_);
-		setUint(setId, amt_);
 
-		eventName_ = "LogDepositFromUsingManager(address,address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, from, to, amt_, getId, setId);
+		eventName_ = "LogDepositFromUsingManager(address,address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token, from, to, amt_);
 	}
 
 	/**
@@ -189,22 +172,18 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @notice Withdraw base token or deposited token from Compound.
 	 * @param market The address of the market.
 	 * @param token The address of the token to be withdrawn. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens withdrawn.
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 */
 	function withdraw(
 		address market,
 		address token,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 
 		require(
 			market != address(0) && token != address(0),
@@ -223,7 +202,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		);
 
 		if (token_ == getBaseToken(market)) {
-			if (amt_ == uint256(-1)) {
+			if (amt_ == type(uint).max) {
 				amt_ = initialBal;
 			} else {
 				//if there are supplies, ensure withdrawn amount is not greater than supplied i.e can't borrow using withdraw.
@@ -236,7 +215,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 				"withdraw-disabled-for-zero-supplies"
 			);
 		} else {
-			amt_ = amt_ == uint256(-1) ? initialBal : amt_;
+			amt_ = amt_ == type(uint).max ? initialBal : amt_;
 		}
 
 		CometInterface(market).withdraw(token_, amt_);
@@ -247,14 +226,12 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			token_
 		);
 
-		amt_ = sub(initialBal, finalBal);
+		amt_ = initialBal - finalBal;
 
 		convertWethToEth(isEth, tokenContract, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogWithdraw(address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, amt_, getId, setId);
+		eventName_ = "LogWithdraw(address,address,uint256)";
+		eventParam_ = abi.encode(market, token, amt_);
 	}
 
 	/**
@@ -263,36 +240,30 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The address of the token to be withdrawn. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param to The address to which the borrowed assets are to be transferred.
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens withdrawn.
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 */
 	function withdrawTo(
 		address market,
 		address token,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		(uint256 amt_, uint256 setId_) = _withdraw(
+		(uint256 amt_) = _withdraw(
 			BorrowWithdrawParams({
 				market: market,
 				token: token,
 				from: address(this),
 				to: to,
-				amt: amt,
-				getId: getId,
-				setId: setId
+				amt: amt
 			})
 		);
 
-		eventName_ = "LogWithdrawTo(address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, to, amt_, getId, setId_);
+		eventName_ = "LogWithdrawTo(address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token, to, amt_);
 	}
 
 	/**
@@ -301,36 +272,30 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The address of the token to be withdrawn. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param from The address from where asset is to be withdrawed.
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens withdrawn.
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 */
 	function withdrawOnBehalf(
 		address market,
 		address token,
 		address from,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		(uint256 amt_, uint256 setId_) = _withdraw(
+		(uint256 amt_) = _withdraw(
 			BorrowWithdrawParams({
 				market: market,
 				token: token,
 				from: from,
 				to: address(this),
-				amt: amt,
-				getId: getId,
-				setId: setId
+				amt: amt
 			})
 		);
 
-		eventName_ = "LogWithdrawOnBehalf(address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, from, amt_, getId, setId_);
+		eventName_ = "LogWithdrawOnBehalf(address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token, from, amt_);
 	}
 
 	/**
@@ -340,37 +305,31 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param token The address of the token to be withdrawn. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param from The address from where asset is to be withdrawed.
 	 * @param to The address to which the borrowed assets are to be transferred.
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens withdrawn.
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 */
 	function withdrawOnBehalfAndTransfer(
 		address market,
 		address token,
 		address from,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		public
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		(uint256 amt_, uint256 setId_) = _withdraw(
+		(uint256 amt_) = _withdraw(
 			BorrowWithdrawParams({
 				market: market,
 				token: token,
 				from: from,
 				to: to,
-				amt: amt,
-				getId: getId,
-				setId: setId
+				amt: amt
 			})
 		);
 
-		eventName_ = "LogWithdrawOnBehalfAndTransfer(address,address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token, from, to, amt_, getId, setId_);
+		eventName_ = "LogWithdrawOnBehalfAndTransfer(address,address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token, from, to, amt_);
 	}
 
 	/**
@@ -379,21 +338,17 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The address of the token to be borrowed. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param amt The amount of base token to borrow.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens borrowed.
 	 */
 	function borrow(
 		address market,
 		address token,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 
 		require(market != address(0), "invalid market address");
 
@@ -418,14 +373,12 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			address(this)
 		);
 
-		amt_ = sub(finalBal, initialBal);
+		amt_ = finalBal - initialBal;
 
 		convertWethToEth(isEth, tokenContract, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogBorrow(address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, amt_, getId, setId);
+		eventName_ = "LogBorrow(address,uint256)";
+		eventParam_ = abi.encode(market, amt_);
 	}
 
 	/**
@@ -434,17 +387,13 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The address of the token to be borrowed. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param to The address to which the borrowed asset is transferred.
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens borrowed.
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 */
 	function borrowTo(
 		address market,
 		address token,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
@@ -454,19 +403,17 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			token == ethAddr || token == getBaseToken(market),
 			"invalid-token"
 		);
-		(uint256 amt_, uint256 setId_) = _borrow(
+		(uint256 amt_) = _borrow(
 			BorrowWithdrawParams({
 				market: market,
 				token: token,
 				from: address(this),
 				to: to,
-				amt: amt,
-				getId: getId,
-				setId: setId
+				amt: amt
 			})
 		);
-		eventName_ = "LogBorrowTo(address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, to, amt_, getId, setId_);
+		eventName_ = "LogBorrowTo(address,address,uint256)";
+		eventParam_ = abi.encode(market, to, amt_);
 	}
 
 	/**
@@ -474,18 +421,14 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @notice Borrow base token or deposited token from Compound.
 	 * @param market The address of the market.
 	 * @param token The address of the token to be borrowed. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 * @param from The address from where asset is to be withdrawed.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens borrowed.
 	 */
 	function borrowOnBehalf(
 		address market,
 		address token,
 		address from,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
@@ -495,19 +438,17 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			token == ethAddr || token == getBaseToken(market),
 			"invalid-token"
 		);
-		(uint256 amt_, uint256 setId_) = _borrow(
+		(uint256 amt_) = _borrow(
 			BorrowWithdrawParams({
 				market: market,
 				token: token,
 				from: from,
 				to: address(this),
-				amt: amt,
-				getId: getId,
-				setId: setId
+				amt: amt
 			})
 		);
-		eventName_ = "LogBorrowOnBehalf(address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, from, amt_, getId, setId_);
+		eventName_ = "LogBorrowOnBehalf(address,address,uint256)";
+		eventParam_ = abi.encode(market, from, amt_);
 	}
 
 	/**
@@ -515,20 +456,16 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @notice Borrow base token or deposited token from Compound.
 	 * @param market The address of the market.
 	 * @param token The address of the token to be borrowed. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 * @param from The address from where asset is to be withdrawed.
 	 * @param to The address to which the borrowed assets are to be transferred.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens borrowed.
 	 */
 	function borrowOnBehalfAndTransfer(
 		address market,
 		address token,
 		address from,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
@@ -538,19 +475,17 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			token == ethAddr || token == getBaseToken(market),
 			"invalid-token"
 		);
-		(uint256 amt_, uint256 setId_) = _borrow(
+		(uint256 amt_) = _borrow(
 			BorrowWithdrawParams({
 				market: market,
 				token: token,
 				from: from,
 				to: to,
-				amt: amt,
-				getId: getId,
-				setId: setId
+				amt: amt
 			})
 		);
-		eventName_ = "LogBorrowOnBehalfAndTransfer(address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, from, to, amt_, getId, setId_);
+		eventName_ = "LogBorrowOnBehalfAndTransfer(address,address,address,uint256)";
+		eventParam_ = abi.encode(market, from, to, amt_);
 	}
 
 	/**
@@ -559,21 +494,17 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The address of the token to be repaid. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param amt The amount to be repaid.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens repaid.
 	 */
 	function payback(
 		address market,
 		address token,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 		require(
 			market != address(0) && token != address(0),
 			"invalid market/token address"
@@ -589,7 +520,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			address(this)
 		);
 
-		if (amt_ == uint256(-1)) {
+		if (amt_ == type(uint).max) {
 			amt_ = borrowedBalance_;
 		} else {
 			require(
@@ -609,10 +540,8 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		CometInterface(market).supply(token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogPayback(address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, amt_, getId, setId);
+		eventName_ = "LogPayback(address,uint256)";
+		eventParam_ = abi.encode(market, amt_);
 	}
 
 	/**
@@ -622,22 +551,18 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param token The address of the token to be repaid. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param to The address on behalf of which the borrow is to be repaid.
 	 * @param amt The amount to be repaid.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens repaid.
 	 */
 	function paybackOnBehalf(
 		address market,
 		address token,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 		require(
 			market != address(0) && token != address(0) && to != address(0),
 			"invalid market/token/to address"
@@ -651,7 +576,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		uint256 borrowedBalance_ = CometInterface(market).borrowBalanceOf(to);
 
-		if (amt_ == uint256(-1)) {
+		if (amt_ == type(uint).max) {
 			amt_ = borrowedBalance_;
 		} else {
 			require(
@@ -671,10 +596,8 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		CometInterface(market).supplyTo(to, token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogPaybackOnBehalf(address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, to, amt_, getId, setId);
+		eventName_ = "LogPaybackOnBehalf(address,address,uint256)";
+		eventParam_ = abi.encode(market, to, amt_);
 	}
 
 	/**
@@ -685,23 +608,19 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param from The address from which the borrow has to be repaid on behalf of 'to'.
 	 * @param to The address on behalf of which the borrow is to be repaid.
 	 * @param amt The amount to be repaid.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens repaid.
 	 */
 	function paybackFromUsingManager(
 		address market,
 		address token,
 		address from,
 		address to,
-		uint256 amt,
-		uint256 getId,
-		uint256 setId
+		uint256 amt
 	)
 		external
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amt);
+		uint256 amt_ = amt;
 		require(
 			market != address(0) && token != address(0) && to != address(0),
 			"invalid market/token/to address"
@@ -712,7 +631,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		bool isEth = token == ethAddr;
 		require(token == token_ || isEth, "invalid-token");
 
-		if (amt_ == uint256(-1)) {
+		if (amt_ == type(uint).max) {
 			amt_ = _calculateFromAmount(
 				market,
 				token_,
@@ -737,10 +656,8 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		CometInterface(market).supplyFrom(from, to, token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogPaybackFromUsingManager(address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, from, to, amt_, getId, setId);
+		eventName_ = "LogPaybackFromUsingManager(address,address,address,uint256)";
+		eventParam_ = abi.encode(market, from, to, amt_);
 	}
 
 	/**
@@ -751,17 +668,13 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param buyAsset The collateral asset to purachase. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
 	 * @param unitAmt Minimum amount of collateral expected to be received.
 	 * @param baseSellAmt Amount of base asset to be sold for collateral.
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of base tokens sold.
 	 */
 	function buyCollateral(
 		address market,
 		address sellToken,
 		address buyAsset,
 		uint256 unitAmt,
-		uint256 baseSellAmt,
-		uint256 getId,
-		uint256 setId
+		uint256 baseSellAmt
 	)
 		external
 		payable
@@ -774,9 +687,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 				buyAsset: buyAsset,
 				unitAmt: unitAmt,
 				baseSellAmt: baseSellAmt
-			}),
-			getId,
-			setId
+			})
 		);
 	}
 
@@ -786,23 +697,19 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param market The address of the market.
 	 * @param token The collateral asset to transfer to dest address.
 	 * @param dest The account where to transfer the base assets.
-	 * @param amount The amount of the collateral token to transfer. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens transferred.
+	 * @param amount The amount of the collateral token to transfer. (For max: `type(uint).max`)
 	 */
 	function transferAsset(
 		address market,
 		address token,
 		address dest,
-		uint256 amount,
-		uint256 getId,
-		uint256 setId
+		uint256 amount
 	)
 		external
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amount);
+		uint256 amt_ = amount;
 		require(
 			market != address(0) && token != address(0) && dest != address(0),
 			"invalid market/token/to address"
@@ -810,14 +717,12 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		address token_ = token == ethAddr ? wethAddr : token;
 
-		amt_ = amt_ == uint256(-1) ? _getAccountSupplyBalanceOfAsset(address(this), market, token) : amt_;
+		amt_ = amt_ == type(uint).max ? _getAccountSupplyBalanceOfAsset(address(this), market, token) : amt_;
 
 		CometInterface(market).transferAssetFrom(address(this), dest, token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogTransferAsset(address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token_, dest, amt_, getId, setId);
+		eventName_ = "LogTransferAsset(address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token_, dest, amt_);
 	}
 
 	/**
@@ -827,24 +732,20 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 	 * @param token The collateral asset to transfer to dest address.
 	 * @param src The account from where to transfer the collaterals.
 	 * @param dest The account where to transfer the collateral assets.
-	 * @param amount The amount of the collateral token to transfer. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens transferred.
+	 * @param amount The amount of the collateral token to transfer. (For max: `type(uint).max`)
 	 */
 	function transferAssetOnBehalf(
 		address market,
 		address token,
 		address src,
 		address dest,
-		uint256 amount,
-		uint256 getId,
-		uint256 setId
+		uint256 amount
 	)
 		external
 		payable
 		returns (string memory eventName_, bytes memory eventParam_)
 	{
-		uint256 amt_ = getUint(getId, amount);
+		uint256 amt_ = amount;
 		require(
 			market != address(0) && token != address(0) && dest != address(0),
 			"invalid market/token/to address"
@@ -852,14 +753,12 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		address token_ = token == ethAddr ? wethAddr : token;
 
-		amt_ = amt_ == uint256(-1) ? _getAccountSupplyBalanceOfAsset(src, market, token) : amt_;
+		amt_ = amt_ == type(uint).max ? _getAccountSupplyBalanceOfAsset(src, market, token) : amt_;
 
 		CometInterface(market).transferAssetFrom(src, dest, token_, amt_);
 
-		setUint(setId, amt_);
-
-		eventName_ = "LogTransferAssetOnBehalf(address,address,address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(market, token_, src, dest, amt_, getId, setId);
+		eventName_ = "LogTransferAssetOnBehalf(address,address,address,address,uint256)";
+		eventParam_ = abi.encode(market, token_, src, dest, amt_);
 	}
 
 	/**

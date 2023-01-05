@@ -16,11 +16,11 @@ abstract contract CompoundResolver is Events, Helpers {
 
         enterMarket(cToken);
         if (token == ethAddr) {
-            amt = amt == uint(-1) ? address(this).balance : amt;
+            amt = amt == type(uint).max ? address(this).balance : amt;
             CETHInterface(cToken).mint{value: amt}();
         } else {
             TokenInterface tokenContract = TokenInterface(token);
-            amt = amt == uint(-1) ? tokenContract.balanceOf(address(this)) : amt;
+            amt = amt == type(uint).max ? tokenContract.balanceOf(address(this)) : amt;
             approve(tokenContract, cToken, amt);
             require(CTokenInterface(cToken).mint(amt) == 0, "deposit-failed");
         }
@@ -45,7 +45,7 @@ abstract contract CompoundResolver is Events, Helpers {
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         CTokenInterface cTokenContract = CTokenInterface(cToken);
-        if (amt == uint(-1)) {
+        if (amt == type(uint).max) {
             TokenInterface tokenContract = TokenInterface(token);
             uint initialBal = token == ethAddr ? address(this).balance : tokenContract.balanceOf(address(this));
             require(cTokenContract.redeem(cTokenContract.balanceOf(address(this))) == 0, "full-withdraw-failed");
@@ -97,7 +97,7 @@ abstract contract CompoundResolver is Events, Helpers {
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         CTokenInterface cTokenContract = CTokenInterface(cToken);
-        amt = amt == uint(-1) ? cTokenContract.borrowBalanceCurrent(address(this)) : amt;
+        amt = amt == type(uint).max ? cTokenContract.borrowBalanceCurrent(address(this)) : amt;
 
         if (token == ethAddr) {
             require(address(this).balance >= amt, "not-enough-eth");
@@ -134,11 +134,11 @@ abstract contract CompoundResolver is Events, Helpers {
         uint initialBal = ctokenContract.balanceOf(address(this));
 
         if (token == ethAddr) {
-            amt = amt == uint(-1) ? address(this).balance : amt;
+            amt = amt == type(uint).max ? address(this).balance : amt;
             CETHInterface(cToken).mint{value: amt}();
         } else {
             TokenInterface tokenContract = TokenInterface(token);
-            amt = amt == uint(-1) ? tokenContract.balanceOf(address(this)) : amt;
+            amt = amt == type(uint).max ? tokenContract.balanceOf(address(this)) : amt;
             approve(tokenContract, cToken, amt);
             require(ctokenContract.mint(amt) == 0, "deposit-ctoken-failed.");
         }
@@ -171,7 +171,7 @@ abstract contract CompoundResolver is Events, Helpers {
 
         CTokenInterface cTokenContract = CTokenInterface(cToken);
         TokenInterface tokenContract = TokenInterface(token);
-        cTokenAmt = cTokenAmt == uint(-1) ? cTokenContract.balanceOf(address(this)) : cTokenAmt;
+        cTokenAmt = cTokenAmt == type(uint).max ? cTokenContract.balanceOf(address(this)) : cTokenAmt;
 
         uint withdrawAmt;
         {
@@ -210,7 +210,7 @@ abstract contract CompoundResolver is Events, Helpers {
         {
             (,, uint shortfal) = troller.getAccountLiquidity(borrower);
             require(shortfal != 0, "account-cannot-be-liquidated");
-            amt = amt == uint(-1) ? cTokenContract.borrowBalanceCurrent(borrower) : amt;
+            amt = amt == type(uint).max ? cTokenContract.borrowBalanceCurrent(borrower) : amt;
         }
 
         if (tokenToPay == ethAddr) {

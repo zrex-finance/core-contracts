@@ -108,7 +108,7 @@ abstract contract Helpers is Basic {
 
 		if (token_ == getBaseToken(params.market)) {
 			//if there are supplies, ensure withdrawn amount is not greater than supplied i.e can't borrow using withdraw.
-			if (amt_ == uint256(-1)) {
+			if (amt_ == type(uint).max) {
 				amt_ = initialBal;
 			} else {
 				require(
@@ -123,7 +123,7 @@ abstract contract Helpers is Basic {
 				"withdraw-disabled-for-zero-supplies"
 			);
 		} else {
-			amt_ = amt_ == uint256(-1) ? initialBal : amt_;
+			amt_ = amt_ == type(uint).max ? initialBal : amt_;
 		}
 
 		CometInterface(params.market).withdrawFrom(
@@ -170,7 +170,7 @@ abstract contract Helpers is Basic {
 		bool isEth,
 		Action action
 	) internal view returns (uint256) {
-		if (amt == uint256(-1)) {
+		if (amt == type(uint).max) {
 			uint256 allowance_ = TokenInterface(token).allowance(src, market);
 			uint256 bal_;
 
@@ -204,7 +204,7 @@ abstract contract Helpers is Basic {
 			"invalid-sell-token"
 		);
 
-		if (sellAmt_ == uint256(-1)) {
+		if (sellAmt_ == type(uint).max) {
 			sellAmt_ = isEth
 				? address(this).balance
 				: TokenInterface(params.sellToken).balanceOf(address(this));
@@ -216,13 +216,11 @@ abstract contract Helpers is Basic {
 
 		uint256 slippageAmt_ = convert18ToDec(
 			TokenInterface(params.buyAsset).decimals(),
-			wmul(
-				params.unitAmt,
-				convertTo18(
+
+			params.unitAmt * convertTo18(
 					TokenInterface(params.sellToken).decimals(),
 					sellAmt_
 				)
-			)
 		);
 
 		uint256 initialCollBal_ = TokenInterface(params.buyAsset).balanceOf(
@@ -241,7 +239,7 @@ abstract contract Helpers is Basic {
 			address(this)
 		);
 
-		uint256 buyAmt_ = sub(finalCollBal_, initialCollBal_);
+		uint256 buyAmt_ = finalCollBal_ - initialCollBal_;
 		require(slippageAmt_ <= buyAmt_, "too-much-slippage");
 
 		convertWethToEth(isEth, TokenInterface(params.buyAsset), buyAmt_);

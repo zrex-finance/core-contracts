@@ -38,7 +38,7 @@ abstract contract LiquityResolver is Events, Helpers {
         address upperHint,
         address lowerHint
     ) external payable returns (string memory _eventName, bytes memory _eventParam) {
-        depositAmount = depositAmount == uint(-1) ? address(this).balance : depositAmount;
+        depositAmount = depositAmount == type(uint).max ? address(this).balance : depositAmount;
 
         borrowerOperations.openTrove{value: depositAmount}(
             maxFeePercentage,
@@ -56,7 +56,6 @@ abstract contract LiquityResolver is Events, Helpers {
      * @notice Closes a Trove by repaying LUSD debt
     */
     function close() external payable returns (string memory _eventName, bytes memory _eventParam) {
-        uint collateral = troveManager.getTroveColl(address(this));
         borrowerOperations.closeTrove();
 
          _eventName = "LogClose(address)";
@@ -75,7 +74,7 @@ abstract contract LiquityResolver is Events, Helpers {
         address upperHint,
         address lowerHint
     ) external payable returns (string memory _eventName, bytes memory _eventParam)  {
-        amount = amount == uint(-1) ? address(this).balance : amount;
+        amount = amount == type(uint).max ? address(this).balance : amount;
 
         borrowerOperations.addColl{value: amount}(upperHint, lowerHint);
 
@@ -95,7 +94,7 @@ abstract contract LiquityResolver is Events, Helpers {
         address upperHint,
         address lowerHint
     ) external payable returns (string memory _eventName, bytes memory _eventParam)  {
-        amount = amount == uint(-1) ? troveManager.getTroveColl(address(this)) : amount;
+        amount = amount == type(uint).max ? troveManager.getTroveColl(address(this)) : amount;
 
         borrowerOperations.withdrawColl(amount, upperHint, lowerHint);
 
@@ -135,7 +134,7 @@ abstract contract LiquityResolver is Events, Helpers {
         address upperHint,
         address lowerHint
     ) external payable returns (string memory _eventName, bytes memory _eventParam)  {
-        if (amount == uint(-1)) {
+        if (amount == type(uint).max) {
             uint _lusdBal = lusdToken.balanceOf(address(this));
             uint _totalDebt = troveManager.getTroveDebt(address(this));
             amount = _lusdBal > _totalDebt ? _totalDebt : _lusdBal;
@@ -171,11 +170,11 @@ abstract contract LiquityResolver is Events, Helpers {
 
         adjustTrove.maxFeePercentage = maxFeePercentage;
 
-        adjustTrove.depositAmount = depositAmount == uint(-1) ? address(this).balance : depositAmount;
+        adjustTrove.depositAmount = depositAmount == type(uint).max ? address(this).balance : depositAmount;
 
-        adjustTrove.withdrawAmount = withdrawAmount == uint(-1) ? troveManager.getTroveColl(address(this)) : withdrawAmount;
+        adjustTrove.withdrawAmount = withdrawAmount == type(uint).max ? troveManager.getTroveColl(address(this)) : withdrawAmount;
 
-        if (repayAmount == uint(-1)) {
+        if (repayAmount == type(uint).max) {
             uint _lusdBal = lusdToken.balanceOf(address(this));
             uint _totalDebt = troveManager.getTroveDebt(address(this));
             repayAmount = _lusdBal > _totalDebt ? _totalDebt : _lusdBal;
@@ -222,7 +221,7 @@ abstract contract LiquityResolver is Events, Helpers {
         uint amount,
         address frontendTag
     ) external payable returns (string memory _eventName, bytes memory _eventParam) {
-        amount = amount == uint(-1) ? lusdToken.balanceOf(address(this)) : amount;
+        amount = amount == type(uint).max ? lusdToken.balanceOf(address(this)) : amount;
 
         uint ethGain = stabilityPool.getDepositorETHGain(address(this));
         uint lqtyBalanceBefore = lqtyToken.balanceOf(address(this));
@@ -230,7 +229,7 @@ abstract contract LiquityResolver is Events, Helpers {
         stabilityPool.provideToSP(amount, frontendTag);
         
         uint lqtyBalanceAfter = lqtyToken.balanceOf(address(this));
-        uint lqtyGain = sub(lqtyBalanceAfter, lqtyBalanceBefore);
+        uint lqtyGain = lqtyBalanceAfter - lqtyBalanceBefore;
 
         _eventName = "LogStabilityDeposit(address,uint256,uint256,uint256,address)";
         _eventParam = abi.encode(address(this), amount, ethGain, lqtyGain, frontendTag);
@@ -244,7 +243,7 @@ abstract contract LiquityResolver is Events, Helpers {
     function stabilityWithdraw(
         uint amount
     ) external payable returns (string memory _eventName, bytes memory _eventParam) {
-        amount = amount == uint(-1) ? stabilityPool.getCompoundedLUSDDeposit(address(this)) : amount;
+        amount = amount == type(uint).max ? stabilityPool.getCompoundedLUSDDeposit(address(this)) : amount;
 
         uint ethGain = stabilityPool.getDepositorETHGain(address(this));
         uint lqtyBalanceBefore = lqtyToken.balanceOf(address(this));
@@ -252,7 +251,7 @@ abstract contract LiquityResolver is Events, Helpers {
         stabilityPool.withdrawFromSP(amount);
         
         uint lqtyBalanceAfter = lqtyToken.balanceOf(address(this));
-        uint lqtyGain = sub(lqtyBalanceAfter, lqtyBalanceBefore);
+        uint lqtyGain = lqtyBalanceAfter - lqtyBalanceBefore;
 
         _eventName = "LogStabilityWithdraw(address,uint256,uint256,uint25)";
         _eventParam = abi.encode(address(this), amount, ethGain, lqtyGain);
@@ -285,10 +284,7 @@ abstract contract LiquityResolver is Events, Helpers {
     function stake(
         uint amount
     ) external payable returns (string memory _eventName, bytes memory _eventParam) {
-        amount = amount == uint(-1) ? lqtyToken.balanceOf(address(this)) : amount;
-
-        uint ethGain = staking.getPendingETHGain(address(this));
-        uint lusdGain = staking.getPendingLUSDGain(address(this));
+        amount = amount == type(uint).max ? lqtyToken.balanceOf(address(this)) : amount;
 
         staking.stake(amount);
 
@@ -304,10 +300,7 @@ abstract contract LiquityResolver is Events, Helpers {
     function unstake(
         uint amount
     ) external payable returns (string memory _eventName, bytes memory _eventParam) {
-        amount = amount == uint(-1) ? staking.stakes(address(this)) : amount;
-
-        uint ethGain = staking.getPendingETHGain(address(this));
-        uint lusdGain = staking.getPendingLUSDGain(address(this));
+        amount = amount == type(uint).max ? staking.stakes(address(this)) : amount;
 
         staking.unstake(amount);
 

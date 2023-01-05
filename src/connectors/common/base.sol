@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Connectors, TokenInterface } from "./interface.sol";
+import { Connectors, TokenInterface } from "./interfaces.sol";
 import { Stores } from "./stores.sol";
 
 abstract contract Basic is Stores {

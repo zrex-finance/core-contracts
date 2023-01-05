@@ -10,7 +10,7 @@ contract TokenReceiver {
         address,
         uint256,
         bytes calldata
-    ) external returns (bytes4) {
+    ) external pure returns (bytes4) {
         return 0x150b7a02; // bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))
     }
 
@@ -23,7 +23,7 @@ contract TokenReceiver {
         uint256,
         uint256,
         bytes memory
-    ) external returns (bytes4) {
+    ) external pure returns (bytes4) {
         return 0xf23a6e61; // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
     }
 
@@ -36,7 +36,7 @@ contract TokenReceiver {
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata
-    ) external returns (bytes4) {
+    ) external pure returns (bytes4) {
         return 0xbc197c81; // bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))
     }
 }

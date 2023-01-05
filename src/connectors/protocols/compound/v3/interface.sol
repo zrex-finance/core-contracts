@@ -12,78 +12,78 @@ struct RewardOwed {
 }
 
 interface CometInterface {
-	function supply(address asset, uint256 amount) external virtual;
+	function supply(address asset, uint256 amount) external;
 
 	function supplyTo(
 		address dst,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
 	function supplyFrom(
 		address from,
 		address dst,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
 	function transfer(address dst, uint256 amount)
 		external
-		virtual
+	
 		returns (bool);
 
 	function transferFrom(
 		address src,
 		address dst,
 		uint256 amount
-	) external virtual returns (bool);
+	) external returns (bool);
 
 	function transferAsset(
 		address dst,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
 	function transferAssetFrom(
 		address src,
 		address dst,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
-	function withdraw(address asset, uint256 amount) external virtual;
+	function withdraw(address asset, uint256 amount) external;
 
 	function withdrawTo(
 		address to,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
 	function withdrawFrom(
 		address src,
 		address to,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
 	function approveThis(
 		address manager,
 		address asset,
 		uint256 amount
-	) external virtual;
+	) external;
 
-	function withdrawReserves(address to, uint256 amount) external virtual;
+	function withdrawReserves(address to, uint256 amount) external;
 
 	function absorb(address absorber, address[] calldata accounts)
 		external
-		virtual;
+	;
 
 	function buyCollateral(
 		address asset,
 		uint256 minAmount,
 		uint256 baseAmount,
 		address recipient
-	) external virtual;
+	) external;
 
 	function quoteCollateral(address asset, uint256 baseAmount)
 		external

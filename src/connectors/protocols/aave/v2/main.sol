@@ -29,10 +29,10 @@ abstract contract AaveResolver is Events, Helpers {
 		TokenInterface tokenContract = TokenInterface(_token);
 
 		if (isEth) {
-			amt = amt == uint256(-1) ? address(this).balance : amt;
+			amt = amt == type(uint).max ? address(this).balance : amt;
 			convertEthToWeth(isEth, tokenContract, amt);
 		} else {
-			amt = amt == uint256(-1)
+			amt = amt == type(uint).max
 				? tokenContract.balanceOf(address(this))
 				: amt;
 		}
@@ -113,7 +113,7 @@ abstract contract AaveResolver is Events, Helpers {
 
 		TokenInterface tokenContract = TokenInterface(_token);
 
-		if (amt == uint256(-1)) {
+		if (amt == type(uint).max) {
 			uint256 _amtDSA = isEth
 				? address(this).balance
 				: tokenContract.balanceOf(address(this));
@@ -148,7 +148,7 @@ abstract contract AaveResolver is Events, Helpers {
 
 		TokenInterface tokenContract = TokenInterface(_token);
 
-		if (amt == uint256(-1)) {
+		if (amt == type(uint).max) {
 			uint256 _amtDSA = isEth
 				? address(this).balance
 				: tokenContract.balanceOf(address(this));
@@ -169,7 +169,7 @@ abstract contract AaveResolver is Events, Helpers {
 		_eventName = "LogPaybackOnBehalfOf(address,uint256,uint256,address)";
 		_eventParam = abi.encode(
 			token,
-			_amt,
+			amt,
 			rateMode,
 			onBehalfOf
 		);

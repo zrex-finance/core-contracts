@@ -50,10 +50,6 @@ contract EulerImport is EulerHelpers {
 	) internal returns (string memory _eventName, bytes memory _eventParam) {
 		require(inputData._supplyTokens.length > 0, "0-length-not-allowed");
 		require(
-			AccountInterface(address(this)).isAuth(userAccount),
-			"user-account-not-auth"
-		);
-		require(
 			inputData._enterMarket.length == inputData._supplyTokens.length,
 			"lengths-not-same"
 		);

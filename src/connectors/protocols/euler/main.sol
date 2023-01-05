@@ -16,7 +16,7 @@ abstract contract Euler is Helpers {
 	 * @notice Deposit a token to Euler for lending / collaterization.
 	 * @param subAccount Sub-account Id (0 for primary and 1 - 255 for sub-account)
 	 * @param token The address of the token to deposit.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to deposit. (For max: `uint256(-1)`)
+	 * @param amt The amount of the token to deposit. (For max: `type(uint).max`)
 	 * @param enableCollateral True for entering the market
 	 */
 	function deposit(
@@ -35,10 +35,10 @@ abstract contract Euler is Helpers {
 		TokenInterface tokenContract = TokenInterface(_token);
 
 		if (isEth) {
-			amt = amt == uint256(-1) ? address(this).balance : amt;
+			amt = amt == type(uint).max ? address(this).balance : amt;
 			convertEthToWeth(isEth, tokenContract, amt);
 		} else {
-			amt = amt == uint256(-1)
+			amt = amt == type(uint).max
 				? tokenContract.balanceOf(address(this))
 				: amt;
 		}
@@ -66,7 +66,7 @@ abstract contract Euler is Helpers {
 	 * @notice Withdraw deposited token and earned interest from Euler
 	 * @param subAccount Subaccount number
 	 * @param token The address of the token to withdraw.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to withdraw. (For max: `uint256(-1)`)
+	 * @param amt The amount of the token to withdraw. (For max: `type(uint).max`)
 	 */
 	function withdraw(
 		uint256 subAccount,
@@ -84,7 +84,7 @@ abstract contract Euler is Helpers {
 		IEulerEToken eToken = IEulerEToken(markets.underlyingToEToken(_token));
 
 		address _subAccount = getSubAccount(address(this), subAccount);
-		amt = amt == uint256(-1) ?  eToken.balanceOfUnderlying(_subAccount) : amt;
+		amt = amt == type(uint).max ?  eToken.balanceOfUnderlying(_subAccount) : amt;
 		uint256 initialBal = tokenContract.balanceOf(address(this));
 
 		eToken.withdraw(subAccount, amt);
@@ -133,7 +133,7 @@ abstract contract Euler is Helpers {
 	 * @notice Repay a token from Euler
 	 * @param subAccount Subaccount number
 	 * @param token The address of the token to repay.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to repay. (For max: `uint256(-1)`)
+	 * @param amt The amount of the token to repay. (For max: `type(uint).max`)
 	 */
 	function repay(
 		uint256 subAccount,
@@ -152,7 +152,7 @@ abstract contract Euler is Helpers {
 		);
 
 		address _subAccount = getSubAccount(address(this), subAccount);
-		amt = amt == uint256(-1) ? borrowedDToken.balanceOf(_subAccount) : amt;
+		amt = amt == type(uint).max ? borrowedDToken.balanceOf(_subAccount) : amt;
 		if (isEth) {
 			convertEthToWeth(isEth, TokenInterface(_token), amt);
 		}
@@ -216,7 +216,7 @@ abstract contract Euler is Helpers {
 
 		address _subAccount = getSubAccount(address(this), subAccount);
 
-		if(amt == uint256(-1)) {
+		if(amt == type(uint).max) {
 
 			uint256 _eTokenBalance = eToken.balanceOfUnderlying(_subAccount);
 			uint256 _dTokenBalance = dToken.balanceOf(_subAccount);
@@ -238,7 +238,7 @@ abstract contract Euler is Helpers {
 	 * @param subAccountFrom subAccount from which deposit is transferred
 	 * @param subAccountTo subAccount to which deposit is transferred
 	 * @param token The address of the token to etransfer.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to etransfer. (For max: `uint256(-1)`)
+	 * @param amt The amount of the token to etransfer. (For max: `type(uint).max`)
 	 */
 	function eTransfer(
 		uint256 subAccountFrom,
@@ -258,7 +258,7 @@ abstract contract Euler is Helpers {
 		address _subAccountFromAddr = getSubAccount(address(this), subAccountFrom);
 		address _subAccountToAddr = getSubAccount(address(this), subAccountTo);
 
-		amt = amt == uint256(-1)
+		amt = amt == type(uint).max
 			? eToken.balanceOf(_subAccountFromAddr)
 			: amt;
 
@@ -281,9 +281,7 @@ abstract contract Euler is Helpers {
 	 * @param subAccountFrom subAccount from which debt is transferred
 	 * @param subAccountTo subAccount to which debt is transferred
 	 * @param token The address of the token to dtransfer.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-	 * @param amt The amount of the token to dtransfer. (For max: `uint256(-1)`)
-	 * @param getId ID to retrieve amt.
-	 * @param setId ID stores the amount of tokens deposited.
+	 * @param amt The amount of the token to dtransfer. (For max: `type(uint).max`)
 	 */
 	function dTransfer(
 		uint256 subAccountFrom,
@@ -303,7 +301,7 @@ abstract contract Euler is Helpers {
 		address _subAccountFromAddr = getSubAccount(address(this), subAccountFrom);
 		address _subAccountToAddr = getSubAccount(address(this), subAccountTo);
 
-		amt = amt == uint256(-1)
+		amt = amt == type(uint).max
 			? dToken.balanceOf(_subAccountFromAddr)
 			: amt;
 
@@ -345,8 +343,8 @@ abstract contract Euler is Helpers {
 
 		dToken.approveDebt(subAccountId, debtSender, amt);
 
-		_eventName = "LogApproveSpenderDebt(uint256,address,address,uint256,uint256)";
-		_eventParam = abi.encode(subAccountId, debtSender, token, amt, setId);
+		_eventName = "LogApproveSpenderDebt(uint256,address,address,uint256)";
+		_eventParam = abi.encode(subAccountId, debtSender, token, amt);
 	}
 
 	/**

@@ -23,8 +23,7 @@ contract EulerIncentives is Helpers, Events {
         address user,
         address token,
         uint256 amt,
-        bytes32[] memory proof,
-        uint256 setId
+        bytes32[] memory proof
     ) external payable returns (string memory _eventName, bytes memory _eventParam) {
         require(proof.length > 0, "proofs-empty");
 
