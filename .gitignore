@@ -4,6 +4,7 @@ out/
 
 # JS
 node_modules/
+.idea/
 
 #Hardhat files
 cache_hardhat/
