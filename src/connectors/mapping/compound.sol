@@ -72,7 +72,7 @@ abstract contract Helpers {
         address[] memory _tokens,
         address[] calldata _ctokens
     ) external {
-        // require(msg.sender == instaIndex.master(), "not-master"); TODO check owner
+        // require(msg.sender == master(), "not-master"); TODO check owner
 
         require(_names.length == _tokens.length, "updateCtokenMapping: not same length");
         require(_names.length == _ctokens.length, "updateCtokenMapping: not same length");
