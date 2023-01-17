@@ -26,5 +26,4 @@ contract Variables is ConstantVariables {
     }
 
     address public owner;
-    mapping(address => bool) public isWhitelisted;
 }
