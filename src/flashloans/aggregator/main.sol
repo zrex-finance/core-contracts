@@ -17,6 +17,9 @@ contract FlashAggregator is Helper {
     
     receive() external payable {}
 
+    /**
+     * @notice Callback function for aave flashloan.
+     */
     function executeOperation(
         address[] memory _assets,
         uint256[] memory _amounts,
@@ -38,7 +41,7 @@ contract FlashAggregator is Helper {
         loanVariables_._amounts = _amounts;
         loanVariables_._fees = calculateFees(
             _amounts,
-            calculateFeeBPS(1, sender_)
+            calculateFeeBPS(1)
         );
         loanVariables_._iniBals = calculateBalances(
             _assets,
@@ -65,12 +68,14 @@ contract FlashAggregator is Helper {
         return true;
     }
 
-
+    /**
+     * @notice Fallback function for makerdao flashloan.
+     */
     function onFlashLoan(
         address _initiator,
         address,
-        uint256 _amount,
-        uint256 _fee,
+        uint256,
+        uint256,
         bytes calldata _data
     ) external verifyDataHash(_data) returns (bytes32) {
         require(_initiator == address(this), "not-same-sender");
@@ -94,55 +99,17 @@ contract FlashAggregator is Helper {
         );
         loanVariables_._fees = calculateFees(
             amounts_,
-            calculateFeeBPS(route_, sender_)
+            calculateFeeBPS(route_)
         );
 
-        if (route_ == 2) {
-            safeTransfer(loanVariables_, sender_);
-
-            FlashReceiverInterface(sender_).executeOperation(
-                    tokens_,
-                    amounts_,
-                    loanVariables_._fees,
-                    sender_,
-                    data_
-                );
-        } else if (route_ == 3 || route_ == 4) {
-            require(_fee == 0, "flash-DAI-fee-not-0");
-
-            address[] memory _daiTokenList = new address[](1);
-            uint256[] memory _daiTokenAmountsList = new uint256[](1);
-            _daiTokenList[0] = daiTokenAddr;
-            _daiTokenAmountsList[0] = _amount;
-
-            if (route_ == 3) {
-                compoundSupply(_daiTokenList, _daiTokenAmountsList);
-                compoundBorrow(tokens_, amounts_);
-            } else {
-                aaveSupply(_daiTokenList, _daiTokenAmountsList);
-                aaveBorrow(tokens_, amounts_);
-            }
-
-            safeTransfer(loanVariables_, sender_);
-
-            FlashReceiverInterface(sender_).executeOperation(
-                    tokens_,
-                    amounts_,
-                    loanVariables_._fees,
-                    sender_,
-                    data_
-                );
-
-            if (route_ == 3) {
-                compoundPayback(tokens_, amounts_);
-                compoundWithdraw(_daiTokenList, _daiTokenAmountsList);
-            } else {
-                aavePayback(tokens_, amounts_);
-                aaveWithdraw(_daiTokenList, _daiTokenAmountsList);
-            }
-        } else {
-            revert("wrong-route");
-        }
+        safeTransfer(loanVariables_, sender_);
+        FlashReceiverInterface(sender_).executeOperation(
+                tokens_,
+                amounts_,
+                loanVariables_._fees,
+                sender_,
+                data_
+            );
 
         loanVariables_._finBals = calculateBalances(
             tokens_,
@@ -152,10 +119,13 @@ contract FlashAggregator is Helper {
 
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
-
+    
+    /**
+     * @notice Fallback function for balancer flashloan.
+     */
     function receiveFlashLoan(
         IERC20[] memory,
-        uint256[] memory _amounts,
+        uint256[] memory,
         uint256[] memory _fees,
         bytes memory _data
     ) external verifyDataHash(_data) {
@@ -179,91 +149,34 @@ contract FlashAggregator is Helper {
         );
         loanVariables_._fees = calculateFees(
             amounts_,
-            calculateFeeBPS(route_, sender_)
+            calculateFeeBPS(route_)
         );
 
-        if (route_ == 5) {
-            if (tokens_[0] == stEthTokenAddr) {
-                wstEthToken.unwrap(_amounts[0]);
-            }
-            safeTransfer(loanVariables_, sender_);
-            FlashReceiverInterface(sender_).executeOperation(
-                    tokens_,
-                    amounts_,
-                    loanVariables_._fees,
-                    sender_,
-                    data_
-                );
-            if (tokens_[0] == stEthTokenAddr) {
-                wstEthToken.wrap(amounts_[0]);
-            }
-
-            loanVariables_._finBals = calculateBalances(
+        safeTransfer(loanVariables_, sender_);
+        FlashReceiverInterface(sender_).executeOperation(
                 tokens_,
-                address(this)
+                amounts_,
+                loanVariables_._fees,
+                sender_,
+                data_
             );
-            if (tokens_[0] == stEthTokenAddr) {
-                // adding 10 wei to avoid any possible decimal errors in final calculations
-                loanVariables_._finBals[0] =
-                    loanVariables_._finBals[0] +
-                    10;
-                loanVariables_._tokens[0] = address(wstEthToken);
-                loanVariables_._amounts[0] = _amounts[0];
-            }
-            validateFlashloan(loanVariables_);
+
+        loanVariables_._finBals = calculateBalances(
+            tokens_,
+            address(this)
+        );
+
+        validateFlashloan(loanVariables_);
             safeTransferWithFee(
                 loanVariables_,
                 _fees,
                 address(balancerLending)
             );
-        } else if (route_ == 6 || route_ == 7) {
-            require(_fees[0] == 0, "flash-ETH-fee-not-0");
-
-            address[] memory wEthTokenList = new address[](1);
-            wEthTokenList[0] = address(wethToken);
-
-            if (route_ == 6) {
-                compoundSupply(wEthTokenList, _amounts);
-                compoundBorrow(tokens_, amounts_);
-            } else {
-                aaveSupply(wEthTokenList, _amounts);
-                aaveBorrow(tokens_, amounts_);
-            }
-
-            safeTransfer(loanVariables_, sender_);
-
-            FlashReceiverInterface(sender_).executeOperation(
-                    tokens_,
-                    amounts_,
-                    loanVariables_._fees,
-                    sender_,
-                    data_
-                );
-
-            if (route_ == 6) {
-                compoundPayback(tokens_, amounts_);
-                compoundWithdraw(wEthTokenList, _amounts);
-            } else {
-                aavePayback(tokens_, amounts_);
-                aaveWithdraw(wEthTokenList, _amounts);
-            }
-            loanVariables_._finBals = calculateBalances(
-                tokens_,
-                address(this)
-            );
-            validateFlashloan(loanVariables_);
-            loanVariables_._tokens = wEthTokenList;
-            loanVariables_._amounts = _amounts;
-            safeTransferWithFee(
-                loanVariables_,
-                _fees,
-                address(balancerLending)
-            );
-        } else {
-            revert("wrong-route");
-        }
     }
 
+    /**
+     * @notice Middle function for route 1.
+     */
     function routeAave(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -287,6 +200,9 @@ contract FlashAggregator is Helper {
         );
     }
 
+    /**
+     * @notice Middle function for route 2.
+     */
     function routeMaker(
         address _token,
         uint256 _amount,
@@ -312,48 +228,9 @@ contract FlashAggregator is Helper {
         );
     }
 
-    function routeMakerCompound(
-        address[] memory _tokens,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        bytes memory data_ = abi.encode(
-            3,
-            _tokens,
-            _amounts,
-            msg.sender,
-            _data
-        );
-        dataHash = bytes32(keccak256(data_));
-        makerLending.flashLoan(
-            FlashReceiverInterface(address(this)),
-            daiTokenAddr,
-            daiBorrowAmount,
-            data_
-        );
-    }
-
-    function routeMakerAave(
-        address[] memory _tokens,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        bytes memory data_ = abi.encode(
-            4,
-            _tokens,
-            _amounts,
-            msg.sender,
-            _data
-        );
-        dataHash = bytes32(keccak256(data_));
-        makerLending.flashLoan(
-            FlashReceiverInterface(address(this)),
-            daiTokenAddr,
-            daiBorrowAmount,
-            data_
-        );
-    }
-
+    /**
+     * @notice Middle function for route 5.
+     */
     function routeBalancer(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -372,11 +249,7 @@ contract FlashAggregator is Helper {
             _data
         );
         dataHash = bytes32(keccak256(data_));
-        if (_tokens[0] == stEthTokenAddr) {
-            require(length_ == 1, "steth-length-should-be-1");
-            tokens_[0] = IERC20(address(wstEthToken));
-            _amounts[0] = wstEthToken.getWstETHByStETH(_amounts[0]);
-        }
+
         balancerLending.flashLoan(
             FlashReceiverInterface(address(this)),
             tokens_,
@@ -385,56 +258,9 @@ contract FlashAggregator is Helper {
         );
     }
 
-    function routeBalancerCompound(
-        address[] memory _tokens,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        bytes memory data_ = abi.encode(
-            6,
-            _tokens,
-            _amounts,
-            msg.sender,
-            _data
-        );
-        IERC20[] memory wethTokenList_ = new IERC20[](1);
-        uint256[] memory wethAmountList_ = new uint256[](1);
-        wethTokenList_[0] = IERC20(wethToken);
-        wethAmountList_[0] = getWEthBorrowAmount();
-        dataHash = bytes32(keccak256(data_));
-        balancerLending.flashLoan(
-            FlashReceiverInterface(address(this)),
-            wethTokenList_,
-            wethAmountList_,
-            data_
-        );
-    }
-
-    function routeBalancerAave(
-        address[] memory _tokens,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        bytes memory data_ = abi.encode(
-            7,
-            _tokens,
-            _amounts,
-            msg.sender,
-            _data
-        );
-        IERC20[] memory wethTokenList_ = new IERC20[](1);
-        uint256[] memory wethAmountList_ = new uint256[](1);
-        wethTokenList_[0] = wethToken;
-        wethAmountList_[0] = getWEthBorrowAmount();
-        dataHash = bytes32(keccak256(data_));
-        balancerLending.flashLoan(
-            FlashReceiverInterface(address(this)),
-            wethTokenList_,
-            wethAmountList_,
-            data_
-        );
-    }
-
+    /**
+     * @notice Main function for flashloan for all routes. Calls the middle functions according to routes.
+     */
     function flashLoan(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -452,33 +278,25 @@ contract FlashAggregator is Helper {
         } else if (_route == 2) {
             routeMaker(_tokens[0], _amounts[0], _data);
         } else if (_route == 3) {
-            routeMakerCompound(_tokens, _amounts, _data);
-        } else if (_route == 4) {
-            routeMakerAave(_tokens, _amounts, _data);
-        } else if (_route == 5) {
             routeBalancer(_tokens, _amounts, _data);
-        } else if (_route == 6) {
-            routeBalancerCompound(_tokens, _amounts, _data);
-        } else if (_route == 7) {
-            routeBalancerAave(_tokens, _amounts, _data);
-        } else {
-            revert("route-does-not-exist");
         }
 
         emit LogFlashloan(msg.sender, _route, _tokens, _amounts);
     }
 
+    /**
+     * @notice Function to get the list of available routes.
+     */
     function getRoutes() public pure returns (uint16[] memory routes_) {
-        routes_ = new uint16[](7);
+        routes_ = new uint16[](3);
         routes_[0] = 1;
         routes_[1] = 2;
         routes_[2] = 3;
-        routes_[3] = 4;
-        routes_[4] = 5;
-        routes_[5] = 6;
-        routes_[6] = 7;
     }
 
+    /**
+     * @notice Function to transfer fee to the treasury. Will be called manually.
+     */
     function transferFeeToTreasury(address[] memory _tokens) public {
         for (uint256 i = 0; i < _tokens.length; i++) {
             IERC20 token_ = IERC20(_tokens[i]);

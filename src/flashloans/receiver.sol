@@ -17,7 +17,6 @@ interface IFlashLoan {
 contract FlashReceiver {
     using SafeERC20 for IERC20;
     IFlashLoan internal immutable flashloan;
-
     
     function flashBorrow(
         address[] calldata tokens_,

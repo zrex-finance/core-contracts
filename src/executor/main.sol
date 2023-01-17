@@ -29,7 +29,11 @@ contract ExecutorImplementation is TokenReceiver {
 
   receive() external payable {}
 
-  function execute(string[] calldata _targetNames, bytes[] calldata _datas, address _origin) external payable {
+  function execute(
+    string[] calldata _targetNames,
+    bytes[] calldata _datas,
+    address _origin
+  ) external payable {
     uint256 _length = _targetNames.length;
     require(_length != 0, "Length invalid");
     require(_length == _datas.length , "Array has different lenght");

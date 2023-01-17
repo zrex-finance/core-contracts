@@ -109,148 +109,16 @@ contract Helper is Variables {
         }
     }
 
-    function compoundSupply(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-    {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        address[] memory cTokens_ = new address[](length_);
-        for (uint256 i = 0; i < length_; i++) {
-            if (_tokens[i] == address(wethToken)) {
-                wethToken.withdraw(_amounts[i]);
-                CEthInterface cEth_ = CEthInterface(cethTokenAddr);
-                cEth_.mint{value: _amounts[i]}();
-                cTokens_[i] = cethTokenAddr;
-            } else {
-                CTokenInterface cToken_ = CTokenInterface(
-                    tokenToCToken[_tokens[i]]
-                );
-                // Approved already in addTokenToctoken function
-                require(cToken_.mint(_amounts[i]) == 0, "mint failed");
-                cTokens_[i] = tokenToCToken[_tokens[i]];
-            }
-        }
-    }
-
-    function compoundBorrow(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-    {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            if (_tokens[i] == address(wethToken)) {
-                CEthInterface cEth = CEthInterface(cethTokenAddr);
-                require(cEth.borrow(_amounts[i]) == 0, "borrow failed");
-                wethToken.deposit{value: _amounts[i]}();
-            } else {
-                CTokenInterface cToken = CTokenInterface(
-                    tokenToCToken[_tokens[i]]
-                );
-                require(cToken.borrow(_amounts[i]) == 0, "borrow failed");
-            }
-        }
-    }
-
-    function compoundPayback(
-        address[] memory _tokens,
-        uint256[] memory _amounts
-    ) internal {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            if (_tokens[i] == address(wethToken)) {
-                wethToken.withdraw(_amounts[i]);
-                CEthInterface cToken = CEthInterface(cethTokenAddr);
-                cToken.repayBorrow{value: _amounts[i]}();
-            } else {
-                CTokenInterface cToken = CTokenInterface(
-                    tokenToCToken[_tokens[i]]
-                );
-                // Approved already in addTokenToctoken function
-                require(cToken.repayBorrow(_amounts[i]) == 0, "repay failed");
-            }
-        }
-    }
-
-    function compoundWithdraw(
-        address[] memory _tokens,
-        uint256[] memory _amounts
-    ) internal {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            if (_tokens[i] == address(wethToken)) {
-                CEthInterface cEth_ = CEthInterface(cethTokenAddr);
-                require(
-                    cEth_.redeemUnderlying(_amounts[i]) == 0,
-                    "redeem failed"
-                );
-                wethToken.deposit{value: _amounts[i]}();
-            } else {
-                CTokenInterface cToken_ = CTokenInterface(
-                    tokenToCToken[_tokens[i]]
-                );
-                require(
-                    cToken_.redeemUnderlying(_amounts[i]) == 0,
-                    "redeem failed"
-                );
-            }
-        }
-    }
-
-    function aaveSupply(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-    {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            approve(_tokens[i], address(aaveLending), _amounts[i]);
-            aaveLending.deposit(_tokens[i], _amounts[i], address(this), 3228);
-            aaveLending.setUserUseReserveAsCollateral(_tokens[i], true);
-        }
-    }
-
-    function aaveBorrow(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-    {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            aaveLending.borrow(_tokens[i], _amounts[i], 2, 3228, address(this));
-        }
-    }
-
-    function aavePayback(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-    {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            approve(_tokens[i], address(aaveLending), _amounts[i]);
-            aaveLending.repay(_tokens[i], _amounts[i], 2, address(this));
-        }
-    }
-
-    function aaveWithdraw(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-    {
-        uint256 length_ = _tokens.length;
-        require(_amounts.length == length_, "array-lengths-not-same");
-        for (uint256 i = 0; i < length_; i++) {
-            aaveLending.withdraw(_tokens[i], _amounts[i], address(this));
-        }
-    }
-
-    function calculateFeeBPS(uint256 _route, address account_)
+    function calculateFeeBPS(uint256 _route)
         public
         view
         returns (uint256 BPS_)
     {
         if (_route == 1) {
             BPS_ = aaveLending.FLASHLOAN_PREMIUM_TOTAL();
-        } else if (_route == 2 || _route == 3 || _route == 4) {
+        } else if (_route == 2) {
             BPS_ = (makerLending.toll()) / (10**14);
-        } else if (_route == 5 || _route == 6 || _route == 7) {
+        } else if (_route == 3) {
             BPS_ =
                 (
                     balancerLending
@@ -260,10 +128,6 @@ contract Helper is Variables {
                 100;
         } else {
             revert("Invalid source");
-        }
-
-        if (!isWhitelisted[account_] && BPS_ < FeeBPS) {
-            BPS_ = FeeBPS;
         }
     }
 
@@ -303,11 +167,6 @@ contract Helper is Variables {
             }
         }
         return (_tokens, _amounts);
-    }
-
-    function getWEthBorrowAmount() internal view returns (uint256) {
-        uint256 amount_ = wethToken.balanceOf(address(balancerLending));
-        return (amount_ * wethBorrowAmountPercentage) / 100;
     }
 
     modifier verifyDataHash(bytes memory data_) {
