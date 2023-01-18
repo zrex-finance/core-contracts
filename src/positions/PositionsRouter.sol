@@ -13,6 +13,7 @@ contract PositionsRouter {
     }
 
     IExecutor private immutable executor;
+    IFlashloanReciever private immutable flashloanReciever;
 
     mapping (bytes32 => Position) public positions;
     mapping (address => uint256) public positionsIndex;
@@ -22,12 +23,22 @@ contract PositionsRouter {
         _;
     }
 
-    constructor(IExecutor _executor) {
+    constructor(IExecutor _executor,IFlashloanReciever _flashloanReciever) {
         executor = _executor;
+        flashloanReciever = _flashloanReciever;
     }
 
-    function openPosition(Position memory position) external payable {
+    function openPosition(
+        Position memory position,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
+    ) external payable {
         require(position.account == msg.sender, "Only owner");
+
+        flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
 
         address account = position.account;
         uint256 index = positionsIndex[account] += 1;
@@ -38,10 +49,19 @@ contract PositionsRouter {
         positions[key] = position;
     }
 
-    function closePosition(bytes32 key) external payable {
+    function closePosition(
+        bytes32 key,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
+    ) external payable {
         Position memory position = positions[key];
 
         require(msg.sender == position.account, "Can close own position or position available for liquidation");
+
+        flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
 
         delete positions[key];
     }

@@ -196,7 +196,7 @@ contract FlashAggregator is Helper {
             _modes,
             address(0),
             data_,
-            3228
+            0
         );
     }
 
@@ -204,26 +204,22 @@ contract FlashAggregator is Helper {
      * @notice Middle function for route 2.
      */
     function routeMaker(
-        address _token,
-        uint256 _amount,
+        address[] memory _tokens,
+        uint256[] memory _amounts,
         bytes memory _data
     ) internal {
-        address[] memory tokens_ = new address[](1);
-        uint256[] memory amounts_ = new uint256[](1);
-        tokens_[0] = _token;
-        amounts_[0] = _amount;
         bytes memory data_ = abi.encode(
             2,
-            tokens_,
-            amounts_,
+            _tokens,
+            _amounts,
             msg.sender,
             _data
         );
         dataHash = bytes32(keccak256(data_));
         makerLending.flashLoan(
             FlashReceiverInterface(address(this)),
-            _token,
-            _amount,
+            _tokens[0],
+            _amounts[0],
             data_
         );
     }
@@ -276,7 +272,7 @@ contract FlashAggregator is Helper {
         if (_route == 1) {
             routeAave(_tokens, _amounts, _data);
         } else if (_route == 2) {
-            routeMaker(_tokens[0], _amounts[0], _data);
+            routeMaker(_tokens, _amounts, _data);
         } else if (_route == 3) {
             routeBalancer(_tokens, _amounts, _data);
         }
