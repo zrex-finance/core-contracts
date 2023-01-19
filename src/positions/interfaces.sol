@@ -26,3 +26,14 @@ interface IFlashloanReciever {
         bytes calldata /* params */
     ) external returns (bool);
 }
+
+interface IExchanges {
+    function exchange(
+        address buyAddr,
+		address sellAddr,
+		uint256 sellAmt,
+		uint256 unitAmt,
+        uint256 _route,
+		bytes calldata callData
+    ) external payable returns (uint256 _buyAmt);
+}

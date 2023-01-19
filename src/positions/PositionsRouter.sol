@@ -13,6 +13,7 @@ contract PositionsRouter {
     }
 
     IExecutor private immutable executor;
+    IExchanges private immutable exchanges;
     IFlashloanReciever private immutable flashloanReciever;
 
     mapping (bytes32 => Position) public positions;
@@ -23,9 +24,10 @@ contract PositionsRouter {
         _;
     }
 
-    constructor(IExecutor _executor,IFlashloanReciever _flashloanReciever) {
+    constructor(IExecutor _executor,IFlashloanReciever _flashloanReciever,IExchanges _exchanges) {
         executor = _executor;
         flashloanReciever = _flashloanReciever;
+        exchanges = _exchanges;
     }
 
     function openPosition(
@@ -76,6 +78,7 @@ contract PositionsRouter {
         address _origin,
         uint256 /* repayAmount */
     ) external payable onlyCallback {
+        exchange(_datas[0]);
         executor.execute(_targetNames, _datas, _origin);
     }
 
@@ -85,7 +88,20 @@ contract PositionsRouter {
         address _origin,
         uint256 /* repayAmount */
     ) external payable onlyCallback {
+        exchange(_datas[0]);
         executor.execute(_targetNames, _datas, _origin);
+    }
 
+    function exchange(bytes calldata _exchangeData) internal returns (uint256 value) {
+        (
+            address buyAddr,
+            address sellAddr,
+            uint256 sellAmt,
+            uint256 unitAmt,
+            uint256 _route,
+            bytes memory callData
+        ) = abi.decode(_exchangeData, (address, address, uint256, uint256, uint256, bytes));
+
+        value = exchanges.exchange(buyAddr, sellAddr, sellAmt, unitAmt, _route, callData);
     }
 }
