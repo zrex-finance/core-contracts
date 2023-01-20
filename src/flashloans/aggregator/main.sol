@@ -275,6 +275,8 @@ contract FlashAggregator is Helper {
             routeMaker(_tokens, _amounts, _data);
         } else if (_route == 3) {
             routeBalancer(_tokens, _amounts, _data);
+        } else {
+            revert("route-does-not-exist");
         }
 
         emit LogFlashloan(msg.sender, _route, _tokens, _amounts);

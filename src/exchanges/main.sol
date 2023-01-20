@@ -19,6 +19,8 @@ contract Exchanges is Helpers {
             _buyAmt = routeUni(buyAddr, sellAddr, sellAmt, unitAmt, callData);
         } else if (_route == 2) {
             _buyAmt = routeOneInch(buyAddr, sellAddr, sellAmt, unitAmt, callData);
+        } else {
+            revert("route-does-not-exist");
         }
     }
 
