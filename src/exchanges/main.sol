@@ -7,6 +7,16 @@ import { Helpers } from "./helpers.sol";
 import { SwapData, OneInchData } from "./interface.sol";
 
 contract Exchanges is Helpers {
+
+    event LogExchange(
+        address indexed account,
+        uint256 indexed route,
+        address buyAddr,
+		address sellAddr,
+		uint256 sellAmt,
+		uint256 unitAmt
+    );
+
     function exchange(
         address buyAddr,
 		address sellAddr,
@@ -22,6 +32,8 @@ contract Exchanges is Helpers {
         } else {
             revert("route-does-not-exist");
         }
+
+        emit LogExchange(msg.sender, _route, buyAddr, sellAddr, sellAmt, unitAmt);
     }
 
     function routeUni(
