@@ -38,7 +38,7 @@ contract FlashReceiver is Helper {
             );
         }
 
-        (bool success, bytes memory results) = address(positionsRouter).call(params);
+        (bool success, bytes memory results) = address(positionsRouter).call(abi.encodePacked(params, amounts[0] + premiums[0]));
 
         if (!success) {
             revert(_getRevertMsg(results));

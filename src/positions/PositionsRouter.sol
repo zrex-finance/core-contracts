@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../lib/UniversalERC20.sol";
+
 import "./interfaces.sol";
 
 contract PositionsRouter {
+    using UniversalERC20 for IERC20;
+    
     struct Position {
         address account;
         address debt;
@@ -74,25 +79,41 @@ contract PositionsRouter {
 
     function openPositionCallback(
         string[] calldata _targetNames,
-        bytes[] calldata _datas,
+        bytes[] memory _datas,
+        bytes[] calldata _customDatas,
         address _origin,
-        uint256 /* repayAmount */
+        uint256 repayAmount
     ) external payable onlyCallback {
-        exchange(_datas[0]);
+        uint256 amt = exchange(_customDatas[0]);
+
+        _datas[1] = replaceAmount(_datas[0], amt);
+        _datas[2] = replaceAmount(_datas[1], repayAmount);
+
         executor.execute(_targetNames, _datas, _origin);
     }
 
     function closePositionCallback(
         string[] calldata _targetNames,
-        bytes[] calldata _datas,
+        bytes[] memory _datas,
+        bytes[] calldata _customDatas,
         address _origin,
-        uint256 /* repayAmount */
+        uint256 repayAmount
     ) external payable onlyCallback {
-        exchange(_datas[0]);
         executor.execute(_targetNames, _datas, _origin);
+
+        uint256 returnedAmt = exchange(_customDatas[0]);
+
+        Position memory position = positions[bytes32(_customDatas[1])];
+
+        IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
 
-    function exchange(bytes calldata _exchangeData) internal returns (uint256 value) {
+    function replaceAmount(bytes memory _data, uint256 _amt) internal pure returns (bytes memory data) {
+        (bytes4 selector, address token) = abi.decode(_data, (bytes4, address));
+        data = abi.encodePacked(selector, _amt, token);
+    }
+
+    function exchange(bytes memory _exchangeData) internal returns (uint256 value) {
         (
             address buyAddr,
             address sellAddr,
