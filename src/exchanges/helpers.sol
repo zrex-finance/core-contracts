@@ -13,8 +13,11 @@ abstract contract Helpers is Basic {
 	function _uniSwap(SwapData memory swapData) internal returns (uint256 buyAmt) {
 		uint256 initalBal = getTokenBalance(swapData.buyToken);
 
-		(bool success, ) = V3_SWAP_ROUTER_ADDRESS.call(swapData.callData);
-		if (!success) revert("uniswapV3-swap-failed");
+		(bool success, bytes memory results) = V3_SWAP_ROUTER_ADDRESS.call(swapData.callData);
+		
+		if (!success) {
+            revert(_getRevertMsg(results));
+        }
 
 		uint256 finalBal = getTokenBalance(swapData.buyToken);
 
@@ -23,12 +26,13 @@ abstract contract Helpers is Basic {
 
 
 	function uniSwap(SwapData memory swapData) internal returns (uint256 _buyAmt)	{
-		bool isEthSellToken = address(swapData.sellToken) == ethAddr;
-		bool isEthBuyToken = address(swapData.buyToken) == ethAddr;
+		bool isEthSellToken = address(swapData.sellToken) == ethAddr || address(swapData.sellToken) == address(0);
+		bool isEthBuyToken = address(swapData.buyToken) == ethAddr || address(swapData.buyToken) == address(0);
 
 		swapData.sellToken = isEthSellToken
 			? TokenInterface(wethAddr)
 			: swapData.sellToken;
+
 		swapData.buyToken = isEthBuyToken
 			? TokenInterface(wethAddr)
 			: swapData.buyToken;
@@ -54,8 +58,11 @@ abstract contract Helpers is Basic {
 
         uint initalBal = getTokenBalance(buyToken);
 
-        (bool success, ) = oneInchAddr.call{value: ethAmt}(oneInchData.callData);
-        if (!success) revert("1Inch-swap-failed");
+        (bool success, bytes memory results) = oneInchAddr.call{value: ethAmt}(oneInchData.callData);
+        
+		if (!success) {
+            revert(_getRevertMsg(results));
+        }
 
         uint finalBal = getTokenBalance(buyToken);
 
@@ -68,12 +75,25 @@ abstract contract Helpers is Basic {
         TokenInterface _sellAddr = oneInchData.sellToken;
 
         uint ethAmt;
-        if (address(_sellAddr) == ethAddr) {
+        if (address(_sellAddr) == ethAddr || address(_sellAddr) == address(0)) {
             ethAmt = oneInchData._sellAmt;
         } else {
             approve(TokenInterface(_sellAddr), oneInchAddr, oneInchData._sellAmt);
         }
 
         _buyAmt = _oneInchSwap(oneInchData, ethAmt);
+    }
+
+	function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) {
+            return "Transaction reverted silently";
+        }
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 }

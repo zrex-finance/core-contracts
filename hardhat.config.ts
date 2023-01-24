@@ -1,8 +1,13 @@
 import fs from "fs";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
+import "@nomiclabs/hardhat-etherscan";
+import "hardhat-deploy";
+import "hardhat-tracer";
+import "hardhat-gas-reporter"
 import "hardhat-preprocessor";
 import { HardhatUserConfig, task } from "hardhat/config";
+import { config as dotEnvConfig } from "dotenv";
 
 import example from "./tasks/example";
 
@@ -15,6 +20,10 @@ function getRemappings() {
 }
 
 task("example", "Example task").setAction(example);
+
+dotEnvConfig();
+
+const { INFURA_TOKEN, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -29,6 +38,44 @@ const config: HardhatUserConfig = {
   paths: {
     sources: "./src", // Use ./src rather than ./contracts as Hardhat expects
     cache: "./cache_hardhat", // Use a different cache for Hardhat than Foundry
+  },
+  networks: {
+    goerli: {
+      url: `https://goerli.infura.io/v3/b018016af5c445d493f43914d5a479c9`,
+      accounts: PRIVATE_KEY
+        ? [PRIVATE_KEY]
+        : {
+            mnemonic:
+              "test test test test test test test test test test test junk",
+          },
+    },
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${INFURA_TOKEN}`,
+      accounts: PRIVATE_KEY
+        ? [PRIVATE_KEY]
+        : {
+            mnemonic:
+              "test test test test test test test test test test test junk",
+          },
+    },
+    hardhat: {
+      blockGasLimit: 9500000,
+      chainId: 1,
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+        blockNumber: 16241092,
+      },
+      initialBaseFeePerGas: 5,
+    },
+    coverage: {
+      url: "http://127.0.0.1:8555",
+    },
+  },
+  etherscan: {
+    apiKey: ETHERSCAN_API_KEY,
+  },
+  mocha: {
+    timeout: 100000000
   },
   // This fully resolves paths for imports in the ./lib directory for Hardhat
   preprocess: {

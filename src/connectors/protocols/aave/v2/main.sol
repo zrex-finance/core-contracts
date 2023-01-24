@@ -12,7 +12,7 @@ import { Helpers } from "./helpers.sol";
 import { Events } from "./events.sol";
 import { AaveInterface } from "./interface.sol";
 
-abstract contract AaveResolver is Events, Helpers {
+contract AaveResolver is Events, Helpers {
 	function deposit(
 		address token,
 		uint256 amt
@@ -23,7 +23,7 @@ abstract contract AaveResolver is Events, Helpers {
 	{
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
 		TokenInterface tokenContract = TokenInterface(_token);
@@ -58,7 +58,7 @@ abstract contract AaveResolver is Events, Helpers {
 		returns (string memory _eventName, bytes memory _eventParam)
 	{
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
 		TokenInterface tokenContract = TokenInterface(_token);
@@ -87,7 +87,7 @@ abstract contract AaveResolver is Events, Helpers {
 
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
 		aave.borrow(_token, amt, rateMode, referralCode, address(this));
@@ -108,7 +108,7 @@ abstract contract AaveResolver is Events, Helpers {
 	{
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
 		TokenInterface tokenContract = TokenInterface(_token);
@@ -143,7 +143,7 @@ abstract contract AaveResolver is Events, Helpers {
 	{
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
 		TokenInterface tokenContract = TokenInterface(_token);
@@ -205,7 +205,7 @@ abstract contract AaveResolver is Events, Helpers {
 	{
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
 		if (getPaybackBalance(_token, rateMode) > 0) {
@@ -215,8 +215,4 @@ abstract contract AaveResolver is Events, Helpers {
 		_eventName = "LogSwapRateMode(address,uint256)";
 		_eventParam = abi.encode(token, rateMode);
 	}
-}
-
-contract ConnectV2AaveV2 is AaveResolver {
-	string public constant name = "AaveV2-v1.2";
 }

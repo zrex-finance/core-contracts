@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 interface IExecutor {
     function execute(
-        string[] calldata _targetNames,
+        address[] calldata _targets,
         bytes[] calldata _datas,
         address _origin
     ) external payable;
@@ -32,7 +32,6 @@ interface IExchanges {
         address buyAddr,
 		address sellAddr,
 		uint256 sellAmt,
-		uint256 unitAmt,
         uint256 _route,
 		bytes calldata callData
     ) external payable returns (uint256 _buyAmt);

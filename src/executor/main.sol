@@ -5,11 +5,7 @@ import { ConnectorsInterface } from "./interface.sol";
 import { TokenReceiver } from "./helpers.sol";
 
 contract ExecutorImplementation is TokenReceiver {
-  address public immutable connectors;
-
-  constructor(address _connectors) {
-    connectors = _connectors;
-  }
+  constructor() {}
 
   function decodeEvent(bytes memory response) internal pure returns (string memory _eventCode, bytes memory _eventParams) {
     if (response.length > 0) {
@@ -21,7 +17,6 @@ contract ExecutorImplementation is TokenReceiver {
     address indexed origin,
     address indexed sender,
     uint256 value,
-    string[] targetsNames,
     address[] targets,
     string[] eventNames,
     bytes[] eventParams
@@ -30,20 +25,19 @@ contract ExecutorImplementation is TokenReceiver {
   receive() external payable {}
 
   function execute(
-    string[] calldata _targetNames,
+    address[] calldata _targets,
     bytes[] calldata _datas,
     address _origin
   ) external payable {
-    uint256 _length = _targetNames.length;
+    uint256 _length = _targets.length;
     require(_length != 0, "Length invalid");
     require(_length == _datas.length , "Array has different lenght");
 
     string[] memory eventNames = new string[](_length);
     bytes[] memory eventParams = new bytes[](_length);
 
-    (bool isOk, address[] memory _targets) = ConnectorsInterface(connectors).isConnectors(_targetNames);
-
-    require(isOk, "Target is not connector");
+    // (bool isOk, address[] memory _targets) = ConnectorsInterface(connectors).isConnectors(_targetNames);
+    // require(isOk, "Target is not connector");
 
     for (uint i = 0; i < _length; i++) {
       bytes memory response = _delegatecall(_targets[i], _datas[i]);
@@ -54,7 +48,6 @@ contract ExecutorImplementation is TokenReceiver {
       _origin,
       msg.sender,
       msg.value,
-      _targetNames,
       _targets,
       eventNames,
       eventParams

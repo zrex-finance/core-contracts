@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./helpers.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 contract FlashAggregator is Helper {
     using SafeERC20 for IERC20;
@@ -16,6 +16,12 @@ contract FlashAggregator is Helper {
     );
     
     receive() external payable {}
+
+    constructor() {
+        require(status == 0, "cannot-call-again");
+        owner = msg.sender;
+        status = 1;
+    }
 
     /**
      * @notice Callback function for aave flashloan.
@@ -216,6 +222,7 @@ contract FlashAggregator is Helper {
             _data
         );
         dataHash = bytes32(keccak256(data_));
+
         makerLending.flashLoan(
             FlashReceiverInterface(address(this)),
             _tokens[0],

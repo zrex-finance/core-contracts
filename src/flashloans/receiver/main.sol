@@ -10,9 +10,9 @@ import { Helper } from "./helpers.sol";
 contract FlashReceiver is Helper {
     using SafeERC20 for IERC20;
     IFlashLoan internal immutable flashloanAggregator;
-    address internal immutable positionsRouter;
+    address internal positionsRouter;
     
-    function flash(
+    function flashloan(
         address[] calldata _tokens,
         uint256[] calldata _amts,
         uint256 route,
@@ -30,15 +30,33 @@ contract FlashReceiver is Helper {
         address /* initiator */,
         bytes calldata params
     ) external returns (bool) {
+
         // Do something
         for (uint256 i = 0; i < tokens.length; i++) {
             IERC20(tokens[i]).safeTransfer(
-                address(flashloanAggregator),
+                address(positionsRouter),
                 amounts[i] + premiums[i]
             );
         }
 
-        (bool success, bytes memory results) = address(positionsRouter).call(abi.encodePacked(params, amounts[0] + premiums[0]));
+        uint256 amoutWing = amounts[0] + premiums[0];
+
+        bytes memory encodeParams;
+
+        {
+            (
+                bytes4 selector,
+                address[] memory _targets,
+                bytes[] memory _datas,
+                bytes[] memory _customDatas,
+                address _origin
+            ) = abi.decode(params, (bytes4, address[], bytes[], bytes[], address));
+
+            encodeParams = abi.encodeWithSelector(selector, _targets, _datas, _customDatas, _origin, amoutWing);
+        }
+
+        (bool success, bytes memory results) = address(positionsRouter).call(encodeParams);
+    
 
         if (!success) {
             revert(_getRevertMsg(results));
@@ -47,8 +65,11 @@ contract FlashReceiver is Helper {
         return true;
     }
 
-    constructor(address flashloanAggregator_, address positionsRouter_) {
+    function setRouter(address _positionRouter) public {
+        positionsRouter = _positionRouter;
+    }
+
+    constructor(address flashloanAggregator_) {
         flashloanAggregator = IFlashLoan(flashloanAggregator_);
-        positionsRouter = positionsRouter_;
     }
 }

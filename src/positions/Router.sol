@@ -6,7 +6,7 @@ import "../lib/UniversalERC20.sol";
 
 import "./interfaces.sol";
 
-contract PositionsRouter {
+contract PositionRouter {
     using UniversalERC20 for IERC20;
     
     struct Position {
@@ -25,9 +25,11 @@ contract PositionsRouter {
     mapping (address => uint256) public positionsIndex;
 
     modifier onlyCallback() {
-        require(msg.sender == address(this), "Access denied");
+        require(msg.sender == address(flashloanReciever), "Access denied");
         _;
     }
+
+    receive() external payable {}
 
     constructor(IExecutor _executor,IFlashloanReciever _flashloanReciever,IExchanges _exchanges) {
         executor = _executor;
@@ -44,6 +46,7 @@ contract PositionsRouter {
         bytes calldata _customData
     ) external payable {
         require(position.account == msg.sender, "Only owner");
+        IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
 
         flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
 
@@ -78,7 +81,7 @@ contract PositionsRouter {
     }
 
     function openPositionCallback(
-        string[] calldata _targetNames,
+        address[] calldata _targets,
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
         address _origin,
@@ -89,17 +92,17 @@ contract PositionsRouter {
         _datas[1] = replaceAmount(_datas[0], amt);
         _datas[2] = replaceAmount(_datas[1], repayAmount);
 
-        executor.execute(_targetNames, _datas, _origin);
+        executor.execute(_targets, _datas, _origin);
     }
 
     function closePositionCallback(
-        string[] calldata _targetNames,
+        address[] calldata _targets,
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
         address _origin,
         uint256 repayAmount
     ) external payable onlyCallback {
-        executor.execute(_targetNames, _datas, _origin);
+        executor.execute(_targets, _datas, _origin);
 
         uint256 returnedAmt = exchange(_customDatas[0]);
 
@@ -118,11 +121,12 @@ contract PositionsRouter {
             address buyAddr,
             address sellAddr,
             uint256 sellAmt,
-            uint256 unitAmt,
             uint256 _route,
             bytes memory callData
-        ) = abi.decode(_exchangeData, (address, address, uint256, uint256, uint256, bytes));
+        ) = abi.decode(_exchangeData, (address, address, uint256, uint256, bytes));
 
-        value = exchanges.exchange(buyAddr, sellAddr, sellAmt, unitAmt, _route, callData);
+        IERC20(sellAddr).universalTransfer(address(exchanges), sellAmt);
+
+        value = exchanges.exchange(buyAddr, sellAddr, sellAmt, _route, callData);
     }
 }

@@ -6,6 +6,8 @@ out/
 node_modules/
 .idea/
 
+.env
+
 #Hardhat files
 cache_hardhat/
 artifacts/

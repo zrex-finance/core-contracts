@@ -26,7 +26,6 @@ struct OneInchData {
     TokenInterface buyToken;
     uint _sellAmt;
     uint _buyAmt;
-    uint unitAmt;
     bytes callData;
 }
 
@@ -35,6 +34,5 @@ struct SwapData {
 	TokenInterface buyToken;
 	uint256 _sellAmt;
 	uint256 _buyAmt;
-	uint256 unitAmt;
 	bytes callData;
 }

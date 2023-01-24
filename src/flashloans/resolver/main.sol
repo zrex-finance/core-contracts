@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Helper} from "./helpers.sol";
 
+import {Helper} from "./helpers.sol";
 import {FlashloanAggregatorInterface} from "./interfaces.sol";
 
 contract FlashResolver is Helper {
@@ -15,7 +15,7 @@ contract FlashResolver is Helper {
         routes_ = flashloanAggregator.getRoutes();
         fees_ = new uint256[](routes_.length);
         for (uint256 i = 0; i < routes_.length; i++) {
-            fees_[i] = flashloanAggregator.calculateFeeBPS(routes_[i], randomAddr_);
+            fees_[i] = flashloanAggregator.calculateFeeBPS(routes_[i]);
         }
     }
 
@@ -32,20 +32,13 @@ contract FlashResolver is Helper {
         uint16[] memory bRoutes_;
         uint256 feeBPS_;
         uint16[] memory routes_ = flashloanAggregator.getRoutes();
-        uint16[] memory routesWithAvailability_ = getRoutesWithAvailability(
-            routes_,
-            _tokens,
-            _amounts
-        );
+        uint16[] memory routesWithAvailability_ = getRoutesWithAvailability(routes_,_tokens,_amounts);
         uint16 j = 0;
         bRoutes_ = new uint16[](routes_.length);
         feeBPS_ = type(uint256).max;
         for (uint256 i = 0; i < routesWithAvailability_.length; i++) {
             if (routesWithAvailability_[i] != 0) {
-                uint256 routeFeeBPS_ = flashloanAggregator.calculateFeeBPS(
-                    routesWithAvailability_[i],
-                    randomAddr_
-                );
+                uint256 routeFeeBPS_ = flashloanAggregator.calculateFeeBPS(routesWithAvailability_[i]);
                 if (feeBPS_ > routeFeeBPS_) {
                     feeBPS_ = routeFeeBPS_;
                     bRoutes_[0] = routesWithAvailability_[i];
@@ -76,5 +69,9 @@ contract FlashResolver is Helper {
         (routes_, fees_) = getRoutesInfo();
         (bestRoutes_, bestFee_) = getBestRoutes(_tokens, _amounts);
         return (routes_, fees_, bestRoutes_, bestFee_);
+    }
+
+    constructor(address _flashloanAggregatorAddr) {
+        flashloanAggregator = FlashloanAggregatorInterface(_flashloanAggregatorAddr);
     }
 }

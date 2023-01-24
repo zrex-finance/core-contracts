@@ -8,18 +8,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract Helper is Variables {
     function getAaveAvailability(
         address[] memory _tokens,
-        uint256[] memory _amounts,
-        uint256 _route
+        uint256[] memory _amounts
     ) internal view returns (bool) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             IERC20 token_ = IERC20(_tokens[i]);
-            (, , , , , , bool isBorrowingEnabled, , bool isActive, ) = aaveProtocolDataProvider
+            (, , , , , , , , bool isActive, ) = aaveProtocolDataProvider
                 .getReserveConfigurationData(_tokens[i]);
             (address aTokenAddr, , ) = aaveProtocolDataProvider
                 .getReserveTokensAddresses(_tokens[i]);
             if (isActive == false) return false;
             if (token_.balanceOf(aTokenAddr) < _amounts[i]) return false;
-            if ((_route == 4 || _route == 7) && !isBorrowingEnabled) return false;
         }
         return true;
     }
@@ -36,25 +34,6 @@ contract Helper is Variables {
             return true;
         }
         return false;
-    }
-
-    function getCompoundAvailability(
-        address[] memory _tokens,
-        uint256[] memory _amounts
-    ) internal view returns (bool) {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            if (_tokens[i] == chainToken) {
-                if (cEthToken.balance < _amounts[i]) return false;
-            } else {
-                address cTokenAddr_ = flashloanAggregator.tokenToCToken(
-                    _tokens[i]
-                );
-                IERC20 token_ = IERC20(_tokens[i]);
-                if (cTokenAddr_ == address(0)) return false;
-                if (token_.balanceOf(cTokenAddr_) < _amounts[i]) return false;
-            }
-        }
-        return true;
     }
 
     function getBalancerAvailability(
@@ -78,8 +57,8 @@ contract Helper is Variables {
         uint16[] memory routesWithAvailability_ = new uint16[](7);
         uint256 j = 0;
         for (uint256 i = 0; i < _routes.length; i++) {
-            if (_routes[i] == 1 || _routes[i] == 4 || _routes[i] == 7) {
-                if (getAaveAvailability(_tokens, _amounts, _routes[i])) {
+            if (_routes[i] == 1) {
+                if (getAaveAvailability(_tokens, _amounts)) {
                     routesWithAvailability_[j] = _routes[i];
                     j++;
                 }
@@ -88,12 +67,7 @@ contract Helper is Variables {
                     routesWithAvailability_[j] = _routes[i];
                     j++;
                 }
-            } else if (_routes[i] == 3 || _routes[i] == 6) {
-                if (getCompoundAvailability(_tokens, _amounts)) {
-                    routesWithAvailability_[j] = _routes[i];
-                    j++;
-                }
-            } else if (_routes[i] == 5) {
+            } else if (_routes[i] == 3) {
                 if (getBalancerAvailability(_tokens, _amounts)) {
                     routesWithAvailability_[j] = _routes[i];
                     j++;
