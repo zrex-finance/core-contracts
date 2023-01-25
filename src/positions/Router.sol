@@ -3,10 +3,11 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../lib/UniversalERC20.sol";
+import "../executor/main.sol";
 
 import "./interfaces.sol";
 
-contract PositionRouter {
+contract PositionRouter is Executor {
     using UniversalERC20 for IERC20;
     
     struct Position {
@@ -17,7 +18,6 @@ contract PositionRouter {
         uint256 sizeDelta;
     }
 
-    IExecutor private immutable executor;
     IExchanges private immutable exchanges;
     IFlashloanReciever private immutable flashloanReciever;
 
@@ -31,8 +31,7 @@ contract PositionRouter {
 
     receive() external payable {}
 
-    constructor(IExecutor _executor,IFlashloanReciever _flashloanReciever,IExchanges _exchanges) {
-        executor = _executor;
+    constructor(IFlashloanReciever _flashloanReciever,IExchanges _exchanges) {
         flashloanReciever = _flashloanReciever;
         exchanges = _exchanges;
     }
@@ -89,10 +88,15 @@ contract PositionRouter {
     ) external payable onlyCallback {
         uint256 amt = exchange(_customDatas[0]);
 
-        _datas[1] = replaceAmount(_datas[0], amt);
-        _datas[2] = replaceAmount(_datas[1], repayAmount);
+        (bytes4 deposit, address collateral) = abi.decode(_datas[0], (bytes4, address));
+        _datas[0] = abi.encodeWithSelector(deposit, collateral, amt);
 
-        executor.execute(_targets, _datas, _origin);
+        (bytes4 borrow, address debt) = abi.decode(_datas[1], (bytes4, address));
+        _datas[1] = abi.encodeWithSelector(borrow, debt, repayAmount);
+
+        execute(_targets, _datas, _origin);
+
+        IERC20(debt).universalTransfer(address(flashloanReciever), repayAmount);
     }
 
     function closePositionCallback(
@@ -102,18 +106,13 @@ contract PositionRouter {
         address _origin,
         uint256 repayAmount
     ) external payable onlyCallback {
-        executor.execute(_targets, _datas, _origin);
+        execute(_targets, _datas, _origin);
 
         uint256 returnedAmt = exchange(_customDatas[0]);
 
         Position memory position = positions[bytes32(_customDatas[1])];
 
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
-    }
-
-    function replaceAmount(bytes memory _data, uint256 _amt) internal pure returns (bytes memory data) {
-        (bytes4 selector, address token) = abi.decode(_data, (bytes4, address));
-        data = abi.encodePacked(selector, _amt, token);
     }
 
     function exchange(bytes memory _exchangeData) internal returns (uint256 value) {

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { ConnectorsInterface } from "./interface.sol";
 import { TokenReceiver } from "./helpers.sol";
 
-contract ExecutorImplementation is TokenReceiver {
+contract Executor is TokenReceiver {
   constructor() {}
 
   function decodeEvent(bytes memory response) internal pure returns (string memory _eventCode, bytes memory _eventParams) {
@@ -22,22 +21,17 @@ contract ExecutorImplementation is TokenReceiver {
     bytes[] eventParams
   );
 
-  receive() external payable {}
-
   function execute(
-    address[] calldata _targets,
-    bytes[] calldata _datas,
+    address[] memory _targets,
+    bytes[] memory _datas,
     address _origin
-  ) external payable {
+  ) public payable {
     uint256 _length = _targets.length;
     require(_length != 0, "Length invalid");
     require(_length == _datas.length , "Array has different lenght");
 
     string[] memory eventNames = new string[](_length);
     bytes[] memory eventParams = new bytes[](_length);
-
-    // (bool isOk, address[] memory _targets) = ConnectorsInterface(connectors).isConnectors(_targetNames);
-    // require(isOk, "Target is not connector");
 
     for (uint i = 0; i < _length; i++) {
       bytes memory response = _delegatecall(_targets[i], _datas[i]);

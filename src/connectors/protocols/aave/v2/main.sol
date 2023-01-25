@@ -39,7 +39,7 @@ contract AaveResolver is Events, Helpers {
 
 		approve(tokenContract, address(aave), amt);
 
-		aave.deposit(_token, amt, address(this), referralCode);
+		aave.deposit(_token, amt, address(this), 0);
 
 		if (!getIsColl(_token)) {
 			aave.setUserUseReserveAsCollateral(_token, true);
@@ -77,24 +77,23 @@ contract AaveResolver is Events, Helpers {
 
 	function borrow(
 		address token,
-		uint256 amt,
-		uint256 rateMode
+		uint256 amt
 	)
 		external
 		payable
 		returns (string memory _eventName, bytes memory _eventParam)
 	{
-
 		AaveInterface aave = AaveInterface(aaveProvider.getLendingPool());
 
 		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
-		aave.borrow(_token, amt, rateMode, referralCode, address(this));
+		aave.borrow(_token, amt, 1, referralCode, address(this));
+
 		convertWethToEth(isEth, TokenInterface(_token), amt);
 
 		_eventName = "LogBorrow(address,uint256,uint256)";
-		_eventParam = abi.encode(token, amt, rateMode);
+		_eventParam = abi.encode(token, amt, 0);
 	}
 
 	function payback(

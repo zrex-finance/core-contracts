@@ -23,7 +23,7 @@ const DEFAULT_AMOUNT = ethers.utils.parseEther("1000");
 
 const LEVERAGE = BigNumber.from("2");
 
-describe.skip("Leverage Aggregator", async () => {
+describe("Leverage Aggregator", async () => {
   // wallets
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
@@ -53,10 +53,6 @@ describe.skip("Leverage Aggregator", async () => {
     aaveResolver = await aaveResolverFactory.deploy();
     await aaveResolver.deployed();
 
-    const executorImplementationFactory = await ethers.getContractFactory("ExecutorImplementation");
-    const executor = await executorImplementationFactory.deploy();
-    await executor.deployed();
-
     const flashAggregatorFactory = await ethers.getContractFactory("FlashAggregator");
     const flashAggregator = await flashAggregatorFactory.deploy();
     await flashAggregator.deployed();
@@ -78,7 +74,7 @@ describe.skip("Leverage Aggregator", async () => {
 
     positionRouter = ((await positionRouterFactory
       .connect(owner)
-      .deploy(executor.address, flashReceiver.address, exchanges.address)) as unknown) as PositionRouter;
+      .deploy(flashReceiver.address, exchanges.address)) as unknown) as PositionRouter;
     await positionRouter.deployed();
 
     await flashReceiver.setRouter(positionRouter.address);
@@ -122,7 +118,7 @@ describe.skip("Leverage Aggregator", async () => {
 
     const borrow = encoder.encode(
       ["bytes4", "address"],
-      [aaveResolver.interface.getSighash("deposit(address,uint256)"), position.debt]
+      [aaveResolver.interface.getSighash("borrow(address,uint256)"), position.debt]
     );
 
     const customData = encoder.encode(
@@ -135,7 +131,7 @@ describe.skip("Leverage Aggregator", async () => {
       openPositionCallback,
       [aaveResolver.address, aaveResolver.address],
       [deposit, borrow],
-      [customData],
+      [customData, position.debt],
       owner.address,
     );
 

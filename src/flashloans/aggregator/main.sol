@@ -108,7 +108,9 @@ contract FlashAggregator is Helper {
             calculateFeeBPS(route_)
         );
 
+        safeApprove(loanVariables_, loanVariables_._fees, address(makerLending));
         safeTransfer(loanVariables_, sender_);
+
         FlashReceiverInterface(sender_).executeOperation(
                 tokens_,
                 amounts_,
@@ -116,7 +118,6 @@ contract FlashAggregator is Helper {
                 sender_,
                 data_
             );
-
         loanVariables_._finBals = calculateBalances(
             tokens_,
             address(this)

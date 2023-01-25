@@ -31,13 +31,7 @@ contract FlashReceiver is Helper {
         bytes calldata params
     ) external returns (bool) {
 
-        // Do something
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).safeTransfer(
-                address(positionsRouter),
-                amounts[i] + premiums[i]
-            );
-        }
+        transferTokens(address(positionsRouter), tokens, amounts, premiums);
 
         uint256 amoutWing = amounts[0] + premiums[0];
 
@@ -56,17 +50,29 @@ contract FlashReceiver is Helper {
         }
 
         (bool success, bytes memory results) = address(positionsRouter).call(encodeParams);
-    
 
         if (!success) {
             revert(_getRevertMsg(results));
         }
+
+        transferTokens(address(flashloanAggregator), tokens, amounts, premiums);
 
         return true;
     }
 
     function setRouter(address _positionRouter) public {
         positionsRouter = _positionRouter;
+    }
+
+    function transferTokens(
+        address recipient,
+        address[] calldata tokens,
+        uint256[] calldata amounts,
+        uint256[] calldata premiums
+    ) private {
+        for (uint256 i = 0; i < tokens.length; i++) {
+                IERC20(tokens[i]).safeTransfer(recipient,amounts[i] + premiums[i]);
+            }
     }
 
     constructor(address flashloanAggregator_) {
