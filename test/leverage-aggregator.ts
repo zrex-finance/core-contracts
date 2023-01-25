@@ -6,12 +6,10 @@ import { BigNumber } from "ethers";
 import { ERC20, PositionRouter, FlashResolver, AaveResolver, Exchanges } from "../typechain-types";
 
 import {
-  closeCalldata,
   getSignerFromAddress,
   openCalldata,
   uniSwap,
 } from "./utils";
-import { exchanges } from "../typechain-types/src";
 
 chai.use(solidity);
 const { expect } = chai;
