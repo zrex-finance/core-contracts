@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "hardhat test"
+    "test": "TS_NODE_TRANSPILE_ONLY=true hardhat test"
   },
   "author": "Devan Non <devanon@chainstride.capital>",
   "license": "Apache-2.0",
