@@ -62,7 +62,7 @@ const config: HardhatUserConfig = {
       blockGasLimit: 9500000,
       chainId: 1,
       forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+        url: `https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q`,
         blockNumber: 16241092,
       },
       initialBaseFeePerGas: 5,
