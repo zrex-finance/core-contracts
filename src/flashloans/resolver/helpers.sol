@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {Variables} from "./variables.sol";
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Helper is Variables {
@@ -12,10 +11,8 @@ contract Helper is Variables {
     ) internal view returns (bool) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             IERC20 token_ = IERC20(_tokens[i]);
-            (, , , , , , , , bool isActive, ) = aaveProtocolDataProvider
-                .getReserveConfigurationData(_tokens[i]);
-            (address aTokenAddr, , ) = aaveProtocolDataProvider
-                .getReserveTokensAddresses(_tokens[i]);
+            (, , , , , , , , bool isActive, ) = aaveProtocolDataProvider.getReserveConfigurationData(_tokens[i]);
+            (address aTokenAddr, , ) = aaveProtocolDataProvider.getReserveTokensAddresses(_tokens[i]);
             if (isActive == false) return false;
             if (token_.balanceOf(aTokenAddr) < _amounts[i]) return false;
         }
@@ -54,7 +51,7 @@ contract Helper is Variables {
         address[] memory _tokens,
         uint256[] memory _amounts
     ) internal view returns (uint16[] memory) {
-        uint16[] memory routesWithAvailability_ = new uint16[](7);
+        uint16[] memory routesWithAvailability_ = new uint16[](3);
         uint256 j = 0;
         for (uint256 i = 0; i < _routes.length; i++) {
             if (_routes[i] == 1) {

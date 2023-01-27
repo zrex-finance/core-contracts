@@ -7,8 +7,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import "./interfaces.sol";
 import { Helper } from "./helpers.sol";
 
-import "hardhat/console.sol";
-
 contract FlashReceiver is Helper {
     using SafeERC20 for IERC20;
     IFlashLoan internal immutable flashloanAggregator;
@@ -21,7 +19,6 @@ contract FlashReceiver is Helper {
         bytes calldata _data,
         bytes calldata _customData
     ) public {
-        console.log("FlashReceiver flashloan close");
         flashloanAggregator.flashLoan(_tokens, _amts, route, _data, _customData);
     }
 
@@ -33,7 +30,6 @@ contract FlashReceiver is Helper {
         address /* initiator */,
         bytes calldata params
     ) external returns (bool) {
-        console.log("executeOperation");
         transferTokens(address(positionsRouter), tokens, amounts, premiums);
 
         uint256 amoutWing = amounts[0] + premiums[0];
@@ -52,9 +48,7 @@ contract FlashReceiver is Helper {
             encodeParams = abi.encodeWithSelector(selector, _targets, _datas, _customDatas, _origin, amoutWing);
         }
 
-        console.log("encode call");
         (bool success, bytes memory results) = address(positionsRouter).call(encodeParams);
-        console.log("encode call success", success);
 
         if (!success) {
             revert(_getRevertMsg(results));
@@ -76,7 +70,7 @@ contract FlashReceiver is Helper {
         uint256[] calldata premiums
     ) private {
         for (uint256 i = 0; i < tokens.length; i++) {
-                IERC20(tokens[i]).safeTransfer(recipient,amounts[i] + premiums[i]);
+                IERC20(tokens[i]).safeTransfer(recipient, amounts[i] + premiums[i]);
             }
     }
 

@@ -4,8 +4,6 @@ pragma solidity ^0.8.13;
 import { Basic } from "../../../common/base.sol";
 import { AaveLendingPoolProviderInterface, AaveDataProviderInterface } from "./interface.sol";
 
-import "hardhat/console.sol";
-
 abstract contract Helpers is Basic {
     
     /**
@@ -70,9 +68,6 @@ abstract contract Helpers is Basic {
     }
 
     function getCollateralBalance(address token, address _user) public view returns (uint256 bal) {
-        console.log("getCollateralBalance token", token);
-        console.log("getCollateralBalance _user", _user);
         (bal, , , , , , , ,) = aaveData.getUserReserveData(token, _user);
-        console.log("getCollateralBalance bal", bal);
     }
 }

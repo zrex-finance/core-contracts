@@ -12,8 +12,6 @@ import { Helpers } from "./helpers.sol";
 import { Events } from "./events.sol";
 import { AaveInterface } from "./interface.sol";
 
-import "hardhat/console.sol";
-
 contract AaveResolver is Events, Helpers {
 	function deposit(
 		address token,
@@ -66,7 +64,6 @@ contract AaveResolver is Events, Helpers {
 		TokenInterface tokenContract = TokenInterface(_token);
 
 		uint256 initialBal = tokenContract.balanceOf(address(this));
-		console.log("withdraw");
 		aave.withdraw(_token, amt, address(this));
 		uint256 finalBal = tokenContract.balanceOf(address(this));
 
@@ -127,7 +124,6 @@ contract AaveResolver is Events, Helpers {
 
 		approve(tokenContract, address(aave), amt);
 
-		console.log("aave.repay");
 		aave.repay(_token, amt, rateMode, address(this));
 
 		_eventName = "LogPayback(address,uint256,uint256)";

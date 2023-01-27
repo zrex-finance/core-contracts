@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../lib/UniversalERC20.sol";
 import "../executor/main.sol";
 
-import "hardhat/console.sol";
-
 import "./interfaces.sol";
 
 contract PositionRouter is Executor {
@@ -31,13 +29,9 @@ contract PositionRouter is Executor {
         _;
     }
 
-    receive() external payable {
-        console.log("PositionRouter receive");
-    }
+    receive() external payable {}
 
-    fallback() external payable {
-        console.log("PositionRouter fallback");
-    }
+    fallback() external payable {}
 
     constructor(IFlashloanReciever _flashloanReciever,IExchanges _exchanges) {
         flashloanReciever = _flashloanReciever;
@@ -78,7 +72,6 @@ contract PositionRouter is Executor {
 
         require(msg.sender == position.account, "Can close own position or position available for liquidation");
 
-        console.log("flashloan close");
         flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
 
         delete positions[key];
@@ -115,13 +108,19 @@ contract PositionRouter is Executor {
         address _origin,
         uint256 repayAmount
     ) external payable onlyCallback {
-        console.log("closePositionCallback executeOperation");
-        console.log("closePositionCallback executeOperation");
+        (bytes4 payback, address debt, uint256 dAmt, uint256 rate) = abi.decode(_datas[0], (bytes4, address, uint256, uint256));
+        _datas[0] = abi.encodeWithSelector(payback, debt, dAmt, rate);
+
+        (bytes4 withdraw, address collateral, uint256 cAmt) = abi.decode(_datas[1], (bytes4, address, uint256));
+        _datas[1] = abi.encodeWithSelector(withdraw, collateral, cAmt, rate);
+
         execute(_targets, _datas, _origin);
 
         uint256 returnedAmt = exchange(_customDatas[0]);
 
         Position memory position = positions[bytes32(_customDatas[1])];
+
+        IERC20(debt).universalTransfer(address(flashloanReciever), repayAmount);
 
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
