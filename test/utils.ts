@@ -94,7 +94,7 @@ export async function inchCalldata({
 }
 
 const provider = new ethers.providers.JsonRpcProvider(
-  "https://mainnet.infura.io/v3/eb6a84e726614079948e0b1efce5baa5",
+  "https://mainnet.infura.io/v3/8f786b96d16046b78e0287fa61c6fcf8",
   1
 );
 
