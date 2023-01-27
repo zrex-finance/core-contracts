@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/utils/Address.sol";
-
+import "hardhat/console.sol";
 import "./helpers.sol";
 
 contract FlashAggregator is Helper {
@@ -57,6 +57,7 @@ contract FlashAggregator is Helper {
         safeApprove(loanVariables_, _premiums, address(aaveLending));
         safeTransfer(loanVariables_, sender_);
 
+        console.log("route aave executeOperation");
         FlashReceiverInterface(sender_).executeOperation(
                 _assets,
                 _amounts,
@@ -111,6 +112,7 @@ contract FlashAggregator is Helper {
         safeApprove(loanVariables_, loanVariables_._fees, address(makerLending));
         safeTransfer(loanVariables_, sender_);
 
+        console.log("route maker executeOperation");
         FlashReceiverInterface(sender_).executeOperation(
                 tokens_,
                 amounts_,
@@ -196,6 +198,7 @@ contract FlashAggregator is Helper {
             _modes[i] = 0;
         }
         dataHash = bytes32(keccak256(data_));
+        console.log("routeAave");
         aaveLending.flashLoan(
             address(this),
             _tokens,
@@ -223,7 +226,7 @@ contract FlashAggregator is Helper {
             _data
         );
         dataHash = bytes32(keccak256(data_));
-
+        console.log("route maker");
         makerLending.flashLoan(
             FlashReceiverInterface(address(this)),
             _tokens[0],

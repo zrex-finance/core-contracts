@@ -138,11 +138,11 @@ export async function uniSwap(
 }
 
 export function openCalldata(
-  sig: string,
-  _targets: string[],
-  _datas: string[],
-  _customDatas: string[],
-  _origin: string,
+   sig: string,
+   _targets: string[],
+   _datas: string[],
+   _customDatas: string[],
+   _origin: string,
 ) {
   const encoder = new ethers.utils.AbiCoder();
 

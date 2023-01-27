@@ -4,6 +4,8 @@ pragma solidity ^0.8.13;
 import { Basic } from "../../../common/base.sol";
 import { AaveLendingPoolProviderInterface, AaveDataProviderInterface } from "./interface.sol";
 
+import "hardhat/console.sol";
+
 abstract contract Helpers is Basic {
     
     /**
@@ -39,6 +41,11 @@ abstract contract Helpers is Basic {
         return rateMode == 1 ? stableDebt : variableDebt;
     }
 
+    function getPaybackBalance(address token, uint rateMode, address _user) public view returns (uint) {
+        (, uint stableDebt, uint variableDebt, , , , , , ) = aaveData.getUserReserveData(token, _user);
+        return rateMode == 1 ? stableDebt : variableDebt;
+    }
+
     /**
 	 * @dev Get OnBehalfOf user's total debt balance & fee for an asset
 	 * @param token token address of the debt.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
@@ -60,5 +67,12 @@ abstract contract Helpers is Basic {
     */
     function getCollateralBalance(address token) internal view returns (uint bal) {
         (bal, , , , , , , ,) = aaveData.getUserReserveData(token, address(this));
+    }
+
+    function getCollateralBalance(address token, address _user) public view returns (uint256 bal) {
+        console.log("getCollateralBalance token", token);
+        console.log("getCollateralBalance _user", _user);
+        (bal, , , , , , , ,) = aaveData.getUserReserveData(token, _user);
+        console.log("getCollateralBalance bal", bal);
     }
 }
