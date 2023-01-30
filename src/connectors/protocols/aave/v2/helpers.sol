@@ -6,20 +6,12 @@ import { AaveLendingPoolProviderInterface, AaveDataProviderInterface } from "./i
 
 abstract contract Helpers is Basic {
     
-    /**
-     * @dev Aave Lending Pool Provider
-    */
-    AaveLendingPoolProviderInterface constant internal aaveProvider = AaveLendingPoolProviderInterface(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
+    AaveLendingPoolProviderInterface constant internal aaveProvider = 
+        AaveLendingPoolProviderInterface(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
+    AaveDataProviderInterface constant internal aaveData = 
+        AaveDataProviderInterface(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
 
-    /**
-     * @dev Aave Protocol Data Provider
-    */
-    AaveDataProviderInterface constant internal aaveData = AaveDataProviderInterface(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
-
-    /**
-     * @dev Aave Referral Code
-    */
-    uint16 constant internal referralCode = 3228;
+    uint16 constant internal referralCode = 0;
 
     /**
      * @dev Checks if collateral is enabled for an asset

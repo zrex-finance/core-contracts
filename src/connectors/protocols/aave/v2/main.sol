@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-/**
- * @title Aave v2.
- * @dev Lending & Borrowing.
- */
-
 import { TokenInterface } from "../../../common/base.sol";
 import { Stores } from "../../../common/stores.sol";
 import { Helpers } from "./helpers.sol";
@@ -39,7 +34,7 @@ contract AaveResolver is Events, Helpers {
 
 		approve(tokenContract, address(aave), amt);
 
-		aave.deposit(_token, amt, address(this), 0);
+		aave.deposit(_token, amt, address(this), referralCode);
 
 		if (!getIsColl(_token)) {
 			aave.setUserUseReserveAsCollateral(_token, true);
@@ -77,7 +72,8 @@ contract AaveResolver is Events, Helpers {
 
 	function borrow(
 		address token,
-		uint256 amt
+		uint256 amt,
+		uint256 rateMode
 	)
 		external
 		payable
@@ -88,7 +84,7 @@ contract AaveResolver is Events, Helpers {
 		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
-		aave.borrow(_token, amt, 1, referralCode, address(this));
+		aave.borrow(_token, amt, rateMode, referralCode, address(this));
 
 		convertWethToEth(isEth, TokenInterface(_token), amt);
 

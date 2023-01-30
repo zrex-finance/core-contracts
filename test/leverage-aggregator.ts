@@ -91,6 +91,9 @@ describe("Leverage Aggregator", async () => {
       sizeDelta: LEVERAGE,
     };
 
+    const UNISWAP_ROUTE = 1
+    const RATE_TYPE_AAVE = 1
+
     await daiContract
       .connect(owner)
       .approve(positionRouter.address, position.amountIn);
@@ -111,22 +114,17 @@ describe("Leverage Aggregator", async () => {
     const _tokens = [position.debt];
     const _amts = [position.amountIn.mul(position.sizeDelta.sub(1))];
 
+    const { bestRoutes_: bestOpenRoutes, bestFee_ } = await flashResolver.callStatic.getData(_tokens, _amts);
+
     const encoder = new ethers.utils.AbiCoder();
 
-    const deposit = encoder.encode(
-      ["bytes4", "address"],
-      [aaveResolver.interface.getSighash("deposit(address,uint256)"), position.collateral]
-    );
-
-    const borrow = encoder.encode(
-      ["bytes4", "address"],
-      [aaveResolver.interface.getSighash("borrow(address,uint256)"), position.debt]
-    );
+    const deposit = aaveResolver.interface.encodeFunctionData("deposit", [position.collateral, MAX_UINT]);
+    const borrow = aaveResolver.interface.encodeFunctionData("borrow", [position.debt, _amts[0].add(bestFee_), RATE_TYPE_AAVE])
 
     const customOpenData = encoder.encode(
       ["address", "address", "uint256", "uint256", "bytes"],
       // @ts-ignore
-      [position.collateral, position.debt, swapAmount, 1, openSwap.methodParameters.calldata]
+      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
     );
 
     const calldataOpen = openCalldata(
@@ -136,8 +134,6 @@ describe("Leverage Aggregator", async () => {
       [customOpenData, position.debt],
       owner.address,
     );
-
-    const { bestRoutes_: bestOpenRoutes } = await flashResolver.callStatic.getData(_tokens, _amts);
 
     await positionRouter
       .connect(owner)
@@ -151,7 +147,7 @@ describe("Leverage Aggregator", async () => {
     );
 
     const borrowAmount = await aaveResolver.callStatic.getPaybackBalance(
-      position.debt, 1, positionRouter.address
+      position.debt, RATE_TYPE_AAVE, positionRouter.address
     );
 
     const closeSwap = await uniSwap(
@@ -168,28 +164,33 @@ describe("Leverage Aggregator", async () => {
     const __tokens = [position.debt];
     const __amts = [borrowAmount.mul(105).div(100).toHexString()];
     
-    const payback = encoder.encode(
-      ["bytes4", "address", "uint256", "uint256"],
-      [aaveResolver.interface.getSighash("payback(address,uint256, uint256)"), position.debt, MAX_UINT, 1]
-    );
-
-    const withdraw = encoder.encode(
-      ["bytes4", "address", "uint256"],
-      [aaveResolver.interface.getSighash("withdraw(address,uint256)"), position.collateral, MAX_UINT]
-    );
+    const payback = aaveResolver.interface.encodeFunctionData("payback", [position.debt, MAX_UINT, RATE_TYPE_AAVE])
+    const withdraw = aaveResolver.interface.encodeFunctionData("withdraw", [position.collateral, MAX_UINT])
 
     const customCloseData = encoder.encode(
       ["address", "address", "uint256", "uint256", "bytes"],
-      // @ts-ignore
-      [position.debt, position.collateral, collateralAmount.toHexString(), 1, closeSwap.methodParameters.calldata]
+      [
+        position.debt,
+        position.collateral,
+        collateralAmount.toHexString(),
+        UNISWAP_ROUTE,
+        // @ts-ignore
+        closeSwap.methodParameters.calldata
+      ]
     );
 
     const calldataClose = encoder.encode(
       ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
-      [closePositionCallback, [aaveResolver.address, aaveResolver.address], [payback, withdraw], [customCloseData, key], owner.address]
+      [
+        closePositionCallback,
+        [aaveResolver.address, aaveResolver.address],
+        [payback, withdraw],
+        [customCloseData, key],
+        owner.address
+      ]
     )
 
-    const { bestRoutes_: closeRoutes, bestFee_, routes_, fees_ } = await flashResolver.callStatic.getData(__tokens, __amts);
+    const { bestRoutes_: closeRoutes } = await flashResolver.callStatic.getData(__tokens, __amts);
 
     await positionRouter
     .connect(owner)

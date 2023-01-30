@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../lib/UniversalERC20.sol";
 import "../executor/main.sol";
 
+import "hardhat/console.sol";
+
 import "./interfaces.sol";
 
 contract PositionRouter is Executor {
@@ -88,13 +90,7 @@ contract PositionRouter is Executor {
         address _origin,
         uint256 repayAmount
     ) external payable onlyCallback {
-        uint256 amt = exchange(_customDatas[0]);
-
-        (bytes4 deposit, address collateral) = abi.decode(_datas[0], (bytes4, address));
-        _datas[0] = abi.encodeWithSelector(deposit, collateral, amt);
-
-        (bytes4 borrow, address debt) = abi.decode(_datas[1], (bytes4, address));
-        _datas[1] = abi.encodeWithSelector(borrow, debt, repayAmount);
+        (/* uint256  value */,address debt,/* address collateral */) = exchange(_customDatas[0]);
 
         execute(_targets, _datas, _origin);
 
@@ -108,24 +104,17 @@ contract PositionRouter is Executor {
         address _origin,
         uint256 repayAmount
     ) external payable onlyCallback {
-        (bytes4 payback, address debt, uint256 dAmt, uint256 rate) = abi.decode(_datas[0], (bytes4, address, uint256, uint256));
-        _datas[0] = abi.encodeWithSelector(payback, debt, dAmt, rate);
-
-        (bytes4 withdraw, address collateral, uint256 cAmt) = abi.decode(_datas[1], (bytes4, address, uint256));
-        _datas[1] = abi.encodeWithSelector(withdraw, collateral, cAmt, rate);
-
         execute(_targets, _datas, _origin);
 
-        uint256 returnedAmt = exchange(_customDatas[0]);
+        (uint256 returnedAmt, /* address collateral */,/* address debt */) = exchange(_customDatas[0]);
 
         Position memory position = positions[bytes32(_customDatas[1])];
 
-        IERC20(debt).universalTransfer(address(flashloanReciever), repayAmount);
-
+        IERC20(position.debt).universalTransfer(address(flashloanReciever), repayAmount);
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
 
-    function exchange(bytes memory _exchangeData) internal returns (uint256 value) {
+    function exchange(bytes memory _exchangeData) internal returns(uint256,address,address) {
         (
             address buyAddr,
             address sellAddr,
@@ -136,6 +125,8 @@ contract PositionRouter is Executor {
 
         IERC20(sellAddr).universalTransfer(address(exchanges), sellAmt);
 
-        value = exchanges.exchange(buyAddr, sellAddr, sellAmt, _route, callData);
+        uint256 value = exchanges.exchange(buyAddr, sellAddr, sellAmt, _route, callData);
+
+        return (value, sellAddr, buyAddr);
     }
 }
