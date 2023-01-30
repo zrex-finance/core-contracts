@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../lib/UniversalERC20.sol";
 import "../executor/main.sol";
 
-import "hardhat/console.sol";
-
 import "./interfaces.sol";
 
 contract PositionRouter is Executor {
