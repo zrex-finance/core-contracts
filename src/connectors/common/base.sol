@@ -15,12 +15,12 @@ abstract contract Basic is Stores {
     }
 
     function getTokenBalance(TokenInterface token) internal view returns(uint amount) {
-        amount = address(token) == ethAddr ? address(this).balance : token.balanceOf(address(this));
+        amount = isETH(address(token)) ? address(this).balance : token.balanceOf(address(this));
     }
 
     function getTokensDecimals(TokenInterface _token1, TokenInterface _token2) internal view returns(uint token1Dec, uint token2Dec) {
-        token1Dec = address(_token1) == ethAddr ?  18 : _token1.decimals();
-        token2Dec = address(_token2) == ethAddr ?  18 : _token2.decimals();
+        token1Dec = isETH(address(_token1)) ?  18 : _token1.decimals();
+        token2Dec = isETH(address(_token2)) ?  18 : _token2.decimals();
     }
 
     function encodeEvent(string memory eventName, bytes memory eventParam) internal pure returns (bytes memory) {
@@ -37,12 +37,12 @@ abstract contract Basic is Stores {
     }
 
     function changeEthAddress(address buy, address sell) internal pure returns(TokenInterface _buy, TokenInterface _sell){
-        _buy = buy == ethAddr ? TokenInterface(wethAddr) : TokenInterface(buy);
-        _sell = sell == ethAddr ? TokenInterface(wethAddr) : TokenInterface(sell);
+        _buy = isETH(buy) ? TokenInterface(wethAddr) : TokenInterface(buy);
+        _sell = isETH(sell) ? TokenInterface(wethAddr) : TokenInterface(sell);
     }
 
     function changeEthAddrToWethAddr(address token) internal pure returns(address tokenAddr){
-        tokenAddr = token == ethAddr ? wethAddr : token;
+        tokenAddr = isETH(token) ? wethAddr : token;
     }
 
     function convertEthToWeth(bool isEth, TokenInterface token, uint amount) internal {
@@ -54,5 +54,9 @@ abstract contract Basic is Stores {
             approve(token, address(token), amount);
             token.withdraw(amount);
         }
+    }
+
+    function isETH(address token) internal pure returns(bool) {
+        return (address(token) == address(zeroAddr) || address(token) == address(ethAddr));
     }
 }

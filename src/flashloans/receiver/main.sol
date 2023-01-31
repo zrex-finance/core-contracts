@@ -30,23 +30,9 @@ contract FlashReceiver is Helper {
         address /* initiator */,
         bytes calldata params
     ) external returns (bool) {
-        transferTokens(address(positionsRouter), tokens, amounts, premiums);
+        transferTokens(address(positionsRouter), tokens, amounts, premiums, false);
 
-        uint256 amoutWing = amounts[0] + premiums[0];
-
-        bytes memory encodeParams;
-
-        {
-            (
-                bytes4 selector,
-                address[] memory _targets,
-                bytes[] memory _datas,
-                bytes[] memory _customDatas,
-                address _origin
-            ) = abi.decode(params, (bytes4, address[], bytes[], bytes[], address));
-
-            encodeParams = abi.encodeWithSelector(selector, _targets, _datas, _customDatas, _origin, amoutWing);
-        }
+        bytes memory encodeParams = encodingParams(params, amounts[0] + premiums[0]);
 
         (bool success, bytes memory results) = address(positionsRouter).call(encodeParams);
 
@@ -54,7 +40,7 @@ contract FlashReceiver is Helper {
             revert(_getRevertMsg(results));
         }
 
-        transferTokens(address(flashloanAggregator), tokens, amounts, premiums);
+        transferTokens(address(flashloanAggregator), tokens, amounts, premiums, true);
 
         return true;
     }
@@ -67,11 +53,25 @@ contract FlashReceiver is Helper {
         address recipient,
         address[] calldata tokens,
         uint256[] calldata amounts,
-        uint256[] calldata premiums
+        uint256[] calldata premiums,
+        bool withFee
     ) private {
         for (uint256 i = 0; i < tokens.length; i++) {
-                IERC20(tokens[i]).safeTransfer(recipient, amounts[i] + premiums[i]);
+                uint256 amt = withFee ? amounts[i] + premiums[i] : amounts[i];
+                IERC20(tokens[i]).safeTransfer(recipient, amt);
             }
+    }
+
+    function encodingParams(bytes memory params, uint256 amount) internal pure returns (bytes memory encode) {
+        (
+            bytes4 selector,
+            address[] memory _targets,
+            bytes[] memory _datas,
+            bytes[] memory _customDatas,
+            address _origin
+        ) = abi.decode(params, (bytes4, address[], bytes[], bytes[], address));
+
+        encode = abi.encodeWithSelector(selector, _targets, _datas, _customDatas, _origin, amount);
     }
 
     constructor(address flashloanAggregator_) {

@@ -11,6 +11,7 @@ interface TokenInterface {
     function decimals() external view returns (uint);
     function totalSupply() external view returns (uint);
     function allowance(address owner, address spender) external view returns (uint256);
+    function isETH(TokenInterface token) external pure returns(bool);
 }
 
 interface AccountInterface {

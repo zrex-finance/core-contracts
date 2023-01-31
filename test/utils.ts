@@ -53,44 +53,18 @@ export async function inchCalldata({
   amount: string;
   slippage: number;
 }) {
-  const { data: response } = await axios.get<{ protocols: { id: string }[] }>(
-    "https://api.1inch.exchange/v4.0/1/liquidity-sources"
-  );
 
-  const protocols = await response.protocols
-    .filter((i: { id: string }) => i.id !== "ZRX")
-    .map((p: { id: string }) => p.id)
-    .join(",");
-  const call = `https://api.1inch.exchange/v4.0/1/swap?fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}&protocols=${protocols}&disableEstimate=true&usePatching=true`;
+  const ETH_CONTRACT_E = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+  const ETH_CONTRACT = "0x0000000000000000000000000000000000000000";
 
-  const { data: resp } = await axios.get<{
-    tx: { data: string; value: string };
-  }>(call);
+  fromToken = fromToken === ETH_CONTRACT ? ETH_CONTRACT_E : fromToken;
+  toToken = toToken === ETH_CONTRACT ? ETH_CONTRACT_E : toToken;
 
-  let offset;
+  const call = `https://api.1inch.exchange/v5.0/1/swap?fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}&disableEstimate=true`;
 
-  if (resp.tx.data.startsWith("0x7c025200")) {
-    // swap(address,(address,address,address,address,uint256,uint256,uint256,bytes),bytes)
-    offset = (1 + 4 + 32 * 7) * 2;
-  } else if (resp.tx.data.startsWith("0x2e95b6c8")) {
-    // unoswap(address,uint256,uint256,bytes32[])
-    offset = (1 + 4 + 32) * 2;
-  } else if (resp.tx.data.startsWith("0xb0431182")) {
-    // clipperSwap(address,address,uint256,uint256)
-    offset = (1 + 4 + 32 * 2) * 2;
-  } else if (resp.tx.data.startsWith("0xd0a3b665")) {
-    // fillOrderRFQ((uint256,address,address,address,address,uint256,uint256),bytes,uint256,uint256)
-    offset = (1 + 4 + 32 * 9) * 2;
-  } else if (resp.tx.data.startsWith("0xe449022e")) {
-    // uniswapV3Swap(uint256,uint256,uint256[])
-    offset = (1 + 4) * 2;
-  } else {
-    throw new Error("Unsupported 1inch method");
-  }
+  const { data: resp } = await axios.get<{tx: { data: string; value: string }; }>(call);
 
-  const prefix = resp.tx.data.slice(0, offset);
-  const postfix = `0x${resp.tx.data.slice(offset + 64)}`;
-  return { prefix, postfix };
+  return resp.tx.data
 }
 
 const provider = new ethers.providers.JsonRpcProvider(
