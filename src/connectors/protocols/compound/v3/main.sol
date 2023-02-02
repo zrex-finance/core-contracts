@@ -11,7 +11,7 @@ import { Helpers } from "./helpers.sol";
 import { Events } from "./events.sol";
 import { CometInterface } from "./interface.sol";
 
-abstract contract CompoundV3Resolver is Events, Helpers {
+contract CompoundV3Resolver is Events, Helpers {
 	/**
 	 * @dev Deposit base asset or collateral asset supported by the market.
 	 * @notice Deposit a token to Compound for lending / collaterization.
@@ -35,7 +35,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			"invalid market/token address"
 		);
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address token_ = isEth ? wethAddr : token;
 		TokenInterface tokenContract = TokenInterface(token_);
 
@@ -60,6 +60,14 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		eventName_ = "LogDeposit(address,address,uint256)";
 		eventParam_ = abi.encode(market, token, amt_);
+	}
+
+	function borrowBalanceOf(address _market, address _recipient) public view returns(uint256) {
+		return CometInterface(_market).borrowBalanceOf(_recipient);
+	}
+
+	function collateralBalanceOf(address _market, address _recipient, address _token) public view returns(uint256) {
+		return CometInterface(_market).collateralBalanceOf(_recipient, _token);
 	}
 
 	/**
@@ -87,7 +95,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			"invalid market/token/to address"
 		);
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address token_ = isEth ? wethAddr : token;
 		TokenInterface tokenContract = TokenInterface(token_);
 
@@ -142,7 +150,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		);
 		require(from != address(this), "from-cannot-be-address(this)-use-depositOnBehalf");
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address token_ = isEth? wethAddr : token;
 
 		if (token_ == getBaseToken(market)) {
@@ -190,7 +198,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			"invalid market/token address"
 		);
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address token_ = isEth ? wethAddr : token;
 
 		TokenInterface tokenContract = TokenInterface(token_);
@@ -352,7 +360,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 
 		require(market != address(0), "invalid market address");
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address token_ = getBaseToken(market);
 		require(token == token_ || isEth, "invalid-token");
 
@@ -510,7 +518,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			"invalid market/token address"
 		);
 
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		address token_ = getBaseToken(market);
 		require(token == token_ || isEth, "invalid-token");
 
@@ -569,7 +577,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		);
 
 		address token_ = getBaseToken(market);
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		require(token == token_ || isEth, "invalid-token");
 
 		TokenInterface tokenContract = TokenInterface(token_);
@@ -628,7 +636,7 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 		require(from != address(this), "from-cannot-be-address(this)-use-paybackOnBehalf");
 
 		address token_ = getBaseToken(market);
-		bool isEth = token == ethAddr;
+		bool isEth = token == ethAddr || token == address(0);
 		require(token == token_ || isEth, "invalid-token");
 
 		if (amt_ == type(uint).max) {
@@ -825,8 +833,4 @@ abstract contract CompoundV3Resolver is Events, Helpers {
 			s
 		);
 	}
-}
-
-contract ConnectV2CompoundV3 is CompoundV3Resolver {
-	string public name = "CompoundV3-v1.0";
 }

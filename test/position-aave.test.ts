@@ -28,7 +28,7 @@ const LEVERAGE = BigNumber.from("2");
 
 const encoder = new ethers.utils.AbiCoder();
 
-describe("Position router", async () => {
+describe("Position aave", async () => {
   // wallets
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
@@ -53,7 +53,7 @@ describe("Position router", async () => {
     )) as ERC20;
 
     daiContract = await daiContract.connect(
-      await getSignerFromAddress("0x1B7BAa734C00298b9429b518D621753Bb0f6efF2")
+      await getSignerFromAddress("0xb527a981e1d415af696936b3174f2d7ac8d11369")
     );
 
     await daiContract.transfer(owner.address, DEFAULT_AMOUNT.mul(5));
@@ -95,6 +95,114 @@ describe("Position router", async () => {
     closePositionCallback = positionRouter.interface.getSighash(
       "closePositionCallback(address[],bytes[],bytes[],address,uint256)"
     );
+  });
+
+  it.only("open and close", async () => {
+    const position = {
+      account: owner.address,
+      debt: DAI_CONTRACT,
+      collateral: ETH_CONTRACT,
+      amountIn: DEFAULT_AMOUNT,
+      sizeDelta: LEVERAGE,
+    };
+
+    const UNISWAP_ROUTE = 1
+    const RATE_TYPE_AAVE = 1
+
+    await daiContract
+      .connect(owner)
+      .approve(positionRouter.address, position.amountIn);
+    
+    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
+
+    const openSwap = await uniSwap(
+      swapAmount,
+      position.debt,
+      position.collateral,
+      exchanges.address
+    );
+
+    const _tokens = [position.debt];
+    const _amts = [position.amountIn.mul(position.sizeDelta.sub(1))];
+
+    const { bestRoutes_: bestOpenRoutes, bestFee_, routes_, fees_ } = await flashResolver.callStatic.getData(_tokens, _amts);
+
+    const deposit = aaveResolver.interface.encodeFunctionData("deposit", [position.collateral, MAX_UINT]);
+    const borrow = aaveResolver.interface.encodeFunctionData("borrow", [position.debt, _amts[0].add(bestFee_), RATE_TYPE_AAVE])
+
+    const customOpenData = encoder.encode(
+      ["address", "address", "uint256", "uint256", "bytes"],
+      // @ts-ignore
+      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
+    );
+
+    const calldataOpen = encoder.encode(
+      ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
+      [
+        openPositionCallback,
+        [aaveResolver.address, aaveResolver.address],
+        [deposit, borrow],
+        [customOpenData, position.debt],
+        owner.address,
+      ]
+    )
+
+    await positionRouter
+      .connect(owner)
+      .openPosition(position, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
+
+    const index = await positionRouter.callStatic.positionsIndex(owner.address);
+    const key = await positionRouter.callStatic.getKey(owner.address, index);
+
+    const collateralAmount = await aaveResolver.callStatic.getCollateralBalance(
+      position.collateral === ETH_CONTRACT ? WETH_CONTRACT : position.collateral, positionRouter.address
+    );
+
+    const borrowAmount = await aaveResolver.callStatic.getPaybackBalance(
+      position.debt, RATE_TYPE_AAVE, positionRouter.address
+    );
+
+    const closeSwap = await uniSwap(
+      collateralAmount.toHexString(),
+      position.collateral,
+      position.debt,
+      exchanges.address
+    );
+
+    const __tokens = [position.debt];
+    const __amts = [borrowAmount.mul(105).div(100).toHexString()];
+    
+    const payback = aaveResolver.interface.encodeFunctionData("payback", [position.debt, MAX_UINT, RATE_TYPE_AAVE])
+    const withdraw = aaveResolver.interface.encodeFunctionData("withdraw", [position.collateral, MAX_UINT])
+
+    const customCloseData = encoder.encode(
+      ["address", "address", "uint256", "uint256", "bytes"],
+      [
+        position.debt,
+        position.collateral,
+        collateralAmount.toHexString(),
+        UNISWAP_ROUTE,
+        // @ts-ignore
+        closeSwap.methodParameters.calldata
+      ]
+    );
+
+    const calldataClose = encoder.encode(
+      ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
+      [
+        closePositionCallback,
+        [aaveResolver.address, aaveResolver.address],
+        [payback, withdraw],
+        [customCloseData, key],
+        owner.address
+      ]
+    )
+
+    const { bestRoutes_: closeRoutes } = await flashResolver.callStatic.getData(__tokens, __amts);
+
+    await positionRouter
+    .connect(owner)
+    .closePosition(key,__tokens,__amts,closeRoutes[0],calldataClose,[])
   });
 
   async function openAndCloseUniPosition(UNISWAP_ROUTE: number, FLASH_ROUTE: number) {
@@ -205,114 +313,6 @@ describe("Position router", async () => {
     .connect(owner)
     .closePosition(key,__tokens,__amts,closeRoutes[FLASH_ROUTE],calldataClose,[])
   }
-
-  it.only("Open position and close position", async () => {
-    const position = {
-      account: owner.address,
-      debt: DAI_CONTRACT,
-      collateral: ETH_CONTRACT,
-      amountIn: DEFAULT_AMOUNT,
-      sizeDelta: LEVERAGE,
-    };
-
-    const UNISWAP_ROUTE = 1
-    const RATE_TYPE_AAVE = 1
-
-    await daiContract
-      .connect(owner)
-      .approve(positionRouter.address, position.amountIn);
-    
-    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
-
-    const openSwap = await uniSwap(
-      swapAmount,
-      position.debt,
-      position.collateral,
-      exchanges.address
-    );
-
-    const _tokens = [position.debt];
-    const _amts = [position.amountIn.mul(position.sizeDelta.sub(1))];
-
-    const { bestRoutes_: bestOpenRoutes, bestFee_ } = await flashResolver.callStatic.getData(_tokens, _amts);
-
-    const deposit = aaveResolver.interface.encodeFunctionData("deposit", [position.collateral, MAX_UINT]);
-    const borrow = aaveResolver.interface.encodeFunctionData("borrow", [position.debt, _amts[0].add(bestFee_), RATE_TYPE_AAVE])
-
-    const customOpenData = encoder.encode(
-      ["address", "address", "uint256", "uint256", "bytes"],
-      // @ts-ignore
-      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
-    );
-
-    const calldataOpen = encoder.encode(
-      ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
-      [
-        openPositionCallback,
-        [aaveResolver.address, aaveResolver.address],
-        [deposit, borrow],
-        [customOpenData, position.debt],
-        owner.address,
-      ]
-    )
-
-    await positionRouter
-      .connect(owner)
-      .openPosition(position, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
-
-    const index = await positionRouter.callStatic.positionsIndex(owner.address);
-    const key = await positionRouter.callStatic.getKey(owner.address, index);
-
-    const collateralAmount = await aaveResolver.callStatic.getCollateralBalance(
-      position.collateral === ETH_CONTRACT ? WETH_CONTRACT : position.collateral, positionRouter.address
-    );
-
-    const borrowAmount = await aaveResolver.callStatic.getPaybackBalance(
-      position.debt, RATE_TYPE_AAVE, positionRouter.address
-    );
-
-    const closeSwap = await uniSwap(
-      collateralAmount.toHexString(),
-      position.collateral,
-      position.debt,
-      exchanges.address
-    );
-
-    const __tokens = [position.debt];
-    const __amts = [borrowAmount.mul(105).div(100).toHexString()];
-    
-    const payback = aaveResolver.interface.encodeFunctionData("payback", [position.debt, MAX_UINT, RATE_TYPE_AAVE])
-    const withdraw = aaveResolver.interface.encodeFunctionData("withdraw", [position.collateral, MAX_UINT])
-
-    const customCloseData = encoder.encode(
-      ["address", "address", "uint256", "uint256", "bytes"],
-      [
-        position.debt,
-        position.collateral,
-        collateralAmount.toHexString(),
-        UNISWAP_ROUTE,
-        // @ts-ignore
-        closeSwap.methodParameters.calldata
-      ]
-    );
-
-    const calldataClose = encoder.encode(
-      ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
-      [
-        closePositionCallback,
-        [aaveResolver.address, aaveResolver.address],
-        [payback, withdraw],
-        [customCloseData, key],
-        owner.address
-      ]
-    )
-
-    const { bestRoutes_: closeRoutes } = await flashResolver.callStatic.getData(__tokens, __amts);
-
-    await positionRouter
-    .connect(owner)
-    .closePosition(key,__tokens,__amts,closeRoutes[0],calldataClose,[])
-  });
 
   it("AAVE-UNI-AAVE", async () => {
     await openAndCloseUniPosition(1, 0)

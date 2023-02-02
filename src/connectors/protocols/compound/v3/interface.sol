@@ -99,6 +99,7 @@ interface CometInterface {
 	function balanceOf(address account) external view returns (uint256);
 
 	function borrowBalanceOf(address account) external view returns (uint256);
+	function collateralBalanceOf(address account, address asset) external view returns (uint256);
 
 	function allow(address manager, bool isAllowed_) external;
 
