@@ -8,7 +8,7 @@ import { TokenInterface } from "../../common/interfaces.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-abstract contract Euler is Helpers {
+contract Euler is Helpers {
 	using SafeERC20 for IERC20;
 
 	/**
@@ -59,6 +59,22 @@ abstract contract Euler is Helpers {
 			amt,
 			enableCollateral
 		);
+	}
+
+	function borrowBalanceOf(address _token, address _recipient, uint256 _subAccount) public view returns(uint256) {
+		IEulerDToken borrowedDToken = IEulerDToken(markets.underlyingToDToken(_token));
+
+		address subAccount = getSubAccount(_recipient, _subAccount);
+
+		return borrowedDToken.balanceOf(subAccount);
+	}
+
+	function collateralBalanceOf(address _token, address _recipient, uint256 _subAccount) public view returns(uint256) {
+		IEulerEToken eToken = IEulerEToken(markets.underlyingToEToken(_token));
+
+		address subAccount = getSubAccount(_recipient, _subAccount);
+		
+		return eToken.balanceOfUnderlying(subAccount);
 	}
 
 	/**
@@ -387,8 +403,4 @@ abstract contract Euler is Helpers {
 		_eventName = "LogExitMarket(uint256,address)";
 		_eventParam = abi.encode(subAccountId, token);
 	}
-}
-
-contract ConnectV2Euler is Euler {
-	string public constant name = "Euler-v1.0";
 }
