@@ -112,7 +112,7 @@ describe("Position aave", async () => {
 
     await daiContract
       .connect(owner)
-      .approve(exchanges.address, shortAmount);
+      .approve(positionRouter.address, shortAmount);
 
     const shortSwap = await uniSwap(
       shortAmount.toHexString(),
@@ -121,22 +121,24 @@ describe("Position aave", async () => {
       exchanges.address
     );
 
-    await exchanges.connect(owner).exchange(
-      WETH_CONTRACT,
-		  DAI_CONTRACT,
-		  shortAmount,
-      UNISWAP_ROUTE,
-      // @ts-ignore
-		  shortSwap?.methodParameters?.calldata
+    const shortCalldata = encoder.encode(
+      ["address", "address", "uint256", "uint256", "bytes"],
+      [
+        WETH_CONTRACT,
+        DAI_CONTRACT,
+        shortAmount.toHexString(),
+        UNISWAP_ROUTE,
+        // @ts-ignore
+        shortSwap?.methodParameters?.calldata
+      ]
     )
-
-    const wethBalance = await wethContract.callStatic.balanceOf(owner.address);
 
     const position = {
       account: owner.address,
       debt: WETH_CONTRACT,
       collateral: USDC_CONTRACT,
-      amountIn: wethBalance,
+      // @ts-ignore
+      amountIn: ethers.utils.parseUnits(shortSwap.quote.toExact(), 18),
       sizeDelta: LEVERAGE,
     };
 
@@ -180,7 +182,7 @@ describe("Position aave", async () => {
 
     await positionRouter
       .connect(owner)
-      .openPosition(position, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
+      .openPosition(position, true, _tokens, _amts, bestOpenRoutes[0], calldataOpen, shortCalldata);
 
     const index = await positionRouter.callStatic.positionsIndex(owner.address);
     const key = await positionRouter.callStatic.getKey(owner.address, index);
@@ -288,7 +290,7 @@ describe("Position aave", async () => {
 
     await positionRouter
       .connect(owner)
-      .openPosition(position, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
+      .openPosition(position, false, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
 
     const index = await positionRouter.callStatic.positionsIndex(owner.address);
     const key = await positionRouter.callStatic.getKey(owner.address, index);
@@ -397,7 +399,7 @@ describe("Position aave", async () => {
 
     await positionRouter
       .connect(owner)
-      .openPosition(position, _tokens, _amts, routes_[FLASH_ROUTE], calldataOpen, []);
+      .openPosition(position, false, _tokens, _amts, routes_[FLASH_ROUTE], calldataOpen, []);
 
     const index = await positionRouter.callStatic.positionsIndex(owner.address);
     const key = await positionRouter.callStatic.getKey(owner.address, index);
@@ -515,7 +517,7 @@ describe("Position aave", async () => {
 
     await positionRouter
       .connect(owner)
-      .openPosition(position, _tokens, _amts, routes_[FLASH_ROUTE], calldataOpen, []);
+      .openPosition(position, false, _tokens, _amts, routes_[FLASH_ROUTE], calldataOpen, []);
 
     const index = await positionRouter.callStatic.positionsIndex(owner.address);
     const key = await positionRouter.callStatic.getKey(owner.address, index);

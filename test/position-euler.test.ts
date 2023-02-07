@@ -157,7 +157,7 @@ describe("Position euler", async () => {
 
     await positionRouter
       .connect(owner)
-      .openPosition(position, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
+      .openPosition(position, false, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
 
     const index = await positionRouter.callStatic.positionsIndex(owner.address);
     const key = await positionRouter.callStatic.getKey(owner.address, index);

@@ -40,6 +40,7 @@ contract PositionRouter is Executor {
 
     function openPosition(
         Position memory position,
+        bool isShort,
         address[] calldata _tokens,
         uint256[] calldata _amts,
         uint256 route,
@@ -47,7 +48,13 @@ contract PositionRouter is Executor {
         bytes calldata _customData
     ) external payable {
         require(position.account == msg.sender, "Only owner");
-        IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
+        
+        if (isShort) {
+            (uint256 returnedAmt,,) = exchange(_customData, true);
+            position.amountIn = returnedAmt;
+        } else {
+            IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
+        }
 
         flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
 
@@ -88,7 +95,7 @@ contract PositionRouter is Executor {
         address _origin,
         uint256 repayAmount
     ) external payable onlyCallback {
-        (/* uint256  value */,address debt,/* address collateral */) = exchange(_customDatas[0]);
+        (/* uint256  value */,address debt,/* address collateral */) = exchange(_customDatas[0], false);
 
         execute(_targets, _datas, _origin);
 
@@ -104,7 +111,7 @@ contract PositionRouter is Executor {
     ) external payable onlyCallback {
         execute(_targets, _datas, _origin);
 
-        (uint256 returnedAmt, /* address collateral */,/* address debt */) = exchange(_customDatas[0]);
+        (uint256 returnedAmt, /* address collateral */,/* address debt */) = exchange(_customDatas[0], false);
 
         Position memory position = positions[bytes32(_customDatas[1])];
 
@@ -112,7 +119,7 @@ contract PositionRouter is Executor {
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
 
-    function exchange(bytes memory _exchangeData) internal returns(uint256,address,address) {
+    function exchange(bytes memory _exchangeData, bool isTransfer) internal returns(uint256,address,address) {
         (
             address buyAddr,
             address sellAddr,
@@ -121,10 +128,12 @@ contract PositionRouter is Executor {
             bytes memory callData
         ) = abi.decode(_exchangeData, (address, address, uint256, uint256, bytes));
 
-        uint256 amt = IERC20(sellAddr).isETH() ? sellAmt : 0;
-
+        if (isTransfer) {
+            IERC20(sellAddr).universalTransferFrom(msg.sender, address(this), sellAmt);
+        }
         IERC20(sellAddr).universalApprove(address(exchanges), sellAmt);
 
+        uint256 amt = IERC20(sellAddr).isETH() ? sellAmt : 0;
         uint256 value = exchanges.exchange{value: amt}(buyAddr, sellAddr, sellAmt, _route, callData);
 
         return (value, sellAddr, buyAddr);
