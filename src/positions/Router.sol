@@ -121,9 +121,11 @@ contract PositionRouter is Executor {
             bytes memory callData
         ) = abi.decode(_exchangeData, (address, address, uint256, uint256, bytes));
 
-        IERC20(sellAddr).universalTransfer(address(exchanges), sellAmt);
+        uint256 amt = IERC20(sellAddr).isETH() ? sellAmt : 0;
 
-        uint256 value = exchanges.exchange(buyAddr, sellAddr, sellAmt, _route, callData);
+        IERC20(sellAddr).universalApprove(address(exchanges), sellAmt);
+
+        uint256 value = exchanges.exchange{value: amt}(buyAddr, sellAddr, sellAmt, _route, callData);
 
         return (value, sellAddr, buyAddr);
     }

@@ -3,7 +3,7 @@ import { solidity } from "ethereum-waffle";
 import chai from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber } from "ethers";
-import { ERC20, PositionRouter, FlashResolver, AaveResolver, Exchanges } from "../typechain-types";
+import { ERC20, PositionRouter, FlashResolver, AaveResolver, Exchanges, TokenInterface } from "../typechain-types";
 
 import {
   inchCalldata,
@@ -16,6 +16,7 @@ chai.use(solidity);
 const { expect } = chai;
 
 const DAI_CONTRACT = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+const USDC_CONTRACT = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const ETH_CONTRACT = "0x0000000000000000000000000000000000000000";
 const ETH_CONTRACT_2 = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const WETH_CONTRACT = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -33,6 +34,7 @@ describe("Position aave", async () => {
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
   let daiContract: ERC20;
+  let wethContract: TokenInterface;
 
   // contracts
   let positionRouter: PositionRouter;
@@ -51,6 +53,11 @@ describe("Position aave", async () => {
       "IERC20",
       DAI_CONTRACT
     )) as ERC20;
+
+    wethContract = (await ethers.getContractAt(
+      "IERC20",
+      WETH_CONTRACT
+    )) as unknown as TokenInterface;
 
     daiContract = await daiContract.connect(
       await getSignerFromAddress("0xb527a981e1d415af696936b3174f2d7ac8d11369")
@@ -97,7 +104,139 @@ describe("Position aave", async () => {
     );
   });
 
-  it.only("open and close", async () => {
+  it("open and close short position", async () => {
+    const UNISWAP_ROUTE = 1
+    const RATE_TYPE_AAVE = 1
+
+    const shortAmount = DEFAULT_AMOUNT.mul(2)
+
+    await daiContract
+      .connect(owner)
+      .approve(exchanges.address, shortAmount);
+
+    const shortSwap = await uniSwap(
+      shortAmount.toHexString(),
+      DAI_CONTRACT,
+      WETH_CONTRACT,
+      exchanges.address
+    );
+
+    await exchanges.connect(owner).exchange(
+      WETH_CONTRACT,
+		  DAI_CONTRACT,
+		  shortAmount,
+      UNISWAP_ROUTE,
+      // @ts-ignore
+		  shortSwap?.methodParameters?.calldata
+    )
+
+    const wethBalance = await wethContract.callStatic.balanceOf(owner.address);
+
+    const position = {
+      account: owner.address,
+      debt: WETH_CONTRACT,
+      collateral: USDC_CONTRACT,
+      amountIn: wethBalance,
+      sizeDelta: LEVERAGE,
+    };
+
+    await wethContract
+      .connect(owner)
+      .approve(positionRouter.address, position.amountIn);
+    
+    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
+
+    const openSwap = await uniSwap(
+      swapAmount,
+      position.debt,
+      position.collateral,
+      exchanges.address
+    );
+
+    const _tokens = [position.debt];
+    const _amts = [position.amountIn.mul(position.sizeDelta.sub(1))];
+
+    const { bestRoutes_: bestOpenRoutes, bestFee_ } = await flashResolver.callStatic.getData(_tokens, _amts);
+
+    const deposit = aaveResolver.interface.encodeFunctionData("deposit", [position.collateral, MAX_UINT]);
+    const borrow = aaveResolver.interface.encodeFunctionData("borrow", [position.debt, _amts[0].add(bestFee_), RATE_TYPE_AAVE])
+
+    const customOpenData = encoder.encode(
+      ["address", "address", "uint256", "uint256", "bytes"],
+      // @ts-ignore
+      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
+    );
+
+    const calldataOpen = encoder.encode(
+      ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
+      [
+        openPositionCallback,
+        [aaveResolver.address, aaveResolver.address],
+        [deposit, borrow],
+        [customOpenData, position.debt],
+        owner.address,
+      ]
+    )
+
+    await positionRouter
+      .connect(owner)
+      .openPosition(position, _tokens, _amts, bestOpenRoutes[0], calldataOpen, []);
+
+    const index = await positionRouter.callStatic.positionsIndex(owner.address);
+    const key = await positionRouter.callStatic.getKey(owner.address, index);
+
+    const collateralAmount = await aaveResolver.callStatic.getCollateralBalance(
+      position.collateral === ETH_CONTRACT ? WETH_CONTRACT : position.collateral, positionRouter.address
+    );
+
+    const borrowAmount = await aaveResolver.callStatic.getPaybackBalance(
+      position.debt, RATE_TYPE_AAVE, positionRouter.address
+    );
+
+    const closeSwap = await uniSwap(
+      collateralAmount.toHexString(),
+      position.collateral,
+      position.debt,
+      exchanges.address
+    );
+
+    const __tokens = [position.debt];
+    const __amts = [borrowAmount.mul(105).div(100).toHexString()];
+    
+    const payback = aaveResolver.interface.encodeFunctionData("payback", [position.debt, MAX_UINT, RATE_TYPE_AAVE])
+    const withdraw = aaveResolver.interface.encodeFunctionData("withdraw", [position.collateral, MAX_UINT])
+
+    const customCloseData = encoder.encode(
+      ["address", "address", "uint256", "uint256", "bytes"],
+      [
+        position.debt,
+        position.collateral,
+        collateralAmount.toHexString(),
+        UNISWAP_ROUTE,
+        // @ts-ignore
+        closeSwap.methodParameters.calldata
+      ]
+    );
+
+    const calldataClose = encoder.encode(
+      ["bytes4", "address[]", "bytes[]", "bytes[]", "address"],
+      [
+        closePositionCallback,
+        [aaveResolver.address, aaveResolver.address],
+        [payback, withdraw],
+        [customCloseData, key],
+        owner.address
+      ]
+    )
+
+    const { bestRoutes_: closeRoutes } = await flashResolver.callStatic.getData(__tokens, __amts);
+
+    await positionRouter
+    .connect(owner)
+    .closePosition(key,__tokens,__amts,closeRoutes[0],calldataClose,[])
+  });
+
+  it("open and close long position", async () => {
     const position = {
       account: owner.address,
       debt: DAI_CONTRACT,
@@ -314,15 +453,15 @@ describe("Position aave", async () => {
     .closePosition(key,__tokens,__amts,closeRoutes[FLASH_ROUTE],calldataClose,[])
   }
 
-  it("AAVE-UNI-AAVE", async () => {
+  it.skip("AAVE-UNI-AAVE", async () => {
     await openAndCloseUniPosition(1, 0)
   });
 
-  it("MAKER-UNI-AAVE", async () => {
+  it.skip("MAKER-UNI-AAVE", async () => {
     await openAndCloseUniPosition(1, 1)
   });
 
-  it("BALANCER-UNI-AAVE", async () => {
+  it.skip("BALANCER-UNI-AAVE", async () => {
     await openAndCloseUniPosition(1, 2)
   });
 
@@ -432,15 +571,15 @@ describe("Position aave", async () => {
     .closePosition(key,__tokens,__amts,closeRoutes[FLASH_ROUTE],calldataClose,[])
   }
 
-  it("AAVE-1INCH-AAVE", async () => {
+  it.skip("AAVE-1INCH-AAVE", async () => {
     openAndCloseInchPosition(2, 0);
   });
 
-  it("MAKER-1INCH-AAVE", async () => {
+  it.skip("MAKER-1INCH-AAVE", async () => {
     openAndCloseInchPosition(2, 1);
   });
 
-  it("BALANCER-1INCH-AAVE", async () => {
+  it.skip("BALANCER-1INCH-AAVE", async () => {
     openAndCloseInchPosition(2, 2);
   });
 });

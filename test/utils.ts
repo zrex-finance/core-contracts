@@ -79,22 +79,21 @@ export async function uniSwap(
   amount: string,
   fromToken: string,
   toToken: string,
-  recipient: string
+  recipient: string,
 ) {
   const WETH_CONTRACT = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
   const ETH_CONTRACT = "0x0000000000000000000000000000000000000000".toLowerCase();
   const ETH_CONTRACT_2 = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase();
 
-  const FROM_TOKEN = new Token(
-    1,
-    fromToken.toLowerCase() === ETH_CONTRACT || fromToken.toLowerCase() === ETH_CONTRACT_2 ? WETH_CONTRACT : fromToken,
-    18
-  );
-  const TO_TOKEN = new Token(
-    1,
-    toToken.toLowerCase() === ETH_CONTRACT || toToken.toLowerCase() === ETH_CONTRACT_2 ? WETH_CONTRACT : toToken,
-    18
-  );
+  const fromAddress = fromToken.toLowerCase() === ETH_CONTRACT || fromToken.toLowerCase() === ETH_CONTRACT_2 ? WETH_CONTRACT : fromToken;
+  const fromDecimals = await (await ethers.getContractAt("ERC20", fromAddress)).decimals();
+
+  const FROM_TOKEN = new Token(1,fromAddress,fromDecimals);
+
+  const toAddress = toToken.toLowerCase() === ETH_CONTRACT || toToken.toLowerCase() === ETH_CONTRACT_2 ? WETH_CONTRACT : toToken;
+  const toDecimals = await (await ethers.getContractAt("ERC20", toAddress)).decimals();
+
+  const TO_TOKEN = new Token(1,toAddress,toDecimals);
 
   return router.route(
     CurrencyAmount.fromRawAmount(FROM_TOKEN, amount),

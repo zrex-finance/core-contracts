@@ -20,6 +20,8 @@ contract Exchanges is Helpers {
 		uint256 sellAmt
     );
 
+    fallback() external payable {}
+
     function exchange(
         address buyAddr,
 		address sellAddr,
@@ -27,6 +29,8 @@ contract Exchanges is Helpers {
         uint256 _route,
 		bytes calldata callData
     ) external payable returns (uint256 _buyAmt) {
+        IERC20(sellAddr).universalTransferFrom(msg.sender, address(this), sellAmt);
+
         if (_route == 1) {
             _buyAmt = routeUni(buyAddr, sellAddr, sellAmt, callData);
         } else if (_route == 2) {

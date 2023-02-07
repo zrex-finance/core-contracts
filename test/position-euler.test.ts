@@ -30,7 +30,7 @@ const LEVERAGE = BigNumber.from("2");
 
 const encoder = new ethers.utils.AbiCoder();
 
-describe.only("Position euler", async () => {
+describe("Position euler", async () => {
   // wallets
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
@@ -105,7 +105,7 @@ describe.only("Position euler", async () => {
     );
   });
 
-  it.only("open and close", async () => {
+  it("open and close", async () => {
     const position = {
       account: owner.address,
       debt: USDC_CONTRACT,

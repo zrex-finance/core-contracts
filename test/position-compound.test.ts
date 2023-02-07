@@ -58,12 +58,6 @@ describe("Position compound", async () => {
       await getSignerFromAddress("0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078")
     );
 
-    await owner.sendTransaction({
-      from: owner.address,
-      value: ethers.utils.parseEther("1"),
-      to: "0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078"
-    })
-
     await usdcContract.transfer(owner.address, DEFAULT_AMOUNT.mul(5));
 
     const compResolverFactory = await ethers.getContractFactory("CompoundV3Resolver");
@@ -105,7 +99,7 @@ describe("Position compound", async () => {
     );
   });
 
-  it.only("open and close", async () => {
+  it("open and close", async () => {
     const position = {
       account: owner.address,
       debt: USDC_CONTRACT,
@@ -179,7 +173,7 @@ describe("Position compound", async () => {
     );
 
     const __tokens = [position.debt];
-    const __amts = [borrowAmount.mul(105).div(100).toHexString()];
+    const __amts = [borrowAmount.mul(10005).div(10000).toHexString()];
     
     const payback = compResolver.interface.encodeFunctionData("payback", [USDC_MARKET, position.debt, MAX_UINT])
     const withdraw = compResolver.interface.encodeFunctionData("withdraw", [USDC_MARKET, position.collateral, MAX_UINT])
