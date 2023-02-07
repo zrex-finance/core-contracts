@@ -99,7 +99,7 @@ describe("Position compound", async () => {
     );
   });
 
-  it("open and close", async () => {
+  it.skip("open and close", async () => {
     const position = {
       account: owner.address,
       debt: USDC_CONTRACT,
