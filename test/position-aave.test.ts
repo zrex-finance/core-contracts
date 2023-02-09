@@ -24,7 +24,7 @@ const WETH_CONTRACT = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
 const DEFAULT_AMOUNT = ethers.utils.parseEther("1000");
-
+const FEE = BigNumber.from("3"); // 0.03%
 const LEVERAGE = BigNumber.from("2");
 
 const encoder = new ethers.utils.AbiCoder();
@@ -90,7 +90,7 @@ describe("Position aave", async () => {
 
     positionRouter = ((await positionRouterFactory
       .connect(owner)
-      .deploy(flashReceiver.address, exchanges.address)) as unknown) as PositionRouter;
+      .deploy(flashReceiver.address, exchanges.address, FEE, owner.address)) as unknown) as PositionRouter;
     await positionRouter.deployed();
 
     await flashReceiver.setRouter(positionRouter.address);
@@ -146,10 +146,11 @@ describe("Position aave", async () => {
       .connect(owner)
       .approve(positionRouter.address, position.amountIn);
     
-    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
+      const swapAmount = position.amountIn.mul(position.sizeDelta)
+      const swapAmountWithoutFee = swapAmount.sub(swapAmount.mul(FEE).div(10000)).toHexString()
 
     const openSwap = await uniSwap(
-      swapAmount,
+      swapAmountWithoutFee,
       position.debt,
       position.collateral,
       exchanges.address
@@ -254,10 +255,11 @@ describe("Position aave", async () => {
       .connect(owner)
       .approve(positionRouter.address, position.amountIn);
     
-    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
+    const swapAmount = position.amountIn.mul(position.sizeDelta)
+    const swapAmountWithoutFee = swapAmount.sub(swapAmount.mul(FEE).div(10000)).toHexString()
 
     const openSwap = await uniSwap(
-      swapAmount,
+      swapAmountWithoutFee,
       position.debt,
       position.collateral,
       exchanges.address
@@ -266,7 +268,7 @@ describe("Position aave", async () => {
     const _tokens = [position.debt];
     const _amts = [position.amountIn.mul(position.sizeDelta.sub(1))];
 
-    const { bestRoutes_: bestOpenRoutes, bestFee_, routes_, fees_ } = await flashResolver.callStatic.getData(_tokens, _amts);
+    const { bestRoutes_: bestOpenRoutes, bestFee_ } = await flashResolver.callStatic.getData(_tokens, _amts);
 
     const deposit = aaveResolver.interface.encodeFunctionData("deposit", [position.collateral, MAX_UINT]);
     const borrow = aaveResolver.interface.encodeFunctionData("borrow", [position.debt, _amts[0].add(bestFee_), RATE_TYPE_AAVE])
@@ -274,7 +276,7 @@ describe("Position aave", async () => {
     const customOpenData = encoder.encode(
       ["address", "address", "uint256", "uint256", "bytes"],
       // @ts-ignore
-      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
+      [position.collateral, position.debt, swapAmountWithoutFee, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
     );
 
     const calldataOpen = encoder.encode(

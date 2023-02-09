@@ -25,7 +25,7 @@ const USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
 const MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
 const DEFAULT_AMOUNT = ethers.utils.parseUnits("1000", 6);
-
+const FEE = 3 // 0.03%
 const LEVERAGE = BigNumber.from("2");
 
 const encoder = new ethers.utils.AbiCoder();
@@ -91,7 +91,7 @@ describe("Position euler", async () => {
 
     positionRouter = ((await positionRouterFactory
       .connect(owner)
-      .deploy(flashReceiver.address, exchanges.address)) as unknown) as PositionRouter;
+      .deploy(flashReceiver.address, exchanges.address, FEE, owner.address)) as unknown) as PositionRouter;
     await positionRouter.deployed();
 
     await flashReceiver.setRouter(positionRouter.address);
@@ -121,10 +121,11 @@ describe("Position euler", async () => {
       .connect(owner)
       .approve(positionRouter.address, position.amountIn);
     
-    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
+      const swapAmount = position.amountIn.mul(position.sizeDelta)
+      const swapAmountWithoutFee = swapAmount.sub(swapAmount.mul(FEE).div(10000)).toHexString()
 
     const openSwap = await uniSwap(
-      swapAmount,
+      swapAmountWithoutFee,
       position.debt,
       position.collateral,
       exchanges.address
@@ -141,7 +142,7 @@ describe("Position euler", async () => {
     const customOpenData = encoder.encode(
       ["address", "address", "uint256", "uint256", "bytes"],
       // @ts-ignore
-      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
+      [position.collateral, position.debt, swapAmountWithoutFee, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
     );
 
     const calldataOpen = encoder.encode(

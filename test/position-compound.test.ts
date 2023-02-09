@@ -19,7 +19,7 @@ const USDC_CONTRACT = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const ETH_CONTRACT = "0x0000000000000000000000000000000000000000";
 const ETH_CONTRACT_2 = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const WETH_CONTRACT = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-
+const FEE = 3 // 0.03%
 const USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
 
 const MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
@@ -85,7 +85,7 @@ describe("Position compound", async () => {
 
     positionRouter = ((await positionRouterFactory
       .connect(owner)
-      .deploy(flashReceiver.address, exchanges.address)) as unknown) as PositionRouter;
+      .deploy(flashReceiver.address, exchanges.address, FEE, owner.address)) as unknown) as PositionRouter;
     await positionRouter.deployed();
 
     await flashReceiver.setRouter(positionRouter.address);
@@ -114,10 +114,11 @@ describe("Position compound", async () => {
       .connect(owner)
       .approve(positionRouter.address, position.amountIn);
     
-    const swapAmount = position.amountIn.mul(position.sizeDelta).toHexString()
+      const swapAmount = position.amountIn.mul(position.sizeDelta)
+      const swapAmountWithoutFee = swapAmount.sub(swapAmount.mul(FEE).div(10000)).toHexString()
 
     const openSwap = await uniSwap(
-      swapAmount,
+      swapAmountWithoutFee,
       position.debt,
       position.collateral,
       exchanges.address
@@ -134,7 +135,7 @@ describe("Position compound", async () => {
     const customOpenData = encoder.encode(
       ["address", "address", "uint256", "uint256", "bytes"],
       // @ts-ignore
-      [position.collateral, position.debt, swapAmount, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
+      [position.collateral, position.debt, swapAmountWithoutFee, UNISWAP_ROUTE, openSwap.methodParameters.calldata]
     );
 
     const calldataOpen = encoder.encode(

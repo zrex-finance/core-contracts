@@ -18,6 +18,12 @@ contract PositionRouter is Executor {
         uint256 sizeDelta;
     }
 
+    uint256 public fee;
+    uint256 public constant MAX_FEE = 500; // 5%
+
+    uint256 private constant DENOMINATOR = 10000;
+
+    address private immutable treasury;
     IExchanges private immutable exchanges;
     IFlashloanReciever private immutable flashloanReciever;
 
@@ -33,9 +39,18 @@ contract PositionRouter is Executor {
 
     fallback() external payable {}
 
-    constructor(IFlashloanReciever _flashloanReciever,IExchanges _exchanges) {
+    constructor(
+        IFlashloanReciever _flashloanReciever,
+        IExchanges _exchanges,
+        uint256 _fee,
+        address _treasury
+    ) {
+        require(_fee <= MAX_FEE, "Invalid fee");
+
         flashloanReciever = _flashloanReciever;
         exchanges = _exchanges;
+        fee = _fee;
+        treasury = _treasury;
     }
 
     function openPosition(
@@ -57,6 +72,12 @@ contract PositionRouter is Executor {
         }
 
         flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
+
+        uint256 feeAmount = ((position.amountIn + _amts[0]) * fee) / DENOMINATOR;
+
+        if (feeAmount > 0) {
+            IERC20(position.debt).universalTransfer(treasury, feeAmount);
+        }
 
         address account = position.account;
         uint256 index = positionsIndex[account] += 1;
