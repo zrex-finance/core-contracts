@@ -2,9 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { TokenInterface } from "../../connectors/common/interfaces.sol";
+
 import "./variables.sol";
 
-contract Helper is Variables {
+contract FlashAggregatorHelper is Variables {
     using SafeERC20 for IERC20;
 
     function approve(

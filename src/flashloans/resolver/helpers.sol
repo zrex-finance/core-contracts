@@ -22,13 +22,10 @@ contract Helper is Variables {
     function getMakerAvailability(
         address[] memory _tokens,
         uint256[] memory _amounts
-    ) internal pure returns (bool) {
-        if (
-            _tokens.length == 1 &&
-            _tokens[0] == daiToken &&
-            _amounts[0] <= daiBorrowAmount
-        ) {
-            return true;
+    ) internal view returns (bool) {
+        if (_tokens.length == 1 && _tokens[0] == daiToken) {
+            uint256 loanAmt = makerLending.maxFlashLoan(daiToken);
+            return _amounts[0] <= loanAmt;
         }
         return false;
     }

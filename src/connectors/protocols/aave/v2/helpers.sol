@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import { Basic } from "../../../common/base.sol";
 import { AaveLendingPoolProviderInterface, AaveDataProviderInterface } from "./interface.sol";
 
-abstract contract Helpers is Basic {
+abstract contract AaveHelpers is Basic {
     
     AaveLendingPoolProviderInterface constant internal aaveProvider = 
         AaveLendingPoolProviderInterface(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);

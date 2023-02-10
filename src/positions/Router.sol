@@ -40,15 +40,15 @@ contract PositionRouter is Executor {
     fallback() external payable {}
 
     constructor(
-        IFlashloanReciever _flashloanReciever,
-        IExchanges _exchanges,
+        address _flashloanReciever,
+        address _exchanges,
         uint256 _fee,
         address _treasury
     ) {
         require(_fee <= MAX_FEE, "Invalid fee");
 
-        flashloanReciever = _flashloanReciever;
-        exchanges = _exchanges;
+        flashloanReciever = IFlashloanReciever(_flashloanReciever);
+        exchanges = IExchanges(_exchanges);
         fee = _fee;
         treasury = _treasury;
     }

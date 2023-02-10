@@ -3,11 +3,11 @@ pragma solidity ^0.8.13;
 
 import { TokenInterface } from "../../../common/base.sol";
 import { Stores } from "../../../common/stores.sol";
-import { Helpers } from "./helpers.sol";
+import { AaveHelpers } from "./helpers.sol";
 import { Events } from "./events.sol";
 import { AaveInterface } from "./interface.sol";
 
-contract AaveResolver is Events, Helpers {
+contract AaveResolver is Events, AaveHelpers {
 	function deposit(
 		address token,
 		uint256 amt

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/utils/Address.sol";
+import { TokenInterface } from "../../connectors/common/interfaces.sol";
 import "./helpers.sol";
 
-contract FlashAggregator is Helper {
+contract FlashAggregator is FlashAggregatorHelper {
     using SafeERC20 for IERC20;
 
     event LogFlashloan(

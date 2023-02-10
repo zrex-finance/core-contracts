@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test -vvv --fork-url ${{ env.MAINNET_RPC_URL }}
         id: forge-test
 
       - name: Run Forge coverage

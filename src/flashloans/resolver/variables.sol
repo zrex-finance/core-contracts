@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {FlashloanAggregatorInterface, IAaveProtocolDataProvider} from "./interfaces.sol";
+import {FlashloanAggregatorInterface, IAaveProtocolDataProvider, IERC3156FlashLender} from "./interfaces.sol";
 
 contract Variables {
     address public constant chainToken = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public constant aaveLendingAddr = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
+
+    IERC3156FlashLender internal constant makerLending = IERC3156FlashLender(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
     
     address public constant aaveProtocolDataProviderAddr = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
     IAaveProtocolDataProvider public constant aaveProtocolDataProvider = IAaveProtocolDataProvider(aaveProtocolDataProviderAddr);

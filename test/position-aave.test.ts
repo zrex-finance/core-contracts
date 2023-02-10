@@ -285,7 +285,7 @@ describe("Position aave", async () => {
         openPositionCallback,
         [aaveResolver.address, aaveResolver.address],
         [deposit, borrow],
-        [customOpenData, position.debt],
+        [customOpenData],
         owner.address,
       ]
     )
@@ -587,3 +587,4 @@ describe("Position aave", async () => {
     openAndCloseInchPosition(2, 2);
   });
 });
+

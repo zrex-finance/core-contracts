@@ -7,8 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "TS_NODE_TRANSPILE_ONLY=true hardhat test",
-    "coverage": "TS_NODE_TRANSPILE_ONLY=true forge coverage"
+    "test": "TS_NODE_TRANSPILE_ONLY=true hardhat test"
   },
   "author": "Devan Non <devanon@chainstride.capital>",
   "license": "Apache-2.0",
