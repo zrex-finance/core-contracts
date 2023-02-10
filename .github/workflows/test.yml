@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --fork-url ${{ secrets.MAINNET_RPC_URL }}
+          forge test -vvv --fork-url https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q
         id: forge-test
 
       - name: Run Forge coverage
