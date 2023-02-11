@@ -14,22 +14,9 @@ import "../src/flashloans/receiver/main.sol";
 import "../src/flashloans/resolver/main.sol";
 import "../src/flashloans/aggregator/main.sol";
 
-interface IAutoUniRouter {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
+import { UniswapHelper } from "./uniswap-helper.t.sol";
 
-    function multicall(uint256 deadline, bytes[] calldata data) external payable returns (bytes[] memory);
-    function exactInputSingle(ExactInputSingleParams memory params) external payable returns (uint256 amountOut);
-}
-
-abstract contract HelperContract {
+abstract contract HelperContract is UniswapHelper, Test {
     function setUp() public returns(PositionRouter, FlashResolver, address) {
         Exchanges exchanges = new Exchanges();
         FlashAggregator flashloanAggregator = new FlashAggregator();
@@ -45,45 +32,22 @@ abstract contract HelperContract {
         return (_router, flashResolver, address(exchanges));
     }
 
-    function getSwapUniData(
-        address _fromToken,
-        address _toToken,
-        address _recipient,
-        uint256 _amount)
-    public view returns(bytes memory data) {
-        IAutoUniRouter.ExactInputSingleParams memory params = IAutoUniRouter.ExactInputSingleParams(
-            _fromToken,
-            _toToken == 0x0000000000000000000000000000000000000000 ? 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 : _toToken,
-            500,
-            _recipient,
-            _amount,
-            0,
-            0
-        );
-
-        bytes[] memory swapData = new bytes[](1);
-        swapData[0] = abi.encodeWithSelector(IAutoUniRouter.exactInputSingle.selector, params); 
-
-        data = abi.encodeWithSelector(
-            IAutoUniRouter.multicall.selector,
-            block.timestamp * 2,
-            swapData
-        );
+    function topUpTokenBalance(address token, address whale, uint256 amt) public {
+        // top up msg sender balance
+        vm.prank(whale);
+        ERC20(token).transfer(msg.sender, amt);
     }
 }
 
-contract EmitContractTest is Test, HelperContract {
+contract EmitContractTest is HelperContract {
 
     PositionRouter router;
     FlashResolver flashResolver;
     AaveResolver aaveResolver;
-
     address exchanges;
 
-    ERC20 daiContract = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-
+    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
-    address ethContract = 0x0000000000000000000000000000000000000000;
 
     constructor() HelperContract() {
         (router, flashResolver, exchanges) = setUp();
@@ -93,63 +57,72 @@ contract EmitContractTest is Test, HelperContract {
     function testOpenPosition() public {
         PositionRouter.Position memory position = PositionRouter.Position(
             msg.sender,
-            address(daiContract),
-            ethContract,
+            address(daiC),
+            ethC,
             1000 ether,
             2
         );
 
-        // top up msg sender balance
-        vm.prank(daiWhale);
-        daiContract.transfer(msg.sender, position.amountIn);
+        topUpTokenBalance(daiC, daiWhale, position.amountIn);
+        
         // approve tokens
         vm.prank(msg.sender);
-        daiContract.approve(address(router), position.amountIn);
+        ERC20(position.debt).approve(address(router), position.amountIn);
 
-        uint256 loanAmount = position.amountIn * (position.sizeDelta - 1);
+        uint256 loanAmt = position.amountIn * (position.sizeDelta - 1);
 
-        address[] memory _tokens = new address[](1);
-        _tokens[0] = position.debt;
-
-        uint256[] memory _amts = new uint256[](1);
-        _amts[0] = loanAmount;
-
-        (,,uint16[] memory bestRoutes_, uint256 bestFee_) = flashResolver.getData(_tokens, _amts);
+        (   
+            address[] memory _tokens,
+            uint256[] memory _amts,
+            uint16 route, 
+            uint256 fee
+        ) = getFlashloanData(position.debt, loanAmt);
 
         uint256 swapAmount = position.amountIn * position.sizeDelta;
+        // protocol fee 3% denominator 10000
         uint256 swapAmountWithoutFee = swapAmount - (swapAmount * 3 / 10000);
 
-        bytes memory _calldata = getCallbackData(
+        bytes memory _calldata = getOpenCallbackData(
             position.debt,
             position.collateral,
             swapAmountWithoutFee,
-            loanAmount + bestFee_
+            loanAmt + fee
         );
 
-        bytes memory _customdata;
-
         vm.prank(msg.sender);
-        router.openPosition(position, false, _tokens, _amts, bestRoutes_[0], _calldata, _customdata);
+        router.openPosition(position, false, _tokens, _amts, route, _calldata, bytes(""));
     }
 
-    function getCallbackData(
+    function getFlashloanData(
+        address lT,
+        uint256 lA
+    ) public view returns(address[] memory, uint256[] memory, uint16, uint256) {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amts = new uint256[](1);
+        _tokens[0] = lT;
+        _amts[0] = lA;
+
+        (,,uint16[] memory _bestRoutes, uint256 _bestFee) = flashResolver.getData(_tokens, _amts);
+
+        return (_tokens, _amts, _bestRoutes[0], _bestFee);
+    }
+
+    function getOpenCallbackData(
         address debt,
         address collateral,
         uint256 swapAmount,
         uint256 loanAmount
     ) public view returns(bytes memory _calldata) {
-        address[] memory _targets = new address[](2);
-        _targets[0] = address(aaveResolver);
-        _targets[1] = address(aaveResolver);
+        (
+            address[] memory _targets,
+            bytes[] memory _datas
+        ) = getAaveCalldata(collateral, type(uint256).max, debt, loanAmount);
 
-        bytes[] memory _datas = new bytes[](2);
-        _datas[0] = abi.encodeWithSelector(aaveResolver.deposit.selector, collateral, type(uint256).max);
-        _datas[1] = abi.encodeWithSelector(aaveResolver.borrow.selector, debt, loanAmount, 1);
-
+        bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
-        bytes memory _uniData = getSwapUniData(debt, collateral, address(exchanges), swapAmount);
-        _customDatas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);
 
+        // toToken, fromToken, amount, route, calldata
+        _customDatas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);
         _calldata = abi.encode(
             router.openPositionCallback.selector,
             _targets,
@@ -157,5 +130,22 @@ contract EmitContractTest is Test, HelperContract {
             _customDatas,
             msg.sender
         );
+    }
+
+    function getAaveCalldata(
+        address dT,
+        uint256 dA,
+        address bT,
+        uint256 bA
+    ) public view returns(address[] memory, bytes[] memory) {
+        address[] memory _targets = new address[](2);
+        _targets[0] = address(aaveResolver);
+        _targets[1] = address(aaveResolver);
+
+        bytes[] memory _datas = new bytes[](2);
+        _datas[0] = abi.encodeWithSelector(aaveResolver.deposit.selector, dT, dA);
+        _datas[1] = abi.encodeWithSelector(aaveResolver.borrow.selector, bT, bA, 1);
+
+        return(_targets, _datas);
     }
 }
