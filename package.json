@@ -7,7 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "TS_NODE_TRANSPILE_ONLY=true hardhat test"
+    "test": "TS_NODE_TRANSPILE_ONLY=true hardhat test",
+    "deploy": "hardhat run tasks/deploy.ts"
   },
   "author": "Devan Non <devanon@chainstride.capital>",
   "license": "Apache-2.0",

@@ -9,8 +9,6 @@ import "hardhat-preprocessor";
 import { HardhatUserConfig, task } from "hardhat/config";
 import { config as dotEnvConfig } from "dotenv";
 
-import example from "./tasks/example";
-
 function getRemappings() {
   return fs
     .readFileSync("remappings.txt", "utf8")
@@ -18,8 +16,6 @@ function getRemappings() {
     .filter(Boolean)
     .map((line) => line.trim().split("="));
 }
-
-task("example", "Example task").setAction(example);
 
 dotEnvConfig();
 
