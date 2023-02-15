@@ -3,11 +3,14 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../lib/UniversalERC20.sol";
-import "../executor/main.sol";
 
+import "./executor.sol";
+import "./receiver.sol";
 import "./interfaces.sol";
 
-contract PositionRouter is Executor {
+import { TokenReceiver } from "./helper.sol";
+
+contract PositionRouter is Executor, FlashReceiver, TokenReceiver {
     using UniversalERC20 for IERC20;
     
     struct Position {
@@ -25,13 +28,12 @@ contract PositionRouter is Executor {
 
     address private immutable treasury;
     IExchanges private immutable exchanges;
-    IFlashloanReciever private immutable flashloanReciever;
 
     mapping (bytes32 => Position) public positions;
     mapping (address => uint256) public positionsIndex;
 
     modifier onlyCallback() {
-        require(msg.sender == address(flashloanReciever), "Access denied");
+        require(msg.sender == address(this), "Access denied");
         _;
     }
 
@@ -40,14 +42,13 @@ contract PositionRouter is Executor {
     fallback() external payable {}
 
     constructor(
-        address _flashloanReciever,
+        address _flashloanAggregator,
         address _exchanges,
         uint256 _fee,
         address _treasury
-    ) {
+    ) FlashReceiver(_flashloanAggregator) {
         require(_fee <= MAX_FEE, "Invalid fee");
 
-        flashloanReciever = IFlashloanReciever(_flashloanReciever);
         exchanges = IExchanges(_exchanges);
         fee = _fee;
         treasury = _treasury;
@@ -71,7 +72,7 @@ contract PositionRouter is Executor {
             IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
         }
 
-        flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
+        flashloan(_tokens, _amts, route, _data, _customData);
 
         uint256 feeAmount = ((position.amountIn + _amts[0]) * fee) / DENOMINATOR;
 
@@ -100,7 +101,7 @@ contract PositionRouter is Executor {
 
         require(msg.sender == position.account, "Can close own position or position available for liquidation");
 
-        flashloanReciever.flashloan(_tokens, _amts, route, _data, _customData);
+        flashloan(_tokens, _amts, route, _data, _customData);
 
         delete positions[key];
     }
@@ -119,8 +120,8 @@ contract PositionRouter is Executor {
         (/* uint256  value */,address debt,/* address collateral */) = exchange(_customDatas[0], false);
 
         execute(_targets, _datas, _origin);
-
-        IERC20(debt).universalTransfer(address(flashloanReciever), repayAmount);
+        
+        IERC20(debt).transfer(address(flashloanAggregator), repayAmount);
     }
 
     function closePositionCallback(
@@ -136,7 +137,7 @@ contract PositionRouter is Executor {
 
         Position memory position = positions[bytes32(_customDatas[1])];
 
-        IERC20(position.debt).universalTransfer(address(flashloanReciever), repayAmount);
+        IERC20(position.debt).universalTransfer(address(flashloanAggregator), repayAmount);
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
 

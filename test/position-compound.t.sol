@@ -10,7 +10,6 @@ import "../src/positions/interfaces.sol";
 import "../src/connectors/protocols/compound/v3/main.sol";
 
 import "../src/exchanges/main.sol";
-import "../src/flashloans/receiver/main.sol";
 import "../src/flashloans/resolver/main.sol";
 import "../src/flashloans/aggregator/main.sol";
 
@@ -92,9 +91,9 @@ contract LendingHelper is HelperContract {
 
 contract PositionCompound is LendingHelper {
 
+    Exchanges exchanges;
     PositionRouter router;
     FlashResolver flashResolver;
-    Exchanges exchanges;
 
     PositionRouter.Position position;
 
@@ -106,13 +105,11 @@ contract PositionCompound is LendingHelper {
         exchanges = new Exchanges();
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
-        FlashReceiver flashloanReciever = new FlashReceiver(address(flashloanAggregator));
 
         uint256 fee = 3;
         address treasury = msg.sender;
 
-        router = new PositionRouter(address(flashloanReciever), address(exchanges), fee, treasury);
-        flashloanReciever.setRouter(address(router));
+        router = new PositionRouter(address(flashloanAggregator), address(exchanges), fee, treasury);
     }
 
     function testOpenAndClosePosition() public {

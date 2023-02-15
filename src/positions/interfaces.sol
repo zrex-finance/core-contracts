@@ -9,6 +9,16 @@ interface IExecutor {
     ) external payable;
 }
 
+interface IFlashLoan {
+    function flashLoan(
+        address[] memory tokens_,
+        uint256[] memory amts_,
+        uint256 route,
+        bytes calldata data_,
+        bytes calldata _customData
+    ) external;
+}
+
 interface IFlashloanReciever {
     function flashloan(
         address[] calldata _tokens,

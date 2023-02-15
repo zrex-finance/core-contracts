@@ -2,16 +2,21 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interfaces.sol";
-import { FlashReceiverHelper } from "./helpers.sol";
 
-contract FlashReceiver is FlashReceiverHelper {
+contract FlashReceiver is Ownable {
     using SafeERC20 for IERC20;
+
     IFlashLoan internal immutable flashloanAggregator;
-    address internal positionsRouter;
-    
+
+    modifier onlyAggregator() {
+        require(msg.sender == address(flashloanAggregator), "Access denied");
+        _;
+    }
+
     function flashloan(
         address[] calldata _tokens,
         uint256[] calldata _amts,
@@ -29,37 +34,14 @@ contract FlashReceiver is FlashReceiverHelper {
         uint256[] calldata premiums,
         address /* initiator */,
         bytes calldata params
-    ) external returns (bool) {
-        transferTokens(address(positionsRouter), tokens, amounts, premiums, false);
-
+    ) external onlyAggregator returns (bool) {
         bytes memory encodeParams = encodingParams(params, amounts[0] + premiums[0]);
-
-        (bool success, bytes memory results) = address(positionsRouter).call(encodeParams);
-
+        (bool success, bytes memory results) = address(this).call(encodeParams);
         if (!success) {
             revert(_getRevertMsg(results));
         }
 
-        transferTokens(address(flashloanAggregator), tokens, amounts, premiums, true);
-
         return true;
-    }
-
-    function setRouter(address _positionRouter) public {
-        positionsRouter = _positionRouter;
-    }
-
-    function transferTokens(
-        address recipient,
-        address[] calldata tokens,
-        uint256[] calldata amounts,
-        uint256[] calldata premiums,
-        bool withFee
-    ) private {
-        for (uint256 i = 0; i < tokens.length; i++) {
-                uint256 amt = withFee ? amounts[i] + premiums[i] : amounts[i];
-                IERC20(tokens[i]).safeTransfer(recipient, amt);
-            }
     }
 
     function encodingParams(bytes memory params, uint256 amount) internal pure returns (bytes memory encode) {
@@ -76,5 +58,18 @@ contract FlashReceiver is FlashReceiverHelper {
 
     constructor(address flashloanAggregator_) {
         flashloanAggregator = IFlashLoan(flashloanAggregator_);
+    }
+
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) {
+            return "Transaction reverted silently";
+        }
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 }
