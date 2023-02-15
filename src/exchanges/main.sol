@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { TokenInterface } from "../connectors/common/interfaces.sol";
 import "../lib/UniversalERC20.sol";
 
-import { Helpers } from "./helpers.sol";
+import { ExchangeHelpers } from "./helpers.sol";
 import { SwapData, OneInchData } from "./interface.sol";
 
-contract Exchanges is Helpers {
+contract Exchanges is ExchangeHelpers {
     using UniversalERC20 for IERC20;
 
     event LogExchange(

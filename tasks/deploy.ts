@@ -5,39 +5,29 @@ async function example(): Promise<void> {
 
     // Deployment
     const exchangesFactory = await ethers.getContractFactory("Exchanges");
-    const exchanges = await exchangesFactory.deploy();
-    await exchanges.deployed()
-    console.log(`Exchanges deployed ${exchanges.address}`);
+    console.log("exchangesFactory", exchangesFactory.bytecode)
 
     const aaveResolverFactory = await ethers.getContractFactory("AaveResolver");
-    const aaveResolver = await aaveResolverFactory.deploy();
-    await aaveResolver.deployed()
-    console.log(`AaveResolver deployed ${aaveResolver.address}`);
+    console.log("aaveResolverFactory", aaveResolverFactory.getDeployTransaction().data)
 
     const flashAggregatorFactory = await ethers.getContractFactory("FlashAggregator");
-    const flashAggregator = await flashAggregatorFactory.deploy();
-    await flashAggregator.deployed()
-    console.log(`FlashAggregator deployed ${flashAggregator.address}`);
+    console.log("flashAggregatorFactory", flashAggregatorFactory.getDeployTransaction().data)
 
     const flashResolverFactory = await ethers.getContractFactory("FlashResolver");
-    const flashResolver = await flashResolverFactory.deploy(flashAggregator.address);
-    await flashResolver.deployed()
-    console.log(`FlashResolver deployed ${flashResolver.address}`);
+    console.log("flashResolverFactory", flashResolverFactory.getDeployTransaction('flashAggregatorFactory').data)
 
     const flashReceiverFactory = await ethers.getContractFactory("FlashReceiver");
-    const flashReceiver = await flashReceiverFactory.deploy(flashAggregator.address);
-    await flashReceiver.deployed()
-    console.log(`FlashReceiver deployed ${flashReceiver.address}`);
+    console.log("flashReceiverFactory", flashReceiverFactory.getDeployTransaction('flashAggregatorFactory').data)
 
     const fee = 3;
     const treasury = account.address;
 
     const positionRouterFactory = await ethers.getContractFactory("PositionRouter");
-    const positionRouter = await positionRouterFactory.deploy(flashReceiver.address, exchanges.address, fee, treasury);
-    await positionRouter.deployed()
-    console.log(`PositionRouter deployed ${positionRouter.address}`);
+    console.log("positionRouterFactory", positionRouterFactory.getDeployTransaction(
+      'flashAggregatorFactory', 'exchangesFactory', fee, treasury
+    ).data)
 
-    await (await flashReceiver.connect(account).setRouter(positionRouter.address)).wait()
+    // await (await flashReceiver.connect(account).setRouter(positionRouter.address)).wait()
 }
 
 

@@ -28,11 +28,70 @@ contract HelperContract is UniswapHelper, Test {
     }
 }
 
-contract EmitContractTest is HelperContract {
+contract LendingHelper is HelperContract {
+    AaveResolver aaveResolver;
+
+    uint256 RATE_TYPE = 1;
+
+    constructor() {
+        aaveResolver = new AaveResolver();
+    }
+
+    function getLendingCloseCalldata(
+        address pT,
+        uint256 pA,
+        address wT,
+        uint256 wA
+    ) public view returns(address[] memory, bytes[] memory) {
+        address[] memory _targets = new address[](2);
+        _targets[0] = address(aaveResolver);
+        _targets[1] = address(aaveResolver);
+
+        bytes[] memory _datas = new bytes[](2);
+        _datas[0] = abi.encodeWithSelector(aaveResolver.payback.selector, pT, pA, RATE_TYPE);
+        _datas[1] = abi.encodeWithSelector(aaveResolver.withdraw.selector, wT, wA);
+
+        return(_targets, _datas);
+    }
+
+    function getLendingOpenCalldata(
+        address dT,
+        uint256 dA,
+        address bT,
+        uint256 bA
+    ) public view returns(address[] memory, bytes[] memory) {
+        address[] memory _targets = new address[](2);
+        _targets[0] = address(aaveResolver);
+        _targets[1] = address(aaveResolver);
+
+        bytes[] memory _datas = new bytes[](2);
+        _datas[0] = abi.encodeWithSelector(aaveResolver.deposit.selector, dT, dA);
+        _datas[1] = abi.encodeWithSelector(aaveResolver.borrow.selector, bT, bA, RATE_TYPE);
+
+        return(_targets, _datas);
+    }
+
+    function getCollateralAmt(
+        address _token,
+        address _recipient
+    ) public view returns (uint256 collateralAmount) {
+        collateralAmount = aaveResolver.getCollateralBalance(
+            _token == ethC ? wethC : _token, _recipient
+        );        
+    }
+
+    function getBorrowAmt(
+        address _token,
+        address _recipient
+    ) public view returns (uint256 borrowAmount) {
+        borrowAmount = aaveResolver.getPaybackBalance(_token, RATE_TYPE, _recipient);
+    }
+}
+
+contract PositionAave is LendingHelper {
 
     PositionRouter router;
     FlashResolver flashResolver;
-    AaveResolver aaveResolver;
     Exchanges exchanges;
 
     PositionRouter.Position position;
@@ -43,7 +102,6 @@ contract EmitContractTest is HelperContract {
 
     function setUp() public {
         exchanges = new Exchanges();
-        aaveResolver = new AaveResolver();
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
         FlashReceiver flashloanReciever = new FlashReceiver(address(flashloanAggregator));
@@ -103,11 +161,8 @@ contract EmitContractTest is HelperContract {
         uint256 index = router.positionsIndex(msg.sender);
         bytes32 key = router.getKey(msg.sender, index);
 
-        uint256 collateralAmount = aaveResolver.getCollateralBalance(
-            position.collateral == ethC ? wethC : position.collateral, address(router)
-        );
-
-        uint256 borrowAmount = aaveResolver.getPaybackBalance(position.debt, 1, address(router));
+        uint256 collateralAmount = getCollateralAmt(position.collateral, address(router));
+        uint256 borrowAmount = getBorrowAmt(position.debt, address(router));
 
         (   
             address[] memory __tokens,
@@ -149,7 +204,7 @@ contract EmitContractTest is HelperContract {
         (
             address[] memory _targets,
             bytes[] memory _datas
-        ) = getAaveCloseCalldata(debt, type(uint256).max, collateral, type(uint256).max);
+        ) = getLendingCloseCalldata(debt, type(uint256).max, collateral, type(uint256).max);
 
         bytes memory _uniData = getMulticalSwapData(collateral, debt, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](2);
@@ -166,23 +221,6 @@ contract EmitContractTest is HelperContract {
         );
     }
 
-    function getAaveCloseCalldata(
-        address pT,
-        uint256 pA,
-        address wT,
-        uint256 wA
-    ) public view returns(address[] memory, bytes[] memory) {
-        address[] memory _targets = new address[](2);
-        _targets[0] = address(aaveResolver);
-        _targets[1] = address(aaveResolver);
-
-        bytes[] memory _datas = new bytes[](2);
-        _datas[0] = abi.encodeWithSelector(aaveResolver.payback.selector, pT, pA, 1);
-        _datas[1] = abi.encodeWithSelector(aaveResolver.withdraw.selector, wT, wA);
-
-        return(_targets, _datas);
-    }
-
     function getOpenCallbackData(
         address debt,
         address collateral,
@@ -192,7 +230,7 @@ contract EmitContractTest is HelperContract {
         (
             address[] memory _targets,
             bytes[] memory _datas
-        ) = getAaveOpenCalldata(collateral, type(uint256).max, debt, loanAmount);
+        ) = getLendingOpenCalldata(collateral, type(uint256).max, debt, loanAmount);
 
         bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
@@ -206,22 +244,5 @@ contract EmitContractTest is HelperContract {
             _customDatas,
             msg.sender
         );
-    }
-
-    function getAaveOpenCalldata(
-        address dT,
-        uint256 dA,
-        address bT,
-        uint256 bA
-    ) public view returns(address[] memory, bytes[] memory) {
-        address[] memory _targets = new address[](2);
-        _targets[0] = address(aaveResolver);
-        _targets[1] = address(aaveResolver);
-
-        bytes[] memory _datas = new bytes[](2);
-        _datas[0] = abi.encodeWithSelector(aaveResolver.deposit.selector, dT, dA);
-        _datas[1] = abi.encodeWithSelector(aaveResolver.borrow.selector, bT, bA, 1);
-
-        return(_targets, _datas);
     }
 }

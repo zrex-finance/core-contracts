@@ -5,7 +5,7 @@ import { TokenInterface } from "../../../common/interfaces.sol";
 import { Basic } from "../../../common/base.sol";
 import { CometInterface } from "./interface.sol";
 
-abstract contract Helpers is Basic {
+abstract contract CompoundV3Helpers is Basic {
 	struct BorrowWithdrawParams {
 		address market;
 		address token;

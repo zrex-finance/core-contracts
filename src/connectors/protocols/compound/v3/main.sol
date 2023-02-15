@@ -7,11 +7,11 @@ pragma solidity ^0.8.13;
  */
 
 import { TokenInterface } from "../../../common/interfaces.sol";
-import { Helpers } from "./helpers.sol";
+import { CompoundV3Helpers } from "./helpers.sol";
 import { Events } from "./events.sol";
 import { CometInterface } from "./interface.sol";
 
-contract CompoundV3Resolver is Events, Helpers {
+contract CompoundV3Resolver is Events, CompoundV3Helpers {
 	/**
 	 * @dev Deposit base asset or collateral asset supported by the market.
 	 * @notice Deposit a token to Compound for lending / collaterization.

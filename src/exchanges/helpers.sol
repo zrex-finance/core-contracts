@@ -6,7 +6,7 @@ import { TokenInterface } from "../connectors/common/interfaces.sol";
 
 import { SwapData, OneInchInterace, OneInchData } from "./interface.sol";
 
-abstract contract Helpers is Basic {
+abstract contract ExchangeHelpers is Basic {
 	address internal constant V3_SWAP_ROUTER_ADDRESS = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
 	address internal constant oneInchAddr = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 

@@ -19,6 +19,7 @@ interface IUni {
 abstract contract UniswapHelper {
 
     address ethC = 0x0000000000000000000000000000000000000000;
+    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function getMulticalSwapData(
@@ -40,8 +41,8 @@ abstract contract UniswapHelper {
         uint256 _amount
     ) public view returns (bytes memory data) {
         IUni.ExactInputSingleParams memory params = IUni.ExactInputSingleParams(
-            _fromToken == ethC ? wethC : _fromToken,
-            _toToken == ethC ? wethC : _toToken,
+            _fromToken == ethC || _fromToken == ethC2 ? wethC : _fromToken,
+            _toToken == ethC || _toToken == ethC2 ? wethC : _toToken,
             500, // pool fee
             _recipient,
             _amount,
