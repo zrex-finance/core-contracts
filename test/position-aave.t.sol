@@ -36,40 +36,6 @@ contract LendingHelper is HelperContract {
         aaveResolver = new AaveResolver();
     }
 
-    function getLendingCloseCalldata(
-        address pT,
-        uint256 pA,
-        address wT,
-        uint256 wA
-    ) public view returns(address[] memory, bytes[] memory) {
-        address[] memory _targets = new address[](2);
-        _targets[0] = address(aaveResolver);
-        _targets[1] = address(aaveResolver);
-
-        bytes[] memory _datas = new bytes[](2);
-        _datas[0] = abi.encodeWithSelector(aaveResolver.payback.selector, pT, pA, RATE_TYPE);
-        _datas[1] = abi.encodeWithSelector(aaveResolver.withdraw.selector, wT, wA);
-
-        return(_targets, _datas);
-    }
-
-    function getLendingOpenCalldata(
-        address dT,
-        uint256 dA,
-        address bT,
-        uint256 bA
-    ) public view returns(address[] memory, bytes[] memory) {
-        address[] memory _targets = new address[](2);
-        _targets[0] = address(aaveResolver);
-        _targets[1] = address(aaveResolver);
-
-        bytes[] memory _datas = new bytes[](2);
-        _datas[0] = abi.encodeWithSelector(aaveResolver.deposit.selector, dT, dA);
-        _datas[1] = abi.encodeWithSelector(aaveResolver.borrow.selector, bT, bA, RATE_TYPE);
-
-        return(_targets, _datas);
-    }
-
     function getCollateralAmt(
         address _token,
         address _recipient
@@ -105,9 +71,17 @@ contract PositionAave is LendingHelper {
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
         uint256 fee = 3;
-        address treasury = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        address treasury = msg.sender;
 
-        router = new PositionRouter(address(flashloanAggregator), address(exchanges), fee, treasury);
+        router = new PositionRouter(
+            address(flashloanAggregator),
+            address(exchanges),
+            fee, 
+            treasury,
+            address(0),
+            address(aaveResolver),
+            address(0)
+        );
     }
 
     function testOpenAndClosePosition() public {
@@ -126,7 +100,7 @@ contract PositionAave is LendingHelper {
         ERC20(position.debt).approve(address(router), position.amountIn);
         
         openPosition();
-        closePosition();
+        // closePosition();
     }
 
     function openPosition() public {
@@ -135,8 +109,7 @@ contract PositionAave is LendingHelper {
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
-            uint16 route, 
-            uint256 fee
+            uint16 route
         ) = getFlashloanData(position.debt, loanAmt);
 
         uint256 swapAmount = position.amountIn * position.sizeDelta;
@@ -146,8 +119,7 @@ contract PositionAave is LendingHelper {
         bytes memory _calldata = getOpenCallbackData(
             position.debt,
             position.collateral,
-            swapAmountWithoutFee,
-            loanAmt + fee
+            swapAmountWithoutFee
         );
 
         vm.prank(msg.sender);
@@ -161,16 +133,19 @@ contract PositionAave is LendingHelper {
         uint256 collateralAmount = getCollateralAmt(position.collateral, address(router));
         uint256 borrowAmount = getBorrowAmt(position.debt, address(router));
 
-        (   
+        uint256 borrowBumpAmt = borrowAmount * 1005 / 1000;
+
+        (
             address[] memory __tokens,
             uint256[] memory __amts,
-            uint16 _route,
-        ) = getFlashloanData(position.debt, borrowAmount * 1005 / 1000);
+            uint16 _route
+        ) = getFlashloanData(position.debt, borrowBumpAmt);
 
         bytes memory __calldata = getCloseCallbackData(
             position.debt,
             position.collateral,
             collateralAmount,
+            borrowBumpAmt,
             key
         );
 
@@ -181,65 +156,61 @@ contract PositionAave is LendingHelper {
     function getFlashloanData(
         address lT,
         uint256 lA
-    ) public view returns(address[] memory, uint256[] memory, uint16, uint256) {
+    ) public view returns(address[] memory, uint256[] memory, uint16) {
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);
         _tokens[0] = lT;
         _amts[0] = lA;
 
-        (,,uint16[] memory _bestRoutes, uint256 _bestFee) = flashResolver.getData(_tokens, _amts);
+        (,,uint16[] memory _bestRoutes,) = flashResolver.getData(_tokens, _amts);
 
-        return (_tokens, _amts, _bestRoutes[0], _bestFee);
+        return (_tokens, _amts, _bestRoutes[0]);
     }
 
     function getCloseCallbackData(
         address debt,
         address collateral,
-        uint256 swapAmount,
+        uint256 swapAmt,
+        uint256 borrowAmt,
         bytes32 key
     ) public view returns(bytes memory _calldata) {
-        (
-            address[] memory _targets,
-            bytes[] memory _datas
-        ) = getLendingCloseCalldata(debt, type(uint256).max, collateral, type(uint256).max);
 
-        bytes memory _uniData = getMulticalSwapData(collateral, debt, address(exchanges), swapAmount);
-        bytes[] memory _customDatas = new bytes[](2);
+        bytes[] memory _customDatas = new bytes[](1);
+        _customDatas[0] = abi.encodePacked(key);
 
-        // toToken, fromToken, amount, route, calldata
-        _customDatas[0] = abi.encode(debt, collateral, swapAmount, 1, _uniData);
-        _customDatas[1] = abi.encodePacked(key);
+        bytes[] memory _datas = new bytes[](3);
+        _datas[0] = abi.encode(debt, borrowAmt, 1, abi.encode(1));
+        _datas[1] = abi.encode(collateral, swapAmt, 1);
+
+        bytes memory _uniData = getMulticalSwapData(collateral, debt, address(exchanges), swapAmt);
+        _datas[2] = abi.encode(debt, collateral, swapAmt, 1, _uniData);
+
         _calldata = abi.encode(
             router.closePositionCallback.selector,
-            _targets,
             _datas,
-            _customDatas,
-            msg.sender
+            _customDatas
         );
     }
 
     function getOpenCallbackData(
         address debt,
         address collateral,
-        uint256 swapAmount,
-        uint256 loanAmount
+        uint256 swapAmount
     ) public view returns(bytes memory _calldata) {
-        (
-            address[] memory _targets,
-            bytes[] memory _datas
-        ) = getLendingOpenCalldata(collateral, type(uint256).max, debt, loanAmount);
-
         bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
 
-        // toToken, fromToken, amount, route, calldata
-        _customDatas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);
+        bytes[] memory _datas = new bytes[](3);
+        _datas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);
+        // deposit(dynamic amt,token,route)
+        _datas[1] = abi.encode(collateral, 1, bytes(""));
+        // borrow(dynamic amt,token,route,mode)
+        _datas[2] = abi.encode(debt, 1, abi.encode(1));
+
         _calldata = abi.encode(
             router.openPositionCallback.selector,
-            _targets,
             _datas,
-            _customDatas,
-            msg.sender
+            _customDatas
         );
     }
 }

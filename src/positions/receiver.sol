@@ -29,7 +29,7 @@ contract FlashReceiver is Ownable {
 
     // Function which
     function executeOperation(
-        address[] calldata tokens,
+        address[] calldata /* tokens */,
         uint256[] calldata amounts,
         uint256[] calldata premiums,
         address /* initiator */,
@@ -47,13 +47,11 @@ contract FlashReceiver is Ownable {
     function encodingParams(bytes memory params, uint256 amount) internal pure returns (bytes memory encode) {
         (
             bytes4 selector,
-            address[] memory _targets,
             bytes[] memory _datas,
-            bytes[] memory _customDatas,
-            address _origin
-        ) = abi.decode(params, (bytes4, address[], bytes[], bytes[], address));
+            bytes[] memory _customDatas
+        ) = abi.decode(params, (bytes4, bytes[], bytes[]));
 
-        encode = abi.encodeWithSelector(selector, _targets, _datas, _customDatas, _origin, amount);
+        encode = abi.encodeWithSelector(selector, _datas, _customDatas, amount);
     }
 
     constructor(address flashloanAggregator_) {
