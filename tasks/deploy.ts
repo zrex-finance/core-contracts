@@ -24,20 +24,13 @@ async function example(): Promise<void> {
     await flashResolver.deployed()
     console.log(`FlashResolver deployed ${flashResolver.address}`);
 
-    const flashReceiverFactory = await ethers.getContractFactory("FlashReceiver");
-    const flashReceiver = await flashReceiverFactory.deploy(flashAggregator.address);
-    await flashReceiver.deployed()
-    console.log(`FlashReceiver deployed ${flashReceiver.address}`);
-
     const fee = 3;
     const treasury = account.address;
 
     const positionRouterFactory = await ethers.getContractFactory("PositionRouter");
-    const positionRouter = await positionRouterFactory.deploy(flashReceiver.address, exchanges.address, fee, treasury);
+    const positionRouter = await positionRouterFactory.deploy(flashAggregator.address, exchanges.address, fee, treasury);
     await positionRouter.deployed()
     console.log(`PositionRouter deployed ${positionRouter.address}`);
-
-    await (await flashReceiver.connect(account).setRouter(positionRouter.address)).wait()
 }
 
 
