@@ -136,12 +136,12 @@ contract PositionCompound is LendingHelper {
         uint256 borrowAmount = getBorrowAmt(position.debt, address(router));
 
         (   
-            address[] memory __tokens,
-            uint256[] memory __amts,
+            address[] memory _tokens,
+            uint256[] memory _amts,
             uint16 _route
         ) = getFlashloanData(position.debt, borrowAmount);
 
-        bytes memory __calldata = getCloseCallbackData(
+        bytes memory _calldata = getCloseCallbackData(
             position.debt,
             position.collateral,
             collateralAmount,
@@ -150,7 +150,7 @@ contract PositionCompound is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.closePosition(key, __tokens, __amts, _route, __calldata, bytes(""));
+        router.closePosition(key, _tokens, _amts, _route, _calldata, bytes(""));
     }
 
     function getFlashloanData(

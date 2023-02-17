@@ -100,7 +100,7 @@ contract PositionAave is LendingHelper {
         ERC20(position.debt).approve(address(router), position.amountIn);
         
         openPosition();
-        // closePosition();
+        closePosition();
     }
 
     function openPosition() public {
@@ -133,24 +133,22 @@ contract PositionAave is LendingHelper {
         uint256 collateralAmount = getCollateralAmt(position.collateral, address(router));
         uint256 borrowAmount = getBorrowAmt(position.debt, address(router));
 
-        uint256 borrowBumpAmt = borrowAmount * 1005 / 1000;
-
-        (
-            address[] memory __tokens,
-            uint256[] memory __amts,
+        (   
+            address[] memory _tokens,
+            uint256[] memory _amts,
             uint16 _route
-        ) = getFlashloanData(position.debt, borrowBumpAmt);
+        ) = getFlashloanData(position.debt, borrowAmount);
 
-        bytes memory __calldata = getCloseCallbackData(
+        bytes memory _calldata = getCloseCallbackData(
             position.debt,
             position.collateral,
             collateralAmount,
-            borrowBumpAmt,
+            borrowAmount,
             key
         );
 
         vm.prank(msg.sender);
-        router.closePosition(key, __tokens, __amts, _route, __calldata, bytes(""));
+        router.closePosition(key, _tokens, _amts, _route, _calldata, bytes(""));
     }
 
     function getFlashloanData(
@@ -179,8 +177,8 @@ contract PositionAave is LendingHelper {
         _customDatas[0] = abi.encodePacked(key);
 
         bytes[] memory _datas = new bytes[](3);
-        _datas[0] = abi.encode(debt, borrowAmt, 1, abi.encode(1));
-        _datas[1] = abi.encode(collateral, swapAmt, 1);
+        _datas[0] = abi.encode(borrowAmt, debt, 1, abi.encode(1));
+        _datas[1] = abi.encode(swapAmt, collateral, 1, bytes(""));
 
         bytes memory _uniData = getMulticalSwapData(collateral, debt, address(exchanges), swapAmt);
         _datas[2] = abi.encode(debt, collateral, swapAmt, 1, _uniData);
