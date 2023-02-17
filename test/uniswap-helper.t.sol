@@ -16,11 +16,23 @@ interface IUni {
     function exactInputSingle(ExactInputSingleParams memory params) external payable returns (uint256 amountOut);
 }
 
+interface IQouter {
+    function quoteExactInputSingle(
+        address tokenIn,
+        address tokenOut,
+        uint24 fee,
+        uint256 amountIn,
+        uint160 sqrtPriceLimitX96
+    ) external returns (uint256 amountOut);
+}
+
 abstract contract UniswapHelper {
 
     address ethC = 0x0000000000000000000000000000000000000000;
     address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    IQouter quoter = IQouter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
     function getMulticalSwapData(
         address _fromToken,
@@ -51,5 +63,13 @@ abstract contract UniswapHelper {
         );
 
         data = abi.encodeWithSelector(IUni.exactInputSingle.selector, params); 
+    }
+
+     function quoteExactInputSingle(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) public returns (uint256 amountOut) {
+        amountOut = quoter.quoteExactInputSingle(tokenIn, tokenOut, 500, amountIn, 0);
     }
 }

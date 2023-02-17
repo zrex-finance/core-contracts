@@ -17,6 +17,8 @@ import { UniswapHelper } from "./uniswap-helper.t.sol";
 
 contract HelperContract is UniswapHelper, Test {
 
+    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+
     address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
@@ -59,8 +61,6 @@ contract PositionAave is LendingHelper {
     PositionRouter router;
     FlashResolver flashResolver;
 
-    PositionRouter.Position position;
-
     constructor() {
         setUp();
     }
@@ -84,8 +84,8 @@ contract PositionAave is LendingHelper {
         );
     }
 
-    function testOpenAndClosePosition() public {
-        position = PositionRouter.Position(
+    function testLongPosition() public {
+        PositionRouter.Position memory _position = PositionRouter.Position(
             msg.sender,
             address(daiC),
             ethC,
@@ -93,55 +93,104 @@ contract PositionAave is LendingHelper {
             2
         );
 
-        topUpTokenBalance(daiC, daiWhale, position.amountIn);
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn);
         
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(position.debt).approve(address(router), position.amountIn);
+        ERC20(_position.debt).approve(address(router), _position.amountIn);
         
-        openPosition();
-        closePosition();
+        openPosition(_position);
+        closePosition(_position);
     }
 
-    function openPosition() public {
-        uint256 loanAmt = position.amountIn * (position.sizeDelta - 1);
+    function testShortPosition() public {
+        uint256 shortAmt = 2000 ether;
+
+        bytes memory _uniData = getMulticalSwapData(daiC, wethC, address(exchanges), shortAmt);
+        bytes memory datas =  abi.encode(wethC, daiC, shortAmt, 1, _uniData);
+
+        topUpTokenBalance(daiC, daiWhale, shortAmt);
+
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(daiC).approve(address(router), shortAmt);
+
+        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
+
+        PositionRouter.Position memory _position = PositionRouter.Position(
+            msg.sender,
+            wethC,
+            usdcC,
+            exchangeAmt,
+            2
+        );
+
+        openShort(_position, datas);
+        closePosition(_position);
+    }
+
+    function openShort(PositionRouter.Position memory _position, bytes memory _data) public {
+        uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
             uint16 route
-        ) = getFlashloanData(position.debt, loanAmt);
+        ) = getFlashloanData(_position.debt, loanAmt);
 
-        uint256 swapAmount = position.amountIn * position.sizeDelta;
+        uint256 swapAmount = _position.amountIn * _position.sizeDelta;
         // protocol fee 3% denominator 10000
         uint256 swapAmountWithoutFee = swapAmount - (swapAmount * 3 / 10000);
 
         bytes memory _calldata = getOpenCallbackData(
-            position.debt,
-            position.collateral,
+            _position.debt,
+            _position.collateral,
             swapAmountWithoutFee
         );
 
         vm.prank(msg.sender);
-        router.openPosition(position, false, _tokens, _amts, route, _calldata, bytes(""));
+        router.openPosition(_position, true, _tokens, _amts, route, _calldata, _data);
     }
 
-      function closePosition() public {
+    function openPosition(PositionRouter.Position memory _position) public {
+        uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
+
+        (   
+            address[] memory _tokens,
+            uint256[] memory _amts,
+            uint16 route
+        ) = getFlashloanData(_position.debt, loanAmt);
+
+        uint256 swapAmount = _position.amountIn * _position.sizeDelta;
+        // protocol fee 3% denominator 10000
+        uint256 swapAmountWithoutFee = swapAmount - (swapAmount * 3 / 10000);
+
+        bytes memory _calldata = getOpenCallbackData(
+            _position.debt,
+            _position.collateral,
+            swapAmountWithoutFee
+        );
+
+        vm.prank(msg.sender);
+        router.openPosition(_position, false, _tokens, _amts, route, _calldata, bytes(""));
+    }
+
+      function closePosition(PositionRouter.Position memory _position) public {
         uint256 index = router.positionsIndex(msg.sender);
         bytes32 key = router.getKey(msg.sender, index);
 
-        uint256 collateralAmount = getCollateralAmt(position.collateral, address(router));
-        uint256 borrowAmount = getBorrowAmt(position.debt, address(router));
+        uint256 collateralAmount = getCollateralAmt(_position.collateral, address(router));
+        uint256 borrowAmount = getBorrowAmt(_position.debt, address(router));
 
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
             uint16 _route
-        ) = getFlashloanData(position.debt, borrowAmount);
+        ) = getFlashloanData(_position.debt, borrowAmount);
 
         bytes memory _calldata = getCloseCallbackData(
-            position.debt,
-            position.collateral,
+            _position.debt,
+            _position.collateral,
             collateralAmount,
             borrowAmount,
             key
