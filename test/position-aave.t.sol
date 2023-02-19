@@ -100,7 +100,50 @@ contract PositionAave is LendingHelper {
         ERC20(_position.debt).approve(address(router), _position.amountIn);
         
         openPosition(_position);
-        closePosition(_position);
+
+        uint256 collateralAmount = getCollateralAmt(_position.collateral, address(router));
+        uint256 borrowAmount = getBorrowAmt(_position.debt, address(router));
+
+        closePosition(_position, 1, collateralAmount, borrowAmount);
+    }
+
+    function testOpenTwoPosition() public {
+        PositionRouter.Position memory _position = PositionRouter.Position(
+            msg.sender,
+            address(daiC),
+            ethC,
+            1000 ether,
+            2
+        );
+
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn);
+
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(address(router), _position.amountIn);
+
+        openPosition(_position);
+
+        uint256 cA1 = getCollateralAmt(_position.collateral, address(router));
+        uint256 bA1 = getBorrowAmt(_position.debt, address(router));
+
+
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn);
+
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(address(router), _position.amountIn);
+
+        openPosition(_position);
+
+        uint256 cA2 = getCollateralAmt(_position.collateral, address(router));
+        uint256 bA2 = getBorrowAmt(_position.debt, address(router));
+
+        vm.prank(msg.sender);
+        closePosition(_position, 1, cA1, bA1);
+
+        vm.prank(msg.sender);
+        closePosition(_position, 2, cA2 - cA1, bA2 - bA1);
     }
 
     function testShortPosition() public {
@@ -126,7 +169,11 @@ contract PositionAave is LendingHelper {
         );
 
         openShort(_position, datas);
-        closePosition(_position);
+
+        uint256 collateralAmount = getCollateralAmt(_position.collateral, address(router));
+        uint256 borrowAmount = getBorrowAmt(_position.debt, address(router));
+
+        closePosition(_position, 1, collateralAmount, borrowAmount);
     }
 
     function openShort(PositionRouter.Position memory _position, bytes memory _data) public {
@@ -175,24 +222,24 @@ contract PositionAave is LendingHelper {
         router.openPosition(_position, false, _tokens, _amts, route, _calldata, bytes(""));
     }
 
-      function closePosition(PositionRouter.Position memory _position) public {
-        uint256 index = router.positionsIndex(msg.sender);
-        bytes32 key = router.getKey(msg.sender, index);
-
-        uint256 collateralAmount = getCollateralAmt(_position.collateral, address(router));
-        uint256 borrowAmount = getBorrowAmt(_position.debt, address(router));
-
+      function closePosition(
+        PositionRouter.Position memory _position,
+        uint256 _index,
+        uint256 _collateralAmount,
+        uint256 _borrowAmount
+    ) public {
+        bytes32 key = router.getKey(msg.sender, _index);
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
             uint16 _route
-        ) = getFlashloanData(_position.debt, borrowAmount);
+        ) = getFlashloanData(_position.debt, _borrowAmount);
 
         bytes memory _calldata = getCloseCallbackData(
             _position.debt,
             _position.collateral,
-            collateralAmount,
-            borrowAmount,
+            _collateralAmount,
+            _borrowAmount,
             key
         );
 

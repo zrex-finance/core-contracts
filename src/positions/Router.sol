@@ -9,7 +9,9 @@ import { FlashReceiver } from "./receiver.sol";
 
 import { IExchanges } from "./interfaces.sol";
 
-contract PositionRouter is FlashReceiver, Connector {
+import "forge-std/Test.sol";
+
+contract PositionRouter is FlashReceiver, Connector, Test {
     using UniversalERC20 for IERC20;
     
     struct Position {
