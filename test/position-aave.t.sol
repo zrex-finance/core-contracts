@@ -127,7 +127,6 @@ contract PositionAave is LendingHelper {
         uint256 cA1 = getCollateralAmt(_position.collateral, address(router));
         uint256 bA1 = getBorrowAmt(_position.debt, address(router));
 
-
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
 
         // approve tokens
