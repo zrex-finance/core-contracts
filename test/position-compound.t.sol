@@ -92,7 +92,9 @@ contract PositionCompound is LendingHelper {
             address(usdcC),
             ethC2,
             1000000000,
-            2
+            2,
+            0,
+            0
         );
 
         topUpTokenBalance(usdcC, usdcWhale, position.amountIn);
@@ -132,8 +134,7 @@ contract PositionCompound is LendingHelper {
         uint256 index = router.positionsIndex(msg.sender);
         bytes32 key = router.getKey(msg.sender, index);
 
-        uint256 collateralAmount = getCollateralAmt(position.collateral, address(router));
-        uint256 borrowAmount = getBorrowAmt(position.debt, address(router));
+        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
 
         (   
             address[] memory _tokens,
@@ -199,6 +200,11 @@ contract PositionCompound is LendingHelper {
     ) public view returns(bytes memory _calldata) {
         bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
+
+        uint256 index = router.positionsIndex(msg.sender);
+        bytes32 key = router.getKey(msg.sender, index + 1);
+
+        _customDatas[0] = abi.encode(key);
 
         bytes[] memory _datas = new bytes[](3);
         _datas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);

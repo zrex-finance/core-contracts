@@ -18,6 +18,8 @@ contract PositionRouter is FlashReceiver, Connector {
         address collateral;
         uint256 amountIn;
         uint256 sizeDelta;
+        uint256 collateralAmount;
+        uint256 borrowAmount;
     }
 
     uint256 public fee;
@@ -108,20 +110,19 @@ contract PositionRouter is FlashReceiver, Connector {
             IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
         }
 
+        address account = position.account;
+        uint256 index = positionsIndex[account] += 1;
+        positionsIndex[account] = index;
+
+        bytes32 key = getKey(account, index);
+        positions[key] = position;
+
         flashloan(_tokens, _amts, route, _data, _customData);
 
         require(
             chargeFee(position.amountIn + _amts[0], position.debt), 
             "transfer fee"
         );
-
-        address account = position.account;
-        uint256 index = positionsIndex[account] += 1;
-        positionsIndex[account] = index;
-
-        bytes32 key = getKey(account, index);
-
-        positions[key] = position;
     }
 
     function closePosition(
@@ -147,13 +148,18 @@ contract PositionRouter is FlashReceiver, Connector {
 
     function openPositionCallback(
         bytes[] memory _datas,
-        bytes[] calldata /* _customDatas */,
+        bytes[] calldata _customDatas,
         uint256 repayAmount
     ) external payable onlyCallback {
         (uint256  value, address debt,/* address collateral */) = exchange(_datas[0], false);
 
         deposit(value, _datas[1]);
         borrow(repayAmount, _datas[2]);
+
+        bytes32 key = bytes32(_customDatas[0]);
+
+        positions[key].collateralAmount = value;
+        positions[key].borrowAmount = repayAmount;
         
         IERC20(debt).transfer(address(flashloanAggregator), repayAmount);
     }

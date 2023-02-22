@@ -90,7 +90,9 @@ contract PositionAave is LendingHelper {
             address(daiC),
             ethC,
             1000 ether,
-            2
+            2,
+            0,
+            0
         );
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
@@ -101,8 +103,9 @@ contract PositionAave is LendingHelper {
         
         openPosition(_position);
 
-        uint256 collateralAmount = getCollateralAmt(_position.collateral, address(router));
-        uint256 borrowAmount = getBorrowAmt(_position.debt, address(router));
+        uint256 index = router.positionsIndex(msg.sender);
+        bytes32 key = router.getKey(msg.sender, index);
+        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
 
         closePosition(_position, 1, collateralAmount, borrowAmount);
     }
@@ -113,7 +116,9 @@ contract PositionAave is LendingHelper {
             address(daiC),
             ethC,
             1000 ether,
-            2
+            2,
+            0,
+            0
         );
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
@@ -124,8 +129,9 @@ contract PositionAave is LendingHelper {
 
         openPosition(_position);
 
-        uint256 cA1 = getCollateralAmt(_position.collateral, address(router));
-        uint256 bA1 = getBorrowAmt(_position.debt, address(router));
+        uint256 index1 = router.positionsIndex(msg.sender);
+        bytes32 key1 = router.getKey(msg.sender, index1);
+        (,,,,,uint256 cA1, uint256 bA1) = router.positions(key1);
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
 
@@ -135,14 +141,15 @@ contract PositionAave is LendingHelper {
 
         openPosition(_position);
 
-        uint256 cA2 = getCollateralAmt(_position.collateral, address(router));
-        uint256 bA2 = getBorrowAmt(_position.debt, address(router));
+        uint256 index2 = router.positionsIndex(msg.sender);
+        bytes32 key2 = router.getKey(msg.sender, index2);
+        (,,,,,uint256 cA2, uint256 bA2) = router.positions(key2);
 
         vm.prank(msg.sender);
-        closePosition(_position, 1, cA1, bA1);
+        closePosition(_position, index1, cA1, bA1);
 
         vm.prank(msg.sender);
-        closePosition(_position, 2, cA2 - cA1, bA2 - bA1);
+        closePosition(_position, index2, cA2, bA2);
     }
 
     function testShortPosition() public {
@@ -164,15 +171,18 @@ contract PositionAave is LendingHelper {
             wethC,
             usdcC,
             exchangeAmt,
-            2
+            2,
+            0,
+            0
         );
 
         openShort(_position, datas);
 
-        uint256 collateralAmount = getCollateralAmt(_position.collateral, address(router));
-        uint256 borrowAmount = getBorrowAmt(_position.debt, address(router));
+        uint256 index = router.positionsIndex(msg.sender);
+        bytes32 key = router.getKey(msg.sender, index);
+        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
 
-        closePosition(_position, 1, collateralAmount, borrowAmount);
+        closePosition(_position, index, collateralAmount, borrowAmount);
     }
 
     function openShort(PositionRouter.Position memory _position, bytes memory _data) public {
@@ -292,6 +302,11 @@ contract PositionAave is LendingHelper {
     ) public view returns(bytes memory _calldata) {
         bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
+
+        uint256 index = router.positionsIndex(msg.sender);
+        bytes32 key = router.getKey(msg.sender, index + 1);
+
+        _customDatas[0] = abi.encode(key);
 
         bytes[] memory _datas = new bytes[](3);
         _datas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);
