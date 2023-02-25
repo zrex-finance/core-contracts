@@ -4,7 +4,8 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import "../src/positions/Router.sol";
+import "../src/positions/router.sol";
+import "../src/positions/accounts.sol";
 import "../src/positions/interfaces.sol";
 
 import "../src/connectors/protocols/aave/v2/main.sol";
@@ -57,6 +58,7 @@ contract LendingHelper is HelperContract {
 
 contract PositionAave is LendingHelper {
 
+    Accounts accounts;
     Exchanges exchanges;
     PositionRouter router;
     FlashResolver flashResolver;
@@ -73,7 +75,20 @@ contract PositionAave is LendingHelper {
         uint256 fee = 3;
         address treasury = msg.sender;
 
-        router = new PositionRouter(
+        router = new PositionRouter();
+
+        router.initialize(
+            address(flashloanAggregator),
+            address(exchanges),
+            fee, 
+            treasury,
+            address(0),
+            address(aaveResolver),
+            address(0)
+        );
+
+        accounts = new Accounts(
+            address(router),
             address(flashloanAggregator),
             address(exchanges),
             fee, 
@@ -85,7 +100,7 @@ contract PositionAave is LendingHelper {
     }
 
     function testLongPosition() public {
-        PositionRouter.Position memory _position = PositionRouter.Position(
+        SharedStructs.Position memory _position = SharedStructs.Position(
             msg.sender,
             address(daiC),
             ethC,
@@ -99,19 +114,28 @@ contract PositionAave is LendingHelper {
         
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(router), _position.amountIn);
+        ERC20(_position.debt).approve(address(accounts), _position.amountIn);
         
         openPosition(_position);
 
-        uint256 index = router.positionsIndex(msg.sender);
-        bytes32 key = router.getKey(msg.sender, index);
-        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
+        IPositionRouter _router = accounts.routers(msg.sender);
+        console.log("_router", address(_router));
+    
+        uint256 index = _router.positionsIndex(address(accounts));
+        console.log("index", index);
+
+        bytes32 key = _router.getKey(address(accounts), index);
+        console.log("key");
+
+        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = _router.positions(key);
+        console.log("collateralAmount", collateralAmount);
+        console.log("borrowAmount", collateralAmount);
 
         closePosition(_position, 1, collateralAmount, borrowAmount);
     }
 
-    function testOpenTwoPosition() public {
-        PositionRouter.Position memory _position = PositionRouter.Position(
+    function OpenTwoPosition() public {
+        SharedStructs.Position memory _position = SharedStructs.Position(
             msg.sender,
             address(daiC),
             ethC,
@@ -125,25 +149,27 @@ contract PositionAave is LendingHelper {
 
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(router), _position.amountIn);
+        ERC20(_position.debt).approve(address(accounts), _position.amountIn);
 
         openPosition(_position);
 
-        uint256 index1 = router.positionsIndex(msg.sender);
-        bytes32 key1 = router.getKey(msg.sender, index1);
+        IPositionRouter _router = accounts.routers(msg.sender);
+
+        uint256 index1 = _router.positionsIndex(msg.sender);
+        bytes32 key1 = _router.getKey(msg.sender, index1);
         (,,,,,uint256 cA1, uint256 bA1) = router.positions(key1);
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
 
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(router), _position.amountIn);
+        ERC20(_position.debt).approve(address(accounts), _position.amountIn);
 
         openPosition(_position);
 
-        uint256 index2 = router.positionsIndex(msg.sender);
-        bytes32 key2 = router.getKey(msg.sender, index2);
-        (,,,,,uint256 cA2, uint256 bA2) = router.positions(key2);
+        uint256 index2 = _router.positionsIndex(msg.sender);
+        bytes32 key2 = _router.getKey(msg.sender, index2);
+        (,,,,,uint256 cA2, uint256 bA2) = _router.positions(key2);
 
         vm.prank(msg.sender);
         closePosition(_position, index1, cA1, bA1);
@@ -152,7 +178,7 @@ contract PositionAave is LendingHelper {
         closePosition(_position, index2, cA2, bA2);
     }
 
-    function testShortPosition() public {
+    function ShortPosition() public {
         uint256 shortAmt = 2000 ether;
 
         bytes memory _uniData = getMulticalSwapData(daiC, wethC, address(exchanges), shortAmt);
@@ -162,11 +188,11 @@ contract PositionAave is LendingHelper {
 
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(daiC).approve(address(router), shortAmt);
+        ERC20(daiC).approve(address(accounts), shortAmt);
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
 
-        PositionRouter.Position memory _position = PositionRouter.Position(
+        SharedStructs.Position memory _position = SharedStructs.Position(
             msg.sender,
             wethC,
             usdcC,
@@ -178,14 +204,16 @@ contract PositionAave is LendingHelper {
 
         openShort(_position, datas);
 
-        uint256 index = router.positionsIndex(msg.sender);
-        bytes32 key = router.getKey(msg.sender, index);
-        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
+        IPositionRouter _router = accounts.routers(msg.sender);
+        uint256 index = _router.positionsIndex(msg.sender);
+        bytes32 key = _router.getKey(msg.sender, index);
+
+        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = _router.positions(key);
 
         closePosition(_position, index, collateralAmount, borrowAmount);
     }
 
-    function openShort(PositionRouter.Position memory _position, bytes memory _data) public {
+    function openShort(SharedStructs.Position memory _position, bytes memory _data) public {
         uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 
         (   
@@ -208,7 +236,7 @@ contract PositionAave is LendingHelper {
         router.openPosition(_position, true, _tokens, _amts, route, _calldata, _data);
     }
 
-    function openPosition(PositionRouter.Position memory _position) public {
+    function openPosition(SharedStructs.Position memory _position) public {
         uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 
         (   
@@ -228,16 +256,17 @@ contract PositionAave is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.openPosition(_position, false, _tokens, _amts, route, _calldata, bytes(""));
+        accounts.openPosition(_position, false, _tokens, _amts, route, _calldata, bytes(""));
     }
 
       function closePosition(
-        PositionRouter.Position memory _position,
+        SharedStructs.Position memory _position,
         uint256 _index,
         uint256 _collateralAmount,
         uint256 _borrowAmount
     ) public {
-        bytes32 key = router.getKey(msg.sender, _index);
+        IPositionRouter _router = accounts.routers(msg.sender);
+        bytes32 key = _router.getKey(address(accounts), _index);
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
@@ -253,7 +282,7 @@ contract PositionAave is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.closePosition(key, _tokens, _amts, _route, _calldata, bytes(""));
+        accounts.closePosition(key, _tokens, _amts, _route, _calldata, bytes(""));
     }
 
     function getFlashloanData(
@@ -303,8 +332,15 @@ contract PositionAave is LendingHelper {
         bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
 
-        uint256 index = router.positionsIndex(msg.sender);
-        bytes32 key = router.getKey(msg.sender, index + 1);
+        IPositionRouter _router = accounts.routers(msg.sender);
+
+        uint256 index = 0;
+
+        if (address(_router) != address(0)) {
+            index = _router.positionsIndex(address(accounts));
+        }
+
+        bytes32 key = keccak256(abi.encodePacked(address(accounts), index + 1));
 
         _customDatas[0] = abi.encode(key);
 

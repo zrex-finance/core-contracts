@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import { Euler } from "../connectors/protocols/euler/main.sol";
 import { AaveResolver } from "../connectors/protocols/aave/v2/main.sol";
 import { CompoundV3Resolver } from "../connectors/protocols/compound/v3/main.sol";
 
 import { Executor } from "./executor.sol";
 
-contract Connector is Executor {
+contract Connector is Executor, Initializable {
 
     Euler euler;
     AaveResolver aaveV2Resolver;
     CompoundV3Resolver compoundV3Resolver;
 
-    constructor(
+    function __Connector_init(
         address _euler,
         address _aaveV2Resolver,
         address _compoundV3Resolver
-    ) {
+    ) internal onlyInitializing {
         euler = Euler(_euler);
         aaveV2Resolver = AaveResolver(_aaveV2Resolver);
         compoundV3Resolver = CompoundV3Resolver(_compoundV3Resolver);

@@ -61,7 +61,7 @@ contract PositionCompound is LendingHelper {
     PositionRouter router;
     FlashResolver flashResolver;
 
-    PositionRouter.Position position;
+    SharedStructs.Position position;
 
     constructor() {
         setUp();
@@ -72,22 +72,11 @@ contract PositionCompound is LendingHelper {
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
-        uint256 fee = 3;
-        address treasury = msg.sender;
-
-        router = new PositionRouter(
-            address(flashloanAggregator),
-            address(exchanges),
-            fee, 
-            treasury,
-            address(0),
-            address(0),
-            address(compResolver)
-        );
+        router = new PositionRouter();
     }
 
     function testOpenAndClosePosition() public {
-        position = PositionRouter.Position(
+        position = SharedStructs.Position(
             msg.sender,
             address(usdcC),
             ethC2,

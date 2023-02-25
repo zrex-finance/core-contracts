@@ -3,14 +3,15 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interfaces.sol";
 
-contract FlashReceiver is Ownable {
+contract FlashReceiver is Ownable, Initializable {
     using SafeERC20 for IERC20;
 
-    IFlashLoan internal immutable flashloanAggregator;
+    IFlashLoan internal flashloanAggregator;
 
     modifier onlyAggregator() {
         require(msg.sender == address(flashloanAggregator), "Access denied");
@@ -54,7 +55,7 @@ contract FlashReceiver is Ownable {
         encode = abi.encodeWithSelector(selector, _datas, _customDatas, amount);
     }
 
-    constructor(address flashloanAggregator_) {
+    function __FlashReceiver_init(address flashloanAggregator_) internal onlyInitializing {
         flashloanAggregator = IFlashLoan(flashloanAggregator_);
     }
 

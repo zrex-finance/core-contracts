@@ -7,31 +7,25 @@ import "../lib/UniversalERC20.sol";
 import { Connector } from "./connector.sol";
 import { FlashReceiver } from "./receiver.sol";
 
-import { IExchanges } from "./interfaces.sol";
+import "forge-std/Test.sol";
 
-contract PositionRouter is FlashReceiver, Connector {
+import { IExchanges, SharedStructs } from "./interfaces.sol";
+
+contract PositionRouter is Connector, FlashReceiver, Test {
     using UniversalERC20 for IERC20;
-    
-    struct Position {
-        address account;
-        address debt;
-        address collateral;
-        uint256 amountIn;
-        uint256 sizeDelta;
-        uint256 collateralAmount;
-        uint256 borrowAmount;
-    }
 
-    uint256 public fee;
     uint256 public constant MAX_FEE = 500; // 5%
-
     uint256 private constant DENOMINATOR = 10000;
 
-    address private immutable treasury;
-    IExchanges private immutable exchanges;
+    uint256 public fee;
 
-    mapping (bytes32 => Position) public positions;
+    address private treasury;
+    IExchanges private exchanges;
+
+    mapping (bytes32 => SharedStructs.Position) public positions;
     mapping (address => uint256) public positionsIndex;
+
+    mapping (address => PositionRouter) public users;
 
     modifier onlyCallback() {
         require(msg.sender == address(this), "Access denied");
@@ -42,7 +36,7 @@ contract PositionRouter is FlashReceiver, Connector {
 
     fallback() external payable {}
 
-    constructor(
+    function initialize(
         address _flashloanAggregator,
         address _exchanges,
         uint256 _fee,
@@ -50,50 +44,19 @@ contract PositionRouter is FlashReceiver, Connector {
         address _euler,
         address _aaveV2Resolver,
         address _compoundV3Resolver
-    ) 
-        FlashReceiver(_flashloanAggregator)
-        Connector(_euler, _aaveV2Resolver, _compoundV3Resolver) 
-    {
-        require(_fee <= MAX_FEE, "Invalid fee");
+    ) public initializer {
+        require(_fee <= MAX_FEE, "Invalid fee"); // max fee 5%
+
+        __FlashReceiver_init(_flashloanAggregator);
+        __Connector_init(_euler, _aaveV2Resolver, _compoundV3Resolver);
 
         exchanges = IExchanges(_exchanges);
         fee = _fee;
         treasury = _treasury;
     }
 
-    function increasePosition(
-        Position memory position,
-        bytes32 key,
-        address[] calldata _tokens,
-        uint256[] calldata _amts,
-        uint256 route,
-        bytes calldata _data,
-        bytes calldata _customData
-    ) external payable {
-        require(position.account == msg.sender, "Only owner");
-        IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
-
-        Position memory _position = positions[key];
-
-        require(_position.account == position.account, "Only own position");
-        require(_position.debt == position.debt, "Only same debt");
-        require(_position.collateral == position.collateral, "Only same collateral");
-
-        flashloan(_tokens, _amts, route, _data, _customData);
-
-        require(
-            chargeFee(position.amountIn + _amts[0], position.debt), 
-            "transfer fee"
-        );
-
-        _position.amountIn += position.amountIn;
-        _position.sizeDelta = (position.sizeDelta + _position.sizeDelta) / 2;
-
-        positions[key] = _position;
-    }
-
     function openPosition(
-        Position memory position,
+        SharedStructs.Position memory position,
         bool isShort,
         address[] calldata _tokens,
         uint256[] calldata _amts,
@@ -112,6 +75,7 @@ contract PositionRouter is FlashReceiver, Connector {
 
         address account = position.account;
         uint256 index = positionsIndex[account] += 1;
+        console.log("index", index);
         positionsIndex[account] = index;
 
         bytes32 key = getKey(account, index);
@@ -133,7 +97,12 @@ contract PositionRouter is FlashReceiver, Connector {
         bytes calldata _data,
         bytes calldata _customData
     ) external payable {
-        Position memory position = positions[key];
+        SharedStructs.Position memory position = positions[key];
+
+        console.log("closePosition account", position.account);
+        console.log("closePosition amountIn", position.amountIn);
+        console.log("closePosition debt", position.debt);
+        console.log("closePosition msg.sender", msg.sender);
 
         require(msg.sender == position.account, "Can close own position");
 
@@ -151,7 +120,7 @@ contract PositionRouter is FlashReceiver, Connector {
         bytes[] calldata _customDatas,
         uint256 repayAmount
     ) external payable onlyCallback {
-        (uint256  value, address debt,/* address collateral */) = exchange(_datas[0], false);
+        (uint256 value, address debt,/* address collateral */) = exchange(_datas[0], false);
 
         deposit(value, _datas[1]);
         borrow(repayAmount, _datas[2]);
@@ -175,7 +144,7 @@ contract PositionRouter is FlashReceiver, Connector {
 
         (uint256 returnedAmt, /* address collateral */,/* address debt */) = exchange(_datas[2], false);
 
-        Position memory position = positions[bytes32(_customDatas[0])];
+        SharedStructs.Position memory position = positions[bytes32(_customDatas[0])];
 
         IERC20(position.debt).universalTransfer(address(flashloanAggregator), repayAmount);
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
