@@ -121,10 +121,10 @@ contract PositionAave is LendingHelper {
         IPositionRouter _router = accounts.routers(msg.sender);
         console.log("_router", address(_router));
     
-        uint256 index = _router.positionsIndex(address(accounts));
+        uint256 index = _router.positionsIndex(msg.sender);
         console.log("index", index);
 
-        bytes32 key = _router.getKey(address(accounts), index);
+        bytes32 key = _router.getKey(msg.sender, index);
         console.log("key");
 
         (,,,,,uint256 collateralAmount, uint256 borrowAmount) = _router.positions(key);
