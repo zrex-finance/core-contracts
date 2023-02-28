@@ -27,7 +27,7 @@ contract Connector {
         bytes memory _customData
     ) internal {
         if (_route == 1) {
-            aaveV2Resolver.deposit{ value: _amt }(_token, _amt);
+            aaveV2Resolver.deposit(_token, _amt); // delegate call
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
             compoundV3Resolver.deposit(market, _token, _amt);

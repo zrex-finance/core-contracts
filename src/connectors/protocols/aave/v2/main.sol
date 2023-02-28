@@ -95,21 +95,9 @@ contract AaveResolver is Events, AaveHelpers, Test {
 		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
-		console.log("amt", amt);
-		console.log("address(this)", address(this));
-		console.log("balanceOf b", TokenInterface(token).balanceOf(address(this)));
-
 		aave.borrow(_token, amt, rateMode, referralCode, address(this));
-	
-		console.log("balanceOf a", TokenInterface(token).balanceOf(address(this)));
 
-		
-
-		if (isEth) {
-			convertWethToEth(isEth, TokenInterface(_token), amt);
-		} else {
-			TokenInterface(_token).transferFrom( address(this), msg.sender, amt);
-		}
+		convertWethToEth(isEth, TokenInterface(_token), amt);
 
 		_eventName = "LogBorrow(address,uint256,uint256)";
 		_eventParam = abi.encode(token, amt, 0);

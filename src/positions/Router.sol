@@ -112,7 +112,7 @@ contract PositionRouter is Connector {
         positions[key].collateralAmount = value;
         positions[key].borrowAmount = repayAmount;
 
-        console.log("IERC20(debt) a", IERC20(debt).balanceOf(address(this)));
+        console.log("IERC20(debt)", IERC20(debt).balanceOf(address(this)));
         
         IERC20(debt).transfer(address(flashReceiver), repayAmount);
     }
