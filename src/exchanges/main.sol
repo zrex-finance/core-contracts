@@ -9,6 +9,8 @@ import "../lib/UniversalERC20.sol";
 import { ExchangeHelpers } from "./helpers.sol";
 import { SwapData, OneInchData } from "./interface.sol";
 
+import "forge-std/Test.sol";
+
 contract Exchanges is ExchangeHelpers {
     using UniversalERC20 for IERC20;
 
@@ -29,6 +31,10 @@ contract Exchanges is ExchangeHelpers {
         uint256 _route,
 		bytes calldata callData
     ) external payable returns (uint256 _buyAmt) {
+        console.log("msg.sender", msg.sender);
+        console.log("msg.sender", IERC20(sellAddr).balanceOf(msg.sender));
+        console.log(" address(this)",  address(this));
+        console.log(" address(this)",  IERC20(sellAddr).balanceOf(address(this)));
         IERC20(sellAddr).universalTransferFrom(msg.sender, address(this), sellAmt);
 
         if (_route == 1) {

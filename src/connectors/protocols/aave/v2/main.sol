@@ -7,7 +7,9 @@ import { AaveHelpers } from "./helpers.sol";
 import { Events } from "./events.sol";
 import { AaveInterface } from "./interface.sol";
 
-contract AaveResolver is Events, AaveHelpers {
+import "forge-std/Test.sol";
+
+contract AaveResolver is Events, AaveHelpers, Test {
 	function deposit(
 		address token,
 		uint256 amt
@@ -21,7 +23,14 @@ contract AaveResolver is Events, AaveHelpers {
 		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
+		console.log("isEth", isEth);
+		console.log("token", token);
+		console.log("_token", _token);
+
 		TokenInterface tokenContract = TokenInterface(_token);
+
+		console.log("address(this)", address(this));
+		console.log("address(this) balance", address(this).balance);
 
 		if (isEth) {
 			amt = amt == type(uint).max ? address(this).balance : amt;
@@ -31,6 +40,8 @@ contract AaveResolver is Events, AaveHelpers {
 				? tokenContract.balanceOf(address(this))
 				: amt;
 		}
+		console.log("amt", amt);
+		console.log("address(this)", address(this));
 
 		approve(tokenContract, address(aave), amt);
 
@@ -84,9 +95,21 @@ contract AaveResolver is Events, AaveHelpers {
 		bool isEth = token == ethAddr || token == address(0);
 		address _token = isEth ? wethAddr : token;
 
-		aave.borrow(_token, amt, rateMode, referralCode, address(this));
+		console.log("amt", amt);
+		console.log("address(this)", address(this));
+		console.log("balanceOf b", TokenInterface(token).balanceOf(address(this)));
 
-		convertWethToEth(isEth, TokenInterface(_token), amt);
+		aave.borrow(_token, amt, rateMode, referralCode, address(this));
+	
+		console.log("balanceOf a", TokenInterface(token).balanceOf(address(this)));
+
+		
+
+		if (isEth) {
+			convertWethToEth(isEth, TokenInterface(_token), amt);
+		} else {
+			TokenInterface(_token).transferFrom( address(this), msg.sender, amt);
+		}
 
 		_eventName = "LogBorrow(address,uint256,uint256)";
 		_eventParam = abi.encode(token, amt, 0);

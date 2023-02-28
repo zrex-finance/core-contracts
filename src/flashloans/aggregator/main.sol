@@ -4,7 +4,9 @@ pragma solidity ^0.8.13;
 import { TokenInterface } from "../../connectors/common/interfaces.sol";
 import "./helpers.sol";
 
-contract FlashAggregator is FlashAggregatorHelper {
+import "forge-std/Test.sol";
+
+contract FlashAggregator is FlashAggregatorHelper, Test {
     using SafeERC20 for IERC20;
 
     event LogFlashloan(
@@ -37,9 +39,9 @@ contract FlashAggregator is FlashAggregatorHelper {
 
         FlashloanVariables memory loanVariables_;
 
-        (address sender_, bytes memory data_) = abi.decode(
+        (address sender_, address origin_, bytes memory data_) = abi.decode(
             _data,
-            (address, bytes)
+            (address, address, bytes)
         );
 
         loanVariables_._tokens = _assets;
@@ -57,12 +59,13 @@ contract FlashAggregator is FlashAggregatorHelper {
         safeTransfer(loanVariables_, sender_);
 
         FlashReceiverInterface(sender_).executeOperation(
-                _assets,
-                _amounts,
-                loanVariables_._fees,
-                sender_,
-                data_
-            );
+            _assets,
+            _amounts,
+            loanVariables_._fees,
+            sender_,
+            origin_,
+            data_
+        );
 
         loanVariables_._finBals = calculateBalances(
             _assets,
@@ -93,8 +96,9 @@ contract FlashAggregator is FlashAggregatorHelper {
             address[] memory tokens_,
             uint256[] memory amounts_,
             address sender_,
+            address origin_,
             bytes memory data_
-        ) = abi.decode(_data, (uint256, address[], uint256[], address, bytes));
+        ) = abi.decode(_data, (uint256, address[], uint256[], address, address, bytes));
 
         loanVariables_._tokens = tokens_;
         loanVariables_._amounts = amounts_;
@@ -111,12 +115,13 @@ contract FlashAggregator is FlashAggregatorHelper {
         safeTransfer(loanVariables_, sender_);
 
         FlashReceiverInterface(sender_).executeOperation(
-                tokens_,
-                amounts_,
-                loanVariables_._fees,
-                sender_,
-                data_
-            );
+            tokens_,
+            amounts_,
+            loanVariables_._fees,
+            sender_,
+            origin_,
+            data_
+        );
         loanVariables_._finBals = calculateBalances(
             tokens_,
             address(this)
@@ -144,8 +149,9 @@ contract FlashAggregator is FlashAggregatorHelper {
             address[] memory tokens_,
             uint256[] memory amounts_,
             address sender_,
+            address origin_,
             bytes memory data_
-        ) = abi.decode(_data, (uint256, address[], uint256[], address, bytes));
+        ) = abi.decode(_data, (uint256, address[], uint256[], address, address, bytes));
 
         loanVariables_._tokens = tokens_;
         loanVariables_._amounts = amounts_;
@@ -160,12 +166,13 @@ contract FlashAggregator is FlashAggregatorHelper {
 
         safeTransfer(loanVariables_, sender_);
         FlashReceiverInterface(sender_).executeOperation(
-                tokens_,
-                amounts_,
-                loanVariables_._fees,
-                sender_,
-                data_
-            );
+            tokens_,
+            amounts_,
+            loanVariables_._fees,
+            sender_,
+            origin_,
+            data_
+        );
 
         loanVariables_._finBals = calculateBalances(
             tokens_,
@@ -173,11 +180,11 @@ contract FlashAggregator is FlashAggregatorHelper {
         );
 
         validateFlashloan(loanVariables_);
-            safeTransferWithFee(
-                loanVariables_,
-                _fees,
-                address(balancerLending)
-            );
+        safeTransferWithFee(
+            loanVariables_,
+            _fees,
+            address(balancerLending)
+        );
     }
 
     /**
@@ -186,9 +193,10 @@ contract FlashAggregator is FlashAggregatorHelper {
     function routeAave(
         address[] memory _tokens,
         uint256[] memory _amounts,
+        address _sender,
         bytes memory _data
     ) internal {
-        bytes memory data_ = abi.encode(msg.sender, _data);
+        bytes memory data_ = abi.encode(msg.sender, _sender, _data);
         uint256 length_ = _tokens.length;
         uint256[] memory _modes = new uint256[](length_);
         for (uint256 i = 0; i < length_; i++) {
@@ -212,6 +220,7 @@ contract FlashAggregator is FlashAggregatorHelper {
     function routeMaker(
         address[] memory _tokens,
         uint256[] memory _amounts,
+        address _sender,
         bytes memory _data
     ) internal {
         bytes memory data_ = abi.encode(
@@ -219,6 +228,7 @@ contract FlashAggregator is FlashAggregatorHelper {
             _tokens,
             _amounts,
             msg.sender,
+            _sender,
             _data
         );
         dataHash = bytes32(keccak256(data_));
@@ -236,6 +246,7 @@ contract FlashAggregator is FlashAggregatorHelper {
     function routeBalancer(
         address[] memory _tokens,
         uint256[] memory _amounts,
+        address _sender,
         bytes memory _data
     ) internal {
         uint256 length_ = _tokens.length;
@@ -248,6 +259,7 @@ contract FlashAggregator is FlashAggregatorHelper {
             _tokens,
             _amounts,
             msg.sender,
+            _sender,
             _data
         );
         dataHash = bytes32(keccak256(data_));
@@ -267,6 +279,7 @@ contract FlashAggregator is FlashAggregatorHelper {
         address[] memory _tokens,
         uint256[] memory _amounts,
         uint256 _route,
+        address _sender,
         bytes calldata _data,
         bytes calldata 
     ) external reentrancy {
@@ -276,11 +289,11 @@ contract FlashAggregator is FlashAggregatorHelper {
         validateTokens(_tokens);
 
         if (_route == 1) {
-            routeAave(_tokens, _amounts, _data);
+            routeAave(_tokens, _amounts, _sender, _data);
         } else if (_route == 2) {
-            routeMaker(_tokens, _amounts, _data);
+            routeMaker(_tokens, _amounts, _sender, _data);
         } else if (_route == 3) {
-            routeBalancer(_tokens, _amounts, _data);
+            routeBalancer(_tokens, _amounts, _sender, _data);
         } else {
             revert("route-does-not-exist");
         }

@@ -14,6 +14,7 @@ interface IFlashLoan {
         address[] memory tokens_,
         uint256[] memory amts_,
         uint256 route,
+        address origin,
         bytes calldata data_,
         bytes calldata _customData
     ) external;
@@ -24,6 +25,7 @@ interface IFlashloanReciever {
         address[] calldata _tokens,
         uint256[] calldata _amts,
         uint256 route,
+        address _origin,
         bytes calldata _data,
         bytes calldata _customData
     ) external;
@@ -32,8 +34,9 @@ interface IFlashloanReciever {
         address[] calldata tokens,
         uint256[] calldata amounts,
         uint256[] calldata premiums,
-        address /* initiator */,
-        bytes calldata /* params */
+        address initiator,
+        address origin,
+        bytes calldata  params
     ) external returns (bool);
 }
 
@@ -57,6 +60,39 @@ library SharedStructs {
         uint256 collateralAmount;
         uint256 borrowAmount;
     }
+}
+
+interface IAccount {
+    function openPosition(
+        SharedStructs.Position memory position,
+        bool isShort,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
+    ) external payable;
+
+    function closePosition(
+        bytes32 key,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
+    ) external payable;
+
+    function positions(bytes32 _key) external pure returns (
+        address account,
+        address debt,
+        address collateral,
+        uint256 amountIn,
+        uint256 sizeDelta,
+        uint256 collateralAmount,
+        uint256 borrowAmount
+    );
+    function positionsIndex(address _account) external pure returns (uint256);
+    function getKey(address _account, uint256 _index) external pure returns (bytes32);
 }
 
 interface IPositionRouter {
@@ -100,4 +136,18 @@ interface IPositionRouter {
         address _aaveV2Resolver,
         address _compoundV3Resolver
     ) external;
+
+    function openPositionCallback(
+        bytes[] memory _datas,
+        bytes[] calldata _customDatas,
+        uint256 repayAmount
+    ) external;
+}
+
+interface IImplimentation {
+    function execute(
+		address[] memory _targets,
+		bytes[] memory _datas,
+		address _origin
+	) external;
 }

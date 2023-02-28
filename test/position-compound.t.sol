@@ -72,7 +72,11 @@ contract PositionCompound is LendingHelper {
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
+        uint256 fee = 3;
+        address treasury = msg.sender;
+
         router = new PositionRouter();
+        console.log("router", address(router));
     }
 
     function testOpenAndClosePosition() public {
