@@ -11,7 +11,7 @@ struct RewardOwed {
 	uint256 owed;
 }
 
-interface CometInterface {
+interface IComet {
 	function supply(address asset, uint256 amount) external;
 
 	function supplyTo(

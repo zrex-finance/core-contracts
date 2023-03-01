@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-interface CTokenInterface {
+interface ICToken {
     function mint(uint mintAmount) external returns (uint);
     function redeem(uint redeemTokens) external returns (uint);
     function borrow(uint borrowAmount) external returns (uint);
@@ -16,14 +16,7 @@ interface CTokenInterface {
     function balanceOf(address owner) external view returns (uint256 balance);
 }
 
-interface CETHInterface {
-    function mint() external payable;
-    function repayBorrow() external payable;
-    function repayBorrowBehalf(address borrower) external payable;
-    function liquidateBorrow(address borrower, address cTokenCollateral) external payable;
-}
-
-interface ComptrollerInterface {
+interface IComptroller {
     function enterMarkets(address[] calldata cTokens) external returns (uint[] memory);
     function exitMarket(address cTokenAddress) external returns (uint);
     function getAssetsIn(address account) external view returns (address[] memory);
@@ -31,7 +24,7 @@ interface ComptrollerInterface {
     function claimComp(address) external;
 }
 
-interface CompoundMappingInterface {
+interface ICompoundMapping {
     function cTokenMapping(string calldata tokenId) external view returns (address);
     function getMapping(string calldata tokenId) external view returns (address, address);
 }

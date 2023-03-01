@@ -1,25 +1,29 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { TokenInterface } from "../../../common/interfaces.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../../../lib/UniversalERC20.sol";
+
 import { Basic } from "../../../common/base.sol";
-import { CometInterface } from "./interface.sol";
+import { IComet } from "./interface.sol";
 
 abstract contract CompoundV3Helpers is Basic {
+	using UniversalERC20 for IERC20;
+
 	struct BorrowWithdrawParams {
 		address market;
 		address token;
 		address from;
 		address to;
-		uint256 amt;
+		uint256 amount;
 	}
 
 	struct BuyCollateralData {
 		address market;
 		address sellToken;
 		address buyAsset;
-		uint256 unitAmt;
-		uint256 baseSellAmt;
+		uint256 unitamount;
+		uint256 baseSellamount;
 	}
 
 	enum Action {
@@ -27,19 +31,12 @@ abstract contract CompoundV3Helpers is Basic {
 		DEPOSIT
 	}
 
-	function getBaseToken(address market)
-		internal
-		view
-		returns (address baseToken)
-	{
-		baseToken = CometInterface(market).baseToken();
+	function getBaseToken(address market) internal view returns (address baseToken) {
+		baseToken = IComet(market).baseToken();
 	}
 
-	function _borrow(BorrowWithdrawParams memory params)
-		internal
-		returns (uint256 amt)
-	{
-		uint256 amt_ = params.amt;
+	function _borrow(BorrowWithdrawParams memory params) internal returns (uint256 amount) {
+		amount = params.amount;
 
 		require(
 			params.market != address(0) &&
@@ -47,45 +44,28 @@ abstract contract CompoundV3Helpers is Basic {
 				params.to != address(0),
 			"invalid market/token/to address"
 		);
-		bool isEth = params.token == ethAddr;
-		address token_ = isEth ? wethAddr : params.token;
 
-		TokenInterface tokenContract = TokenInterface(token_);
+		params.from = params.from == address(0) 
+			? address(this) 
+			: params.from;
 
-		params.from = params.from == address(0) ? address(this) : params.from;
+		require(IComet(params.market).balanceOf(params.from) == 0,"borrow-disabled-when-supplied-base");
 
-		require(
-			CometInterface(params.market).balanceOf(params.from) == 0,
-			"borrow-disabled-when-supplied-base"
-		);
+		uint256 initialBalance = IComet(params.market).borrowBalanceOf(params.from);
 
-		uint256 initialBal = CometInterface(params.market).borrowBalanceOf(
-			params.from
-		);
-
-		CometInterface(params.market).withdrawFrom(
+		IComet(params.market).withdrawFrom(
 			params.from,
 			params.to,
-			token_,
-			amt_
+			params.token,
+			amount
 		);
 
-		uint256 finalBal = CometInterface(params.market).borrowBalanceOf(
-			params.from
-		);
-		amt_ = finalBal - initialBal;
-
-		if (params.to == address(this))
-			convertWethToEth(isEth, tokenContract, amt_);
-
-		amt = amt_;
+		uint256 finalBalance = IComet(params.market).borrowBalanceOf(params.from);
+		amount = finalBalance - initialBalance;
 	}
 
-	function _withdraw(BorrowWithdrawParams memory params)
-		internal
-		returns (uint256 amt)
-	{
-		uint256 amt_ = params.amt;
+	function _withdraw(BorrowWithdrawParams memory params) internal returns (uint256 amount) {
+		amount = params.amount;
 
 		require(
 			params.market != address(0) &&
@@ -94,56 +74,32 @@ abstract contract CompoundV3Helpers is Basic {
 			"invalid market/token/to address"
 		);
 
-		bool isEth = params.token == ethAddr;
-		address token_ = isEth ? wethAddr : params.token;
+		params.from = params.from == address(0) 
+			? address(this) 
+			: params.from;
 
-		TokenInterface tokenContract = TokenInterface(token_);
-		params.from = params.from == address(0) ? address(this) : params.from;
+		uint256 initialBalance = _getAccountSupplyBalanceOfAsset(params.from,params.market,params.token);
 
-		uint256 initialBal = _getAccountSupplyBalanceOfAsset(
-			params.from,
-			params.market,
-			token_
-		);
-
-		if (token_ == getBaseToken(params.market)) {
+		if (params.token == getBaseToken(params.market)) {
 			//if there are supplies, ensure withdrawn amount is not greater than supplied i.e can't borrow using withdraw.
-			if (amt_ == type(uint).max) {
-				amt_ = initialBal;
+			if (amount == type(uint).max) {
+				amount = initialBalance;
 			} else {
-				require(
-					amt_ <= initialBal,
-					"withdraw-amt-greater-than-supplies"
-				);
+				require(amount <= initialBalance,"withdraw-amount-greater-than-supplies");
 			}
 
 			//if borrow balance > 0, there are no supplies so no withdraw, borrow instead.
-			require(
-				CometInterface(params.market).borrowBalanceOf(params.from) == 0,
-				"withdraw-disabled-for-zero-supplies"
-			);
+			require(IComet(params.market).borrowBalanceOf(params.from) == 0,"withdraw-disabled-for-zero-supplies");
 		} else {
-			amt_ = amt_ == type(uint).max ? initialBal : amt_;
+			amount = amount == type(uint).max 
+				? initialBalance 
+				: amount;
 		}
 
-		CometInterface(params.market).withdrawFrom(
-			params.from,
-			params.to,
-			token_,
-			amt_
-		);
+		IComet(params.market).withdrawFrom(params.from,params.to,params.token,amount);
 
-		uint256 finalBal = _getAccountSupplyBalanceOfAsset(
-			params.from,
-			params.market,
-			token_
-		);
-		amt_ = initialBal - finalBal;
-
-		if (params.to == address(this))
-			convertWethToEth(isEth, tokenContract, amt_);
-
-		amt = amt_;
+		uint256 finalBalance = _getAccountSupplyBalanceOfAsset(params.from,params.market,params.token);
+		amount = initialBalance - finalBalance;
 	}
 
 	function _getAccountSupplyBalanceOfAsset(
@@ -153,11 +109,11 @@ abstract contract CompoundV3Helpers is Basic {
 	) internal returns (uint256 balance) {
 		if (asset == getBaseToken(market)) {
 			//balance in base
-			balance = CometInterface(market).balanceOf(account);
+			balance = IComet(market).balanceOf(account);
 		} else {
 			//balance in asset denomination
 			balance = uint256(
-				CometInterface(market).userCollateral(account, asset).balance
+				IComet(market).userCollateral(account, asset).balance
 			);
 		}
 	}
@@ -166,91 +122,57 @@ abstract contract CompoundV3Helpers is Basic {
 		address market,
 		address token,
 		address src,
-		uint256 amt,
-		bool isEth,
+		uint256 amount,
 		Action action
 	) internal view returns (uint256) {
-		if (amt == type(uint).max) {
-			uint256 allowance_ = TokenInterface(token).allowance(src, market);
-			uint256 bal_;
+		if (amount == type(uint).max) {
+			uint256 allowance = IERC20(token).allowance(src, market);
+			uint256 balance;
 
 			if (action == Action.REPAY) {
-				bal_ = CometInterface(market).borrowBalanceOf(src);
+				balance = IComet(market).borrowBalanceOf(src);
 			} else if (action == Action.DEPOSIT) {
-				if (isEth) bal_ = src.balance;
-				else bal_ = TokenInterface(token).balanceOf(src);
+				balance = IERC20(token).balanceOf(src);
 			}
 
-			amt = bal_ < allowance_ ? bal_ : allowance_;
+			amount = balance < allowance ? balance : allowance;
 		}
 
-		return amt;
+		return amount;
 	}
 
-	function _buyCollateral(
-		BuyCollateralData memory params
-	) internal returns (string memory eventName_, bytes memory eventParam_) {
-		uint256 sellAmt_ = params.baseSellAmt;
+	function _buyCollateral(BuyCollateralData memory params) internal {
+		uint256 sellAmount = params.baseSellamount;
 		require(
 			params.market != address(0) && params.buyAsset != address(0),
 			"invalid market/token address"
 		);
+		require(params.sellToken == getBaseToken(params.market),"invalid-sell-token");
 
-		bool isEth = params.sellToken == ethAddr;
-		params.sellToken = isEth ? wethAddr : params.sellToken;
-
-		require(
-			params.sellToken == getBaseToken(params.market),
-			"invalid-sell-token"
-		);
-
-		if (sellAmt_ == type(uint).max) {
-			sellAmt_ = isEth
-				? address(this).balance
-				: TokenInterface(params.sellToken).balanceOf(address(this));
+		if (sellAmount == type(uint).max) {
+			sellAmount = IERC20(params.sellToken).balanceOf(address(this));
 		}
-		convertEthToWeth(isEth, TokenInterface(params.sellToken), sellAmt_);
 
-		isEth = params.buyAsset == ethAddr;
-		params.buyAsset = isEth ? wethAddr : params.buyAsset;
-
-		uint256 slippageAmt_ = convert18ToDec(
-			TokenInterface(params.buyAsset).decimals(),
-
-			params.unitAmt * convertTo18(
-					TokenInterface(params.sellToken).decimals(),
-					sellAmt_
-				)
+		uint256 slippageAmount = convert18ToDec(
+			IERC20(params.buyAsset).universalDecimals(),
+			params.unitamount * convertTo18(IERC20(params.sellToken).universalDecimals(),sellAmount)
 		);
 
-		uint256 initialCollBal_ = TokenInterface(params.buyAsset).balanceOf(
-			address(this)
-		);
+		uint256 initialCollBalance = IERC20(params.buyAsset).balanceOf(address(this));
 
-		approve(TokenInterface(params.sellToken), params.market, sellAmt_);
-		CometInterface(params.market).buyCollateral(
+		IERC20(params.sellToken).universalApprove(params.market, sellAmount);
+		IComet(params.market).buyCollateral(
 			params.buyAsset,
-			slippageAmt_,
-			sellAmt_,
+			slippageAmount,
+			sellAmount,
 			address(this)
 		);
 
-		uint256 finalCollBal_ = TokenInterface(params.buyAsset).balanceOf(
+		uint256 finalCollBalance = IERC20(params.buyAsset).balanceOf(
 			address(this)
 		);
 
-		uint256 buyAmt_ = finalCollBal_ - initialCollBal_;
-		require(slippageAmt_ <= buyAmt_, "too-much-slippage");
-
-		convertWethToEth(isEth, TokenInterface(params.buyAsset), buyAmt_);
-
-		eventName_ = "LogBuyCollateral(address,address,uint256,uint256,uint256)";
-		eventParam_ = abi.encode(
-			params.market,
-			params.buyAsset,
-			sellAmt_,
-			params.unitAmt,
-			buyAmt_
-		);
+		uint256 buyamount = finalCollBalance - initialCollBalance;
+		require(slippageAmount <= buyamount, "too much slippage");
 	}
 }

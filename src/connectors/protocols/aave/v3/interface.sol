@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-interface AaveInterface {
+interface IAave {
 	function supply(
 		address asset,
 		uint256 amount,
@@ -45,11 +45,11 @@ interface AaveInterface {
 	function setUserEMode(uint8 categoryId) external;
 }
 
-interface AavePoolProviderInterface {
+interface IAavePoolProvider {
 	function getPool() external view returns (address);
 }
 
-interface AaveDataProviderInterface {
+interface IAaveDataProvider {
 	function getReserveTokensAddresses(address _asset)
 		external
 		view
@@ -80,17 +80,6 @@ interface AaveDataProviderInterface {
 		returns (uint256);
 }
 
-interface AaveAddressProviderRegistryInterface {
-	function getAddressesProvidersList()
-		external
-		view
-		returns (address[] memory);
-}
-
-interface ATokenInterface {
-	function balanceOf(address _user) external view returns (uint256);
-}
-
-interface DTokenInterface {
+interface IDToken {
 	function approveDelegation(address delegatee, uint256 amount) external;
 }

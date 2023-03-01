@@ -37,19 +37,19 @@ contract HelperContract is UniswapHelper, Test {
 }
 
 contract LendingHelper is HelperContract {
-    AaveResolver aaveResolver;
+    AaveV2Connector aaveConnector;
 
     uint256 RATE_TYPE = 1;
 
     constructor() {
-        aaveResolver = new AaveResolver();
+        aaveConnector = new AaveV2Connector();
     }
 
     function getCollateralAmt(
         address _token,
         address _recipient
     ) public view returns (uint256 collateralAmount) {
-        collateralAmount = aaveResolver.getCollateralBalance(
+        collateralAmount = aaveConnector.getCollateralBalance(
             _token == ethC ? wethC : _token, _recipient
         );        
     }
@@ -58,7 +58,7 @@ contract LendingHelper is HelperContract {
         address _token,
         address _recipient
     ) public view returns (uint256 borrowAmount) {
-        borrowAmount = aaveResolver.getPaybackBalance(_token, RATE_TYPE, _recipient);
+        borrowAmount = aaveConnector.getPaybackBalance(_token, RATE_TYPE, _recipient);
     }
 }
 
@@ -85,10 +85,9 @@ contract PositionAccount is LendingHelper {
             3,
             msg.sender,
             address(0),
-            address(aaveResolver),
+            address(aaveConnector),
             address(0)
         );
-        console.log("router", address(router));
 
         implementation = new Implementation();
         implementations = new Implementations();
@@ -123,13 +122,9 @@ contract PositionAccount is LendingHelper {
         openPosition(_position);
     
         uint256 index = router.positionsIndex(_position.account);
-        console.log("index", index);
         bytes32 key = router.getKey(_position.account, index);
-        console.logBytes32(key);
 
         (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
-        console.log("collateralAmount", collateralAmount);
-        console.log("borrowAmount", borrowAmount);
 
         closePosition(_position, index, collateralAmount, borrowAmount);
     }

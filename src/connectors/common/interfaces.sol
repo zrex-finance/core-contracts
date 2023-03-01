@@ -14,14 +14,7 @@ interface TokenInterface {
     function isETH(TokenInterface token) external pure returns(bool);
 }
 
-interface AccountInterface {
-    function execute(
-        string[] calldata _targetNames,
-        bytes[] calldata _datas,
-        address _origin
-    ) external payable;
-}
-
-interface Connectors {
-    function isConnectors(string[] calldata) external returns (bool, address[] memory);
+interface IWeth {
+    function deposit() external payable;
+    function withdraw(uint wad) external;
 }

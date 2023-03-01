@@ -1,320 +1,150 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { TokenInterface } from "../../../common/interfaces.sol";
-import { Stores } from "../../../common/stores.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../../../lib/UniversalERC20.sol";
+
 import { Helpers } from "./helpers.sol";
-import { Events } from "./events.sol";
-import { AaveInterface, DTokenInterface } from "./interface.sol";
+import { IAave, IDToken } from "./interface.sol";
 
-abstract contract AaveResolver is Events, Helpers {
+abstract contract AaveResolver is Helpers {
+	using UniversalERC20 for IERC20;
 	
-	function deposit(
-		address token,
-		uint256 amt
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	function deposit(address token,uint256 amount) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+		IERC20 tokenC = IERC20(token);
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
+		amount = amount == type(uint256).max
+			? tokenC.balanceOf(address(this))
+			: amount;
 
-		TokenInterface tokenContract = TokenInterface(_token);
+		tokenC.universalApprove(address(aave), amount);
 
-		if (isEth) {
-			_amt = _amt == type(uint256).max ? address(this).balance : _amt;
-			convertEthToWeth(isEth, tokenContract, _amt);
-		} else {
-			_amt = _amt == type(uint256).max
-				? tokenContract.balanceOf(address(this))
-				: _amt;
+		aave.supply(token, amount, address(this), referralCode);
+
+		if (!getIsColl(token)) {
+			aave.setUserUseReserveAsCollateral(token, true);
 		}
-
-		approve(tokenContract, address(aave), _amt);
-
-		aave.supply(_token, _amt, address(this), referralCode);
-
-		if (!getIsColl(_token)) {
-			aave.setUserUseReserveAsCollateral(_token, true);
-		}
-
-		_eventName = "LogDeposit(address,uint256)";
-		_eventParam = abi.encode(token, _amt);
 	}
 
-	function depositWithoutCollateral(
-		address token,
-		uint256 amt
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	function depositWithoutCollateral(address token,uint256 amount) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+		IERC20 tokenC = IERC20(token);
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
+		amount = amount == type(uint256).max
+			? tokenC.balanceOf(address(this))
+			: amount;
 
-		TokenInterface tokenContract = TokenInterface(_token);
+		tokenC.universalApprove(address(aave), amount);
 
-		if (isEth) {
-			_amt = _amt == type(uint256).max ? address(this).balance : _amt;
-			convertEthToWeth(isEth, tokenContract, _amt);
-		} else {
-			_amt = _amt == type(uint256).max
-				? tokenContract.balanceOf(address(this))
-				: _amt;
+		aave.supply(token, amount, address(this), referralCode);
+
+		if (getCollateralBalance(token) > 0 && getIsColl(token)) {
+			aave.setUserUseReserveAsCollateral(token, false);
 		}
-
-		approve(tokenContract, address(aave), _amt);
-
-		aave.supply(_token, _amt, address(this), referralCode);
-
-		if (getCollateralBalance(_token) > 0 && getIsColl(_token)) {
-			aave.setUserUseReserveAsCollateral(_token, false);
-		}
-
-		_eventName = "LogDepositWithoutCollateral(address,uint256)";
-		_eventParam = abi.encode(token, _amt);
 	}
 
-	function withdraw(
-		address token,
-		uint256 amt
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	function withdraw(address token,uint256 amount) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
+		IERC20 tokenC = IERC20(token);
 
-		TokenInterface tokenContract = TokenInterface(_token);
+		uint256 initialBalance = tokenC.balanceOf(address(this));
+		aave.withdraw(token, amount, address(this));
+		uint256 finalBalance = tokenC.balanceOf(address(this));
 
-		uint256 initialBal = tokenContract.balanceOf(address(this));
-		aave.withdraw(_token, _amt, address(this));
-		uint256 finalBal = tokenContract.balanceOf(address(this));
-
-		_amt = finalBal - initialBal;
-
-		convertWethToEth(isEth, tokenContract, _amt);
-
-		_eventName = "LogWithdraw(address,uint256)";
-		_eventParam = abi.encode(token, _amt);
+		amount = finalBalance - initialBalance;
 	}
 
-	function borrow(
-		address token,
-		uint256 amt,
-		uint256 rateMode
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	function borrow(address token,uint256 amount,uint256 rateMode) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
-
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
-
-		aave.borrow(_token, _amt, rateMode, referralCode, address(this));
-		convertWethToEth(isEth, TokenInterface(_token), _amt);
-
-		_eventName = "LogBorrow(address,uint256,uint256)";
-		_eventParam = abi.encode(token, _amt, rateMode);
+		aave.borrow(token, amount, rateMode, referralCode, address(this));
 	}
 
 	function borrowOnBehalfOf(
 		address token,
-		uint256 amt,
+		uint256 amount,
 		uint256 rateMode,
 		address onBehalfOf
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
-
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
-
-		aave.borrow(_token, _amt, rateMode, referralCode, onBehalfOf);
-		convertWethToEth(isEth, TokenInterface(_token), _amt);
-
-		_eventName = "LogBorrowOnBehalfOf(address,uint256,uint256,address)";
-		_eventParam = abi.encode(
-			token,
-			_amt,
-			rateMode,
-			onBehalfOf
-		);
+		aave.borrow(token, amount, rateMode, referralCode, onBehalfOf);
 	}
 
-	function payback(
-		address token,
-		uint256 amt,
-		uint256 rateMode
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	function payback(address token,uint256 amount,uint256 rateMode) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+		IERC20 tokenC = IERC20(token);
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
+		amount = amount == type(uint256).max 
+			? getPaybackBalance(token, rateMode) 
+			: amount;
 
-		TokenInterface tokenContract = TokenInterface(_token);
-
-		_amt = _amt == type(uint256).max ? getPaybackBalance(_token, rateMode) : _amt;
-
-		if (isEth) convertEthToWeth(isEth, tokenContract, _amt);
-
-		approve(tokenContract, address(aave), _amt);
-
-		aave.repay(_token, _amt, rateMode, address(this));
-
-		_eventName = "LogPayback(address,uint256,uint256)";
-		_eventParam = abi.encode(token, _amt, rateMode);
+		tokenC.universalApprove(address(aave), amount);
+		aave.repay(token, amount, rateMode, address(this));
 	}
 
-	function paybackWithATokens(
-		address token,
-		uint256 amt,
-		uint256 rateMode
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	function paybackWithATokens(address token,uint256 amount,uint256 rateMode) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+		IERC20 tokenC = IERC20(token);
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
+		amount = amount == type(uint256).max 
+			? getPaybackBalance(token, rateMode) 
+			: amount;
 
-		TokenInterface tokenContract = TokenInterface(_token);
-
-		_amt = _amt == type(uint256).max ? getPaybackBalance(_token, rateMode) : _amt;
-
-		if (isEth) convertEthToWeth(isEth, tokenContract, _amt);
-
-		approve(tokenContract, address(aave), _amt);
-
-		aave.repayWithATokens(_token, _amt, rateMode);
-
-		_eventName = "LogPayback(address,uint256,uint256)";
-		_eventParam = abi.encode(token, _amt, rateMode);
+		tokenC.universalApprove(address(aave), amount);
+		aave.repayWithATokens(token, amount, rateMode);
 	}
 
 	function paybackOnBehalfOf(
 		address token,
-		uint256 amt,
+		uint256 amount,
 		uint256 rateMode,
 		address onBehalfOf
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		uint256 _amt = amt;
+	) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+		IERC20 tokenC = IERC20(token);
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
+		amount = amount == type(uint256).max
+			? getOnBehalfOfPaybackBalance(token, rateMode, onBehalfOf)
+			: amount;
 
-		TokenInterface tokenContract = TokenInterface(_token);
-
-		_amt = _amt == type(uint256).max
-			? getOnBehalfOfPaybackBalance(_token, rateMode, onBehalfOf)
-			: _amt;
-
-		if (isEth) convertEthToWeth(isEth, tokenContract, _amt);
-
-		approve(tokenContract, address(aave), _amt);
-
-		aave.repay(_token, _amt, rateMode, onBehalfOf);
-
-		_eventName = "LogPaybackOnBehalfOf(address,uint256,uint256,address)";
-		_eventParam = abi.encode(
-			token,
-			_amt,
-			rateMode,
-			onBehalfOf
-		);
+		tokenC.universalApprove(address(aave), amount);
+		aave.repay(token, amount, rateMode, onBehalfOf);
 	}
 
-	function enableCollateral(address[] calldata tokens)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
+	function enableCollateral(address[] calldata tokens) external payable {
 		uint256 _length = tokens.length;
 		require(_length > 0, "0-tokens-not-allowed");
 
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+		IAave aave = IAave(aaveProvider.getPool());
 
 		for (uint256 i = 0; i < _length; i++) {
-			bool isEth = tokens[i] == ethAddr;
-			address _token = isEth ? wethAddr : tokens[i];
+			address token = tokens[i];
 
-			if (getCollateralBalance(_token) > 0 && !getIsColl(_token)) {
-				aave.setUserUseReserveAsCollateral(_token, true);
+			if (getCollateralBalance(token) > 0 && !getIsColl(token)) {
+				aave.setUserUseReserveAsCollateral(token, true);
 			}
 		}
-
-		_eventName = "LogEnableCollateral(address[])";
-		_eventParam = abi.encode(tokens);
 	}
 
-	function swapBorrowRateMode(address token, uint256 rateMode)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
+	function swapBorrowRateMode(address token, uint256 rateMode) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
-
-		if (getPaybackBalance(_token, rateMode) > 0) {
-			aave.swapBorrowRateMode(_token, rateMode);
+		if (getPaybackBalance(token, rateMode) > 0) {
+			aave.swapBorrowRateMode(token, rateMode);
 		}
-
-		_eventName = "LogSwapRateMode(address,uint256)";
-		_eventParam = abi.encode(token, rateMode);
 	}
 
-	function setUserEMode(uint8 categoryId)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
-		AaveInterface aave = AaveInterface(aaveProvider.getPool());
-
+	function setUserEMode(uint8 categoryId) external payable {
+		IAave aave = IAave(aaveProvider.getPool());
 		aave.setUserEMode(categoryId);
-
-		_eventName = "LogSetUserEMode(uint8)";
-		_eventParam = abi.encode(categoryId);
 	}
 
 	function delegateBorrow(
@@ -322,27 +152,11 @@ abstract contract AaveResolver is Events, Helpers {
 		uint256 amount,
 		uint256 rateMode,
 		address delegateTo
-	)
-		external
-		payable
-		returns (string memory _eventName, bytes memory _eventParam)
-	{
+	) external payable {
 		require(rateMode == 1 || rateMode == 2, "Invalid debt type");
-		uint256 _amt = amount;
 
-		bool isEth = token == ethAddr;
-		address _token = isEth ? wethAddr : token;
-
-		address _dToken = getDTokenAddr(_token, rateMode);
-		DTokenInterface(_dToken).approveDelegation(delegateTo, _amt);
-
-		_eventName = "LogDelegateBorrow(address,uint256,uint256,address)";
-		_eventParam = abi.encode(
-			token,
-			_amt,
-			rateMode,
-			delegateTo
-		);
+		address _dToken = getDTokenAddr(token, rateMode);
+		IDToken(_dToken).approveDelegation(delegateTo, amount);
 	}
 }
 

@@ -1,10 +1,32 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Connectors, TokenInterface } from "./interfaces.sol";
-import { Stores } from "./stores.sol";
 
-abstract contract Basic is Stores {
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../lib/UniversalERC20.sol";
+
+import { IWeth } from "./interfaces.sol";
+
+abstract contract EthConverter {
+    using UniversalERC20 for IERC20;
+
+    IWeth constant internal wethAddr = IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    function convertEthToWeth(address token, uint amount) internal {
+        if (IERC20(token).isETH()) {
+            wethAddr.deposit{value: amount}();
+        }
+    }
+
+    function convertWethToEth(address token, uint amount) internal {
+       if(IERC20(token).isETH()) {
+            IERC20(token).universalApprove(address(wethAddr), amount);
+            wethAddr.withdraw(amount);
+        }
+    }
+}
+
+abstract contract Basic is EthConverter {
 
     function convert18ToDec(uint _decimals, uint256 _amount) internal pure returns (uint256 amount) {
         amount = (_amount / 10 ** (18 - _decimals));
@@ -14,49 +36,14 @@ abstract contract Basic is Stores {
         amount = _amount * (10 ** (18 - _decimals)) ;
     }
 
-    function getTokenBalance(TokenInterface token) internal view returns(uint amount) {
-        amount = isETH(address(token)) ? address(this).balance : token.balanceOf(address(this));
-    }
-
-    function getTokensDecimals(TokenInterface _token1, TokenInterface _token2) internal view returns(uint token1Dec, uint token2Dec) {
-        token1Dec = isETH(address(_token1)) ?  18 : _token1.decimals();
-        token2Dec = isETH(address(_token2)) ?  18 : _token2.decimals();
-    }
-
-    function encodeEvent(string memory eventName, bytes memory eventParam) internal pure returns (bytes memory) {
-        return abi.encode(eventName, eventParam);
-    }
-
-    function approve(TokenInterface token, address spender, uint256 amount) internal {
-        try token.approve(spender, amount) {
-
-        } catch {
-            token.approve(spender, 0);
-            token.approve(spender, amount);
+    function getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        if (_returnData.length < 68) {
+            return "Transaction reverted silently";
         }
-    }
 
-    function changeEthAddress(address buy, address sell) internal pure returns(TokenInterface _buy, TokenInterface _sell){
-        _buy = isETH(buy) ? TokenInterface(wethAddr) : TokenInterface(buy);
-        _sell = isETH(sell) ? TokenInterface(wethAddr) : TokenInterface(sell);
-    }
-
-    function changeEthAddrToWethAddr(address token) internal pure returns(address tokenAddr){
-        tokenAddr = isETH(token) ? wethAddr : token;
-    }
-
-    function convertEthToWeth(bool isEth, TokenInterface token, uint amount) internal {
-        if(isEth) token.deposit{value: amount}();
-    }
-
-    function convertWethToEth(bool isEth, TokenInterface token, uint amount) internal {
-       if(isEth) {
-            approve(token, address(token), amount);
-            token.withdraw(amount);
+        assembly {
+            _returnData := add(_returnData, 0x04)
         }
-    }
-
-    function isETH(address token) internal pure returns(bool) {
-        return (address(token) == address(zeroAddr) || address(token) == address(ethAddr));
+        return abi.decode(_returnData, (string));
     }
 }
