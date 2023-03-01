@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Variables} from "./variables.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import { Variables } from "./variables.sol";
 
 contract Helper is Variables {
     function getAaveAvailability(
@@ -13,8 +14,12 @@ contract Helper is Variables {
             IERC20 token_ = IERC20(_tokens[i]);
             (, , , , , , , , bool isActive, ) = aaveProtocolDataProvider.getReserveConfigurationData(_tokens[i]);
             (address aTokenAddr, , ) = aaveProtocolDataProvider.getReserveTokensAddresses(_tokens[i]);
-            if (isActive == false) return false;
-            if (token_.balanceOf(aTokenAddr) < _amounts[i]) return false;
+            if (isActive == false) {
+                return false;
+            }
+            if (token_.balanceOf(aTokenAddr) < _amounts[i]) {
+                return false;
+            }
         }
         return true;
     }
@@ -71,31 +76,6 @@ contract Helper is Variables {
             }
         }
         return routesWithAvailability_;
-    }
-
-    function bubbleSort(address[] memory _tokens, uint256[] memory _amounts)
-        internal
-        pure
-        returns (address[] memory, uint256[] memory)
-    {
-        for (uint256 i = 0; i < _tokens.length - 1; i++) {
-            for (uint256 j = 0; j < _tokens.length - i - 1; j++) {
-                if (_tokens[j] > _tokens[j + 1]) {
-                    (
-                        _tokens[j],
-                        _tokens[j + 1],
-                        _amounts[j],
-                        _amounts[j + 1]
-                    ) = (
-                        _tokens[j + 1],
-                        _tokens[j],
-                        _amounts[j + 1],
-                        _amounts[j]
-                    );
-                }
-            }
-        }
-        return (_tokens, _amounts);
     }
 
     function validateTokens(address[] memory _tokens) internal pure {

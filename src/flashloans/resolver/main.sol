@@ -26,7 +26,6 @@ contract FlashResolver is Helper {
     {
         require(_tokens.length == _amounts.length, "array-lengths-not-same");
 
-        (_tokens, _amounts) = bubbleSort(_tokens, _amounts);
         validateTokens(_tokens);
 
         uint16[] memory bRoutes_;
@@ -39,6 +38,7 @@ contract FlashResolver is Helper {
         for (uint256 i = 0; i < routesWithAvailability_.length; i++) {
             if (routesWithAvailability_[i] != 0) {
                 uint256 routeFeeBPS_ = flashloanAggregator.calculateFeeBPS(routesWithAvailability_[i]);
+
                 if (feeBPS_ > routeFeeBPS_) {
                     feeBPS_ = routeFeeBPS_;
                     bRoutes_[0] = routesWithAvailability_[i];

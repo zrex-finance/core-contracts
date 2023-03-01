@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { TokenInterface } from "../../connectors/common/interfaces.sol";
-import "./helpers.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../lib/UniversalERC20.sol";
 
-import "forge-std/Test.sol";
+import { IFlashReceiver } from "./interfaces.sol";
+import { FlashAggregatorHelper } from "./helpers.sol";
 
-contract FlashAggregator is FlashAggregatorHelper, Test {
-    using SafeERC20 for IERC20;
+contract FlashAggregator is FlashAggregatorHelper {
+    using UniversalERC20 for IERC20;
 
     event LogFlashloan(
         address indexed account,
@@ -19,8 +20,7 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
     receive() external payable {}
 
     constructor() {
-        require(status == 0, "cannot-call-again");
-        owner = msg.sender;
+        require(status == 0, "cannot call again");
         status = 1;
     }
 
@@ -34,43 +34,32 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
         address _initiator,
         bytes memory _data
     ) external verifyDataHash(_data) returns (bool) {
-        require(_initiator == address(this), "not-same-sender");
-        require(msg.sender == address(aaveLending), "not-aave-sender");
+        require(_initiator == address(this), "not same sender");
+        require(msg.sender == address(aaveLending), "not aave sender");
 
-        FlashloanVariables memory loanVariables_;
+        (
+            uint256 route_,
+            address sender_,
+            bytes memory data_
+        ) = abi.decode(_data,(uint256, address, bytes));
 
-        (address sender_, bytes memory data_) = abi.decode(
-            _data,
-            (address, bytes)
-        );
+        uint256[] memory _fees = calculateFees(_amounts,calculateFeeBPS(route_));
+        uint256[] memory _initialBalances = calculateBalances(_assets, address(this));
 
-        loanVariables_._tokens = _assets;
-        loanVariables_._amounts = _amounts;
-        loanVariables_._fees = calculateFees(
-            _amounts,
-            calculateFeeBPS(1)
-        );
-        loanVariables_._iniBals = calculateBalances(
-            _assets,
-            address(this)
-        );
+        safeApprove(_assets, _amounts, _premiums, address(aaveLending));
+        safeTransfer(_assets,_amounts, sender_);
 
-        safeApprove(loanVariables_, _premiums, address(aaveLending));
-        safeTransfer(loanVariables_, sender_);
-
-        FlashReceiverInterface(sender_).executeOperation(
+        IFlashReceiver(sender_).executeOperation(
                 _assets,
                 _amounts,
-                loanVariables_._fees,
+                _fees,
                 sender_,
                 data_
             );
 
-        loanVariables_._finBals = calculateBalances(
-            _assets,
-            address(this)
-        );
-        validateFlashloan(loanVariables_);
+        uint256[] memory _finalBalances = calculateBalances(_assets,address(this));
+
+        validateFlashloan(_initialBalances, _finalBalances, _fees);
 
         return true;
     }
@@ -85,45 +74,32 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
         uint256,
         bytes calldata _data
     ) external verifyDataHash(_data) returns (bytes32) {
-        require(_initiator == address(this), "not-same-sender");
-        require(msg.sender == address(makerLending), "not-maker-sender");
-
-        FlashloanVariables memory loanVariables_;
+        require(_initiator == address(this), "not same sender");
+        require(msg.sender == address(makerLending), "not maker sender");
 
         (
             uint256 route_,
-            address[] memory tokens_,
+            address[] memory assets_,
             uint256[] memory amounts_,
             address sender_,
             bytes memory data_
         ) = abi.decode(_data, (uint256, address[], uint256[], address, bytes));
 
-        loanVariables_._tokens = tokens_;
-        loanVariables_._amounts = amounts_;
-        loanVariables_._iniBals = calculateBalances(
-            tokens_,
-            address(this)
-        );
-        loanVariables_._fees = calculateFees(
+        uint256[] memory _fees = calculateFees(amounts_,calculateFeeBPS(route_));
+        uint256[] memory _initialBalances = calculateBalances(assets_, address(this));
+
+        safeApprove(assets_, amounts_, _fees, address(makerLending));
+        safeTransfer(assets_,amounts_, sender_);
+
+        IFlashReceiver(sender_).executeOperation(
+            assets_,
             amounts_,
-            calculateFeeBPS(route_)
+            _fees,
+            sender_,
+            data_
         );
-
-        safeApprove(loanVariables_, loanVariables_._fees, address(makerLending));
-        safeTransfer(loanVariables_, sender_);
-
-        FlashReceiverInterface(sender_).executeOperation(
-                tokens_,
-                amounts_,
-                loanVariables_._fees,
-                sender_,
-                data_
-            );
-        loanVariables_._finBals = calculateBalances(
-            tokens_,
-            address(this)
-        );
-        validateFlashloan(loanVariables_);
+        uint256[] memory _finalBalances = calculateBalances(assets_, address(this));
+        validateFlashloan(_initialBalances, _finalBalances, _fees);
 
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
@@ -137,61 +113,41 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
         uint256[] memory _fees,
         bytes memory _data
     ) external verifyDataHash(_data) {
-        require(msg.sender == address(balancerLending), "not-balancer-sender");
-
-        FlashloanVariables memory loanVariables_;
+        require(msg.sender == address(balancerLending), "not balancer sender");
 
         (
             uint256 route_,
-            address[] memory tokens_,
+            address[] memory assets_,
             uint256[] memory amounts_,
             address sender_,
             bytes memory data_
         ) = abi.decode(_data, (uint256, address[], uint256[], address, bytes));
 
-        loanVariables_._tokens = tokens_;
-        loanVariables_._amounts = amounts_;
-        loanVariables_._iniBals = calculateBalances(
-            tokens_,
-            address(this)
-        );
-        loanVariables_._fees = calculateFees(
-            amounts_,
-            calculateFeeBPS(route_)
-        );
+        uint256[] memory fees_ = calculateFees(amounts_,calculateFeeBPS(route_));
+        uint256[] memory initialBalances_ = calculateBalances(assets_, address(this));
 
-        safeTransfer(loanVariables_, sender_);
-        console.log("executeOperation");
-        FlashReceiverInterface(sender_).executeOperation(
-                tokens_,
+        safeTransfer(assets_,amounts_, sender_);
+        IFlashReceiver(sender_).executeOperation(
+                assets_,
                 amounts_,
-                loanVariables_._fees,
+                fees_,
                 sender_,
                 data_
             );
 
-        loanVariables_._finBals = calculateBalances(
-            tokens_,
-            address(this)
-        );
+        uint256[] memory _finalBalances = calculateBalances(assets_, address(this));
 
-        validateFlashloan(loanVariables_);
-            safeTransferWithFee(
-                loanVariables_,
-                _fees,
-                address(balancerLending)
-            );
+        validateFlashloan(initialBalances_, _finalBalances, fees_);
+        safeTransferWithFee(assets_,amounts_,_fees,address(balancerLending));
     }
 
-    /**
-     * @notice Middle function for route 1.
-     */
+
     function routeAave(
         address[] memory _tokens,
         uint256[] memory _amounts,
         bytes memory _data
     ) internal {
-        bytes memory data_ = abi.encode(msg.sender, _data);
+        bytes memory data_ = abi.encode(1, msg.sender, _data);
         uint256 length_ = _tokens.length;
         uint256[] memory _modes = new uint256[](length_);
         for (uint256 i = 0; i < length_; i++) {
@@ -209,33 +165,22 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
         );
     }
 
-    /**
-     * @notice Middle function for route 2.
-     */
+
     function routeMaker(
         address[] memory _tokens,
         uint256[] memory _amounts,
         bytes memory _data
     ) internal {
-        bytes memory data_ = abi.encode(
-            2,
-            _tokens,
-            _amounts,
-            msg.sender,
-            _data
-        );
+        bytes memory data_ = abi.encode(2,_tokens,_amounts,msg.sender,_data);
         dataHash = bytes32(keccak256(data_));
         makerLending.flashLoan(
-            FlashReceiverInterface(address(this)),
+            IFlashReceiver(address(this)),
             _tokens[0],
             _amounts[0],
             data_
         );
     }
 
-    /**
-     * @notice Middle function for route 3.
-     */
     function routeBalancer(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -246,27 +191,17 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
         for (uint256 i = 0; i < length_; i++) {
             tokens_[i] = IERC20(_tokens[i]);
         }
-        bytes memory data_ = abi.encode(
-            3,
-            _tokens,
-            _amounts,
-            msg.sender,
-            _data
-        );
+        bytes memory data_ = abi.encode(3,_tokens,_amounts,msg.sender,_data);
         dataHash = bytes32(keccak256(data_));
 
-        console.log("routeBalancer");
         balancerLending.flashLoan(
-            FlashReceiverInterface(address(this)),
+            IFlashReceiver(address(this)),
             tokens_,
             _amounts,
             data_
         );
     }
 
-    /**
-     * @notice Main function for flashloan for all routes. Calls the middle functions according to routes.
-     */
     function flashLoan(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -276,7 +211,6 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
     ) external reentrancy {
         require(_tokens.length == _amounts.length, "array-lengths-not-same");
 
-        (_tokens, _amounts) = bubbleSort(_tokens, _amounts);
         validateTokens(_tokens);
 
         if (_route == 1) {
@@ -292,33 +226,10 @@ contract FlashAggregator is FlashAggregatorHelper, Test {
         emit LogFlashloan(msg.sender, _route, _tokens, _amounts);
     }
 
-    /**
-     * @notice Function to get the list of available routes.
-     */
     function getRoutes() public pure returns (uint16[] memory routes_) {
         routes_ = new uint16[](3);
         routes_[0] = 1;
         routes_[1] = 2;
         routes_[2] = 3;
-    }
-
-    /**
-     * @notice Function to transfer fee to the treasury. Will be called manually.
-     */
-    function transferFeeToTreasury(address[] memory _tokens) public {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            IERC20 token_ = IERC20(_tokens[i]);
-            uint256 decimals_ = TokenInterface(_tokens[i]).decimals();
-            uint256 amtToSub_ = decimals_ == 18 ? 1e10 : decimals_ > 12
-                ? 10000
-                : decimals_ > 7
-                ? 100
-                : 10;
-            uint256 amtToTransfer_ = token_.balanceOf(address(this)) > amtToSub_
-                ? (token_.balanceOf(address(this)) - amtToSub_)
-                : 0;
-            if (amtToTransfer_ > 0)
-                token_.safeTransfer(treasuryAddr, amtToTransfer_);
-        }
     }
 }

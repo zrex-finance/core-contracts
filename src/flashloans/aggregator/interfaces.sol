@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface FlashReceiverInterface {
+interface IFlashReceiver {
     function executeOperation(
         address[] calldata assets,
         uint256[] calldata amounts,
@@ -36,7 +36,7 @@ interface IERC3156FlashLender {
         returns (uint256);
 
     function flashLoan(
-        FlashReceiverInterface receiver,
+        IFlashReceiver receiver,
         address token,
         uint256 amount,
         bytes calldata data
@@ -45,13 +45,13 @@ interface IERC3156FlashLender {
     function toll() external view returns (uint256);
 }
 
-interface ProtocolFeesCollector {
+interface IProtocolFeesCollector {
     function getFlashLoanFeePercentage() external view returns (uint256);
 }
 
 interface IBalancerLending {
     function flashLoan(
-        FlashReceiverInterface recipient,
+        IFlashReceiver recipient,
         IERC20[] memory tokens,
         uint256[] memory amounts,
         bytes memory userData
@@ -60,5 +60,5 @@ interface IBalancerLending {
     function getProtocolFeesCollector()
         external
         view
-        returns (ProtocolFeesCollector);
+        returns (IProtocolFeesCollector);
 }
