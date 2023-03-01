@@ -1,77 +1,51 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "../lib/UniversalERC20.sol";
+
+import { IPositionRouter, SharedStructs } from "./interfaces.sol";
+
 import "forge-std/Test.sol";
 
-contract Implementation is Test {
+contract Implementation is Test, Initializable {
+	 using UniversalERC20 for IERC20;
 
-    function decodeEvent(
-		bytes memory response
-	) internal pure returns (string memory _eventCode, bytes memory _eventParams) {
-		if (response.length > 0) {
-			(_eventCode, _eventParams) = abi.decode(response, (string, bytes));
-		}
-	}
-
-	event LogCast(
-		address indexed origin,
-		address indexed sender,
-		uint256 value,
-		address[] targets,
-		string[] eventNames,
-		bytes[] eventParams
-	);
+	 IPositionRouter private positionRouter;
 
     receive() external payable {}
 
-    function execute(
-		address[] memory _targets,
-		bytes[] memory _datas,
-		address _origin
-	) public payable {
-		uint256 _length = _targets.length;
-		require(_length != 0, "Length invalid");
-		require(_length == _datas.length , "Array has different lenght");
+	function initialize(address _positionRouter) public initializer {
+        positionRouter = IPositionRouter(_positionRouter);
+    }
 
-		string[] memory eventNames = new string[](_length);
-		bytes[] memory eventParams = new bytes[](_length);
-
-		for (uint i = 0; i < _length; i++) {
-			bytes memory response = _delegatecall(_targets[i], _datas[i]);
-			(eventNames[i], eventParams[i]) = decodeEvent(response);
+    function openPosition(
+        SharedStructs.Position memory position,
+        bool isShort,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
+    ) external payable {
+        if (!isShort) {
+			IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
 		}
+        IERC20(position.debt).universalApprove(address(positionRouter), type(uint256).max);
 
-		emit LogCast(
-			_origin,
-			msg.sender,
-			msg.value,
-			_targets,
-			eventNames,
-			eventParams
-		);
-	}
+        positionRouter.openPosition{value: msg.value}(position, isShort, _tokens, _amts, route, _data, _customData);
+    }
 
-	function _delegatecall(
-		address _target,
-		bytes memory _data
-	) internal returns (bytes memory response) {
-		require(_target != address(0), "Target invalid");
-
-		assembly {
-			let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
-			let size := returndatasize()
-
-			response := mload(0x40)
-			mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-			mstore(response, size)
-			returndatacopy(add(response, 0x20), 0, size)
-
-			switch iszero(succeeded)
-			case 1 {
-				// throw if delegatecall failed
-				returndatacopy(0x00, 0x00, size)
-				revert(0x00, size)
-			}
-		}
-	}
+    function closePosition(
+        bytes32 key,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
+    ) external payable {
+        positionRouter.closePosition(key, _tokens, _amts, route, _data, _customData);
+    }
 }

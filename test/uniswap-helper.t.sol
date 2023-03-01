@@ -43,7 +43,7 @@ abstract contract UniswapHelper {
         bytes[] memory _calldata = new bytes[](1);
         _calldata[0] = getExactInputSingleData(_fromToken, _toToken, _recipient, _amount);
 
-        data = abi.encodeWithSelector(IUni.multicall.selector, block.timestamp * 2, _calldata);
+        data = abi.encodeWithSelector(IUni.multicall.selector, block.timestamp + 10 days, _calldata);
     }
 
     function getExactInputSingleData(

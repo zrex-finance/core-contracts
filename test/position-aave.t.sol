@@ -73,7 +73,15 @@ contract PositionAave is LendingHelper {
         uint256 fee = 3;
         address treasury = msg.sender;
 
-        router = new PositionRouter();
+        router = new PositionRouter(
+            address(flashloanAggregator),
+            address(exchanges),
+            fee,
+            treasury,
+            address(0),
+            address(aaveResolver),
+            address(0)
+        );
     }
 
     function testLongPosition() public {

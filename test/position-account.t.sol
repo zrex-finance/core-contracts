@@ -66,7 +66,6 @@ contract PositionAccount is LendingHelper {
 
     Exchanges exchanges;
     FlashResolver flashResolver;
-    FlashReceiver flashReceiver;
 
     Regestry regestry;
     PositionRouter router;
@@ -76,20 +75,28 @@ contract PositionAccount is LendingHelper {
     Implementations implementations;
 
     constructor() {
+        exchanges = new Exchanges();
+        FlashAggregator flashloanAggregator = new FlashAggregator();
+        flashResolver = new FlashResolver(address(flashloanAggregator));
+
+        router = new PositionRouter(
+            address(flashloanAggregator),
+            address(exchanges),
+            3,
+            msg.sender,
+            address(0),
+            address(aaveResolver),
+            address(0)
+        );
+        console.log("router", address(router));
+
         implementation = new Implementation();
         implementations = new Implementations();
 
         implementations.setDefaultImplementation(address(implementation));
 
         accountProxy = new AccountProxy(address(implementations));
-        regestry = new Regestry(address(accountProxy));
-
-        exchanges = new Exchanges();
-        flashReceiver = new FlashReceiver();
-        FlashAggregator flashloanAggregator = new FlashAggregator();
-        flashResolver = new FlashResolver(address(flashloanAggregator));
-
-        router = new PositionRouter();
+        regestry = new Regestry(address(accountProxy), address(router));
     }
 
     function testAccountLongPosition() public {
@@ -97,11 +104,8 @@ contract PositionAccount is LendingHelper {
         vm.prank(msg.sender);
         address account = regestry.createAccount(msg.sender);
 
-        console.log("account", account);
-        console.log("accountProxy", address(accountProxy));
-
         SharedStructs.Position memory _position = SharedStructs.Position(
-            msg.sender,
+            account,
             address(daiC),
             ethC,
             1000 ether,
@@ -114,16 +118,20 @@ contract PositionAccount is LendingHelper {
         
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(_position.debt).transfer(account, _position.amountIn);
+        ERC20(_position.debt).approve(account, _position.amountIn);
         
         openPosition(_position);
     
-        // uint256 index = router.positionsIndex(_position.account);
-        // bytes32 key = router.getKey(_position.account, index);
+        uint256 index = router.positionsIndex(_position.account);
+        console.log("index", index);
+        bytes32 key = router.getKey(_position.account, index);
+        console.logBytes32(key);
 
-        // (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
+        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
+        console.log("collateralAmount", collateralAmount);
+        console.log("borrowAmount", borrowAmount);
 
-        // closePosition(_position, 1, collateralAmount, borrowAmount);
+        closePosition(_position, index, collateralAmount, borrowAmount);
     }
 
     function openPosition(SharedStructs.Position memory _position) public {
@@ -142,27 +150,16 @@ contract PositionAccount is LendingHelper {
         bytes memory _calldata = getOpenCallbackData(
             _position.debt,
             _position.collateral,
-            swapAmountWithoutFee
+            swapAmountWithoutFee,
+            _position.account
         );
 
         bytes memory _open = abi.encodeWithSelector(
-            router.openPosition.selector, _position, false, _tokens, _amts, route, _calldata, bytes("")
+            implementation.openPosition.selector, _position, false, _tokens, _amts, route, _calldata, bytes("")
         );
-
-        address[] memory _targets = new address[](1);
-        _targets[0] = address(router);
-
-		bytes[] memory _datas = new bytes[](1);
-        _datas[0] = _open;
-
-        bytes memory _execute = abi.encodeWithSelector(
-            implementation.execute.selector, _targets, _datas, msg.sender
-        );
-
-        address account = address(regestry.accounts(msg.sender));
 
         vm.prank(msg.sender);
-        (bool success, bytes memory resp) = account.call(_execute);
+        (bool success, bytes memory resp) = _position.account.call(_open);
         console.log("success", success);
     }
 
@@ -173,6 +170,7 @@ contract PositionAccount is LendingHelper {
         uint256 _borrowAmount
     ) public {
         bytes32 key = router.getKey(_position.account, _index);
+        console.logBytes32(key);
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
@@ -188,21 +186,11 @@ contract PositionAccount is LendingHelper {
         );
 
         bytes memory _close = abi.encodeWithSelector(
-            router.closePosition.selector, key, _tokens, _amts, _route, _calldata, bytes("")
-        );
-
-        address[] memory _targets = new address[](1);
-        _targets[0] = address(router);
-
-		bytes[] memory _datas = new bytes[](1);
-        _datas[0] = _close;
-
-        bytes memory _execute = abi.encodeWithSelector(
-            implementation.execute.selector, _targets, _datas, msg.sender
+            implementation.closePosition.selector, key, _tokens, _amts, _route, _calldata, bytes("")
         );
 
         vm.prank(msg.sender);
-        (bool success, bytes memory resp) = _position.account.call(_execute);
+        (bool success, bytes memory resp) = _position.account.call(_close);
         console.log("success", success);
     }
 
@@ -235,7 +223,7 @@ contract PositionAccount is LendingHelper {
         _datas[0] = abi.encode(borrowAmt, debt, 1, abi.encode(1));
         _datas[1] = abi.encode(swapAmt, collateral, 1, bytes(""));
 
-        bytes memory _uniData = getMulticalSwapData(collateral, debt, address(exchanges), swapAmt);
+        bytes memory _uniData = getMulticalSwapData(collateral, debt, address(router), swapAmt);
         _datas[2] = abi.encode(debt, collateral, swapAmt, 1, _uniData);
 
         _calldata = abi.encode(
@@ -248,13 +236,14 @@ contract PositionAccount is LendingHelper {
     function getOpenCallbackData(
         address debt,
         address collateral,
-        uint256 swapAmount
+        uint256 swapAmount,
+        address account
     ) public view returns(bytes memory _calldata) {
-        bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
+        bytes memory _uniData = getMulticalSwapData(debt, collateral, address(router), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
 
-        uint256 index = router.positionsIndex(address(accountProxy));
-        bytes32 key = router.getKey(address(accountProxy), index + 1);
+        uint256 index = router.positionsIndex(address(account));
+        bytes32 key = router.getKey(address(account), index + 1);
 
         _customDatas[0] = abi.encode(key);
 

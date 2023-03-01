@@ -75,7 +75,15 @@ contract PositionCompound is LendingHelper {
         uint256 fee = 3;
         address treasury = msg.sender;
 
-        router = new PositionRouter();
+        router = new PositionRouter(
+            address(flashloanAggregator),
+            address(exchanges),
+            fee,
+            treasury,
+            address(compResolver),
+            address(0),
+            address(0)
+        );
         console.log("router", address(router));
     }
 

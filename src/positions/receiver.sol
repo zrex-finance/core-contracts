@@ -12,73 +12,53 @@ import "forge-std/Test.sol";
 contract FlashReceiver is Ownable, Test {
     using SafeERC20 for IERC20;
 
-    IFlashLoan public constant flashloanAggregator = IFlashLoan(0xA4AD4f68d0b91CFD19687c881e50f3A00242828c);
-    address public constant positionRouter = 0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF;
+    IFlashLoan public flashloanAggregator;
 
     modifier onlyAggregator() {
         require(msg.sender == address(flashloanAggregator), "Access denied");
         _;
     }
 
+    constructor(address flashloanAggregator_) {
+        flashloanAggregator = IFlashLoan(flashloanAggregator_);
+    }
+
     function flashloan(
         address[] calldata _tokens,
         uint256[] calldata _amts,
         uint256 route,
-        address sender,
         bytes calldata _data,
         bytes calldata _customData
     ) public {
-        require(sender == msg.sender, "not sender");
-        flashloanAggregator.flashLoan(_tokens, _amts, route,sender,_data, _customData);
+        flashloanAggregator.flashLoan(_tokens, _amts, route, _data, _customData);
     }
 
     // Function which
     function executeOperation(
-        address[] calldata tokens,
+        address[] calldata /* tokens */,
         uint256[] calldata amounts,
         uint256[] calldata premiums,
         address /* initiator */,
-        address origin,
         bytes calldata params
     ) external onlyAggregator returns (bool) {
-
-        uint256 amt = amounts[0] + premiums[0];
-
-        IERC20(tokens[0]).safeTransfer(origin, amt);
-
-        console.log("origin a", IERC20(tokens[0]).balanceOf(origin));
-        
-        {
-            bytes memory encodeParams = encodingParams(params, amt);
-
-            (bool success, bytes memory results) = origin.call(encodeParams);
-
-            if (!success) {
-                revert(_getRevertMsg(results));
-            }
+        bytes memory encodeParams = encodingParams(params, amounts[0] + premiums[0]);
+        (bool success, bytes memory results) = address(this).call(encodeParams);
+        if (!success) {
+            revert(_getRevertMsg(results));
         }
-
-        IERC20(tokens[0]).safeTransfer(address(flashloanAggregator), amt);
 
         return true;
     }
 
-    function encodingParams(bytes memory params, uint256 amount) internal view returns (bytes memory encode) {
+
+    function encodingParams(bytes memory params, uint256 amount) internal pure returns (bytes memory encode) {
         (
             bytes4 selector,
             bytes[] memory _datas,
             bytes[] memory _customDatas
         ) = abi.decode(params, (bytes4, bytes[], bytes[]));
 
-        address[] memory targets = new address[](1);
-        targets[0] = positionRouter;
-
-		bytes[] memory datas = new bytes[](1);
-        datas[0] = abi.encodeWithSelector(selector,_datas,_customDatas,amount);
-
-        encode = abi.encodeWithSelector(
-            IImplimentation.execute.selector, targets, datas, msg.sender
-        );
+        encode = abi.encodeWithSelector(selector, _datas, _customDatas, amount);
     }
 
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {

@@ -14,7 +14,6 @@ interface IFlashLoan {
         address[] memory tokens_,
         uint256[] memory amts_,
         uint256 route,
-        address origin,
         bytes calldata data_,
         bytes calldata _customData
     ) external;
@@ -25,7 +24,6 @@ interface IFlashloanReciever {
         address[] calldata _tokens,
         uint256[] calldata _amts,
         uint256 route,
-        address _origin,
         bytes calldata _data,
         bytes calldata _customData
     ) external;
@@ -35,7 +33,6 @@ interface IFlashloanReciever {
         uint256[] calldata amounts,
         uint256[] calldata premiums,
         address initiator,
-        address origin,
         bytes calldata  params
     ) external returns (bool);
 }
@@ -82,17 +79,7 @@ interface IAccount {
         bytes calldata _customData
     ) external payable;
 
-    function positions(bytes32 _key) external pure returns (
-        address account,
-        address debt,
-        address collateral,
-        uint256 amountIn,
-        uint256 sizeDelta,
-        uint256 collateralAmount,
-        uint256 borrowAmount
-    );
-    function positionsIndex(address _account) external pure returns (uint256);
-    function getKey(address _account, uint256 _index) external pure returns (bytes32);
+    function initialize(address _positionRouter) external;
 }
 
 interface IPositionRouter {

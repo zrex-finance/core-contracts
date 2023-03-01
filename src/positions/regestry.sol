@@ -3,68 +3,35 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-interface AccountInterface {
-    function execute(
-        address[] calldata _targets,
-        bytes[] calldata _datas,
-        address _origin
-    ) external payable returns (bytes32[] memory responses);
-}
+import { SharedStructs, IAccount } from "./interfaces.sol";
 
-contract CloneFactory {
- 
-    function createClone(address target) internal returns (address result) {
-        bytes20 targetBytes = bytes20(target)<<16;
-        assembly {
-            let clone := mload(0x40)
-            mstore(clone, 0x3d602b80600a3d3981f3363d3d373d3d3d363d71000000000000000000000000)
-            mstore(add(clone, 0x14), targetBytes)
-            mstore(add(clone, 0x26), 0x5af43d82803e903d91602957fd5bf30000000000000000000000000000000000)
-            result := create(0, clone, 0x35)
-        }
-    }
+contract Regestry {
 
-    function isClone(address target, address query) internal view returns (bool result) {
-        bytes20 targetBytes = bytes20(target)<<16;
-        assembly {
-            let clone := mload(0x40)
-            mstore(clone, 0x363d3d373d3d3d363d7100000000000000000000000000000000000000000000)
-            mstore(add(clone, 0xa), targetBytes)
-            mstore(add(clone, 0x1c), 0x5af43d82803e903d91602957fd5bf30000000000000000000000000000000000)
-
-            let other := add(clone, 0x40)
-            extcodecopy(query, other, 0, 0x2b)
-
-            result := and(
-                eq(mload(clone), mload(other)), 
-                eq(mload(add(clone, 0x20)), mload(add(other, 0x20)))
-            )
-        }
-    }
-}
-
-contract Regestry is CloneFactory {
-
-    address public immutable accountProxy;
+    address public accountProxy;
+    address public positionRouter;
 
     // user -> account proxy
     mapping (address => address) public accounts;
 
-    constructor(address _accountProxy) {
+    constructor(address _accountProxy, address _positionRouter) {
         accountProxy = _accountProxy;
+        positionRouter = _positionRouter;
     }
 
-    function createWithExecute(
-        address _owner,
-        address[] calldata _targets,
-        bytes[] calldata _datas,
-        address _origin
+    function createWithOpen(
+        SharedStructs.Position memory position,
+        bool isShort,
+        address[] calldata _tokens,
+        uint256[] calldata _amts,
+        uint256 route,
+        bytes calldata _data,
+        bytes calldata _customData
     ) external payable returns (address _account) {
-        _account = createAccount(_owner);
+        _account = createAccount(msg.sender);
 
-        if (_targets.length > 0) {
-            AccountInterface(_account).execute{value: msg.value}(_targets, _datas, _origin);
-        }
+        IAccount(_account).openPosition{value: msg.value}(
+            position, isShort, _tokens, _amts, route, _data, _customData
+        );
     }
 
     function createAccount(address _owner) public returns (address _account) {
@@ -73,6 +40,7 @@ contract Regestry is CloneFactory {
 
         require(_account == address(0), "account already exists");
         _account = Clones.clone(accountProxy);
+        IAccount(_account).initialize(positionRouter);
         accounts[_owner] = _account;
     }
 }

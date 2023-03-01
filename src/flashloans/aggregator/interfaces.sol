@@ -9,7 +9,6 @@ interface FlashReceiverInterface {
         uint256[] calldata amounts,
         uint256[] calldata premiums,
         address initiator,
-        address origin,
         bytes calldata _data
     ) external returns (bool);
 }

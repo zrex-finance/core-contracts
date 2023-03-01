@@ -14,8 +14,10 @@ abstract contract ExchangeHelpers is Basic, Test {
 
 	function _uniSwap(SwapData memory swapData) internal returns (uint256 buyAmt) {
 		uint256 initalBal = getTokenBalance(swapData.buyToken);
+        console.log("initalBal", initalBal);
 
 		(bool success, bytes memory results) = V3_SWAP_ROUTER_ADDRESS.call(swapData.callData);
+        console.log("success", success);
 		
 		if (!success) {
             revert(_getRevertMsg(results));
@@ -39,13 +41,19 @@ abstract contract ExchangeHelpers is Basic, Test {
 			? TokenInterface(wethAddr)
 			: swapData.buyToken;
 
+        console.log("isEthSellToken", isEthSellToken);
+
 		convertEthToWeth(isEthSellToken, swapData.sellToken, swapData._sellAmt);
+
+        console.log("_sellAmt", swapData._sellAmt);
+        console.log("sellToken", address(swapData.sellToken));
 
 		approve(
 			TokenInterface(swapData.sellToken),
 			V3_SWAP_ROUTER_ADDRESS,
 			swapData._sellAmt
 		);
+        console.log("approve", swapData._sellAmt);
 
 		_buyAmt = _uniSwap(swapData);
 

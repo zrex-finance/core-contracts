@@ -31,12 +31,9 @@ contract Exchanges is ExchangeHelpers {
         uint256 _route,
 		bytes calldata callData
     ) external payable returns (uint256 _buyAmt) {
-        console.log("msg.sender", msg.sender);
-        console.log("msg.sender", IERC20(sellAddr).balanceOf(msg.sender));
-        console.log(" address(this)",  address(this));
-        console.log(" address(this)",  IERC20(sellAddr).balanceOf(address(this)));
-        IERC20(sellAddr).universalTransferFrom(msg.sender, address(this), sellAmt);
-
+        console.log("buyAddr", buyAddr);
+        console.log("sellAddr", sellAddr);
+        console.log("sellAmt", sellAmt);
         if (_route == 1) {
             _buyAmt = routeUni(buyAddr, sellAddr, sellAmt, callData);
         } else if (_route == 2) {
@@ -44,9 +41,6 @@ contract Exchanges is ExchangeHelpers {
         } else {
             revert("route-does-not-exist");
         }
-
-        IERC20(buyAddr).universalTransfer(msg.sender, _buyAmt);
-
         emit LogExchange(msg.sender, _route, buyAddr, sellAddr, sellAmt);
     }
 

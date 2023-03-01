@@ -5,11 +5,23 @@ import { Euler } from "../connectors/protocols/euler/main.sol";
 import { AaveResolver } from "../connectors/protocols/aave/v2/main.sol";
 import { CompoundV3Resolver } from "../connectors/protocols/compound/v3/main.sol";
 
-contract Connector {
+import { Executor } from "./executor.sol";
 
-    Euler internal constant euler = Euler(address(0));
-    AaveResolver internal constant aaveV2Resolver = AaveResolver(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f);
-    CompoundV3Resolver internal constant compoundV3Resolver = CompoundV3Resolver(address(0));
+contract Connector is Executor {
+
+    Euler internal euler;
+    AaveResolver internal aaveV2Resolver;
+    CompoundV3Resolver internal compoundV3Resolver;
+
+    constructor(
+        address _euler,
+        address _aaveV2Resolver,
+        address _compoundV3Resolver
+    ) {
+        euler = Euler(_euler);
+        aaveV2Resolver = AaveResolver(_aaveV2Resolver);
+        compoundV3Resolver = CompoundV3Resolver(_compoundV3Resolver);
+    }
 
     function deposit(uint256 _amt, bytes memory _data) public payable {
         (
@@ -27,10 +39,16 @@ contract Connector {
         bytes memory _customData
     ) internal {
         if (_route == 1) {
-            aaveV2Resolver.deposit(_token, _amt); // delegate call
+            _delegatecall(
+                address(aaveV2Resolver),
+                abi.encodeWithSelector(aaveV2Resolver.deposit.selector, _token, _amt)
+            );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
-            compoundV3Resolver.deposit(market, _token, _amt);
+            _delegatecall(
+                address(compoundV3Resolver),
+                abi.encodeWithSelector(compoundV3Resolver.deposit.selector, market, _token, _amt)
+            );
         } else if (_route == 3) {
             (uint256 subAccount, bool enableCollateral) = abi.decode(_customData, (uint256, bool));
             euler.deposit(subAccount, _token, _amt, enableCollateral);
@@ -56,10 +74,16 @@ contract Connector {
     ) internal {
         if (_route == 1) {
             uint256 rateMode = abi.decode(_customData, (uint256));
-            aaveV2Resolver.borrow(_token, _amt, rateMode);
+            _delegatecall(
+                address(aaveV2Resolver),
+                abi.encodeWithSelector(aaveV2Resolver.borrow.selector, _token, _amt, rateMode)
+            );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
-            compoundV3Resolver.borrow(market, _token, _amt);
+            _delegatecall(
+                address(compoundV3Resolver),
+                abi.encodeWithSelector(compoundV3Resolver.borrow.selector, market, _token, _amt)
+            );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
             euler.borrow(subAccount, _token, _amt);
@@ -86,10 +110,16 @@ contract Connector {
     ) internal {
         if (_route == 1) {
             uint256 rateMode = abi.decode(_customData, (uint256));
-            aaveV2Resolver.payback(_token, _amt, rateMode);
+            _delegatecall(
+                address(aaveV2Resolver),
+                abi.encodeWithSelector(aaveV2Resolver.payback.selector, _token, _amt, rateMode)
+            );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
-            compoundV3Resolver.payback(market, _token, _amt);
+            _delegatecall(
+                address(compoundV3Resolver),
+                abi.encodeWithSelector(compoundV3Resolver.payback.selector, market, _token, _amt)
+            );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
             euler.repay(subAccount, _token, _amt);
@@ -115,10 +145,16 @@ contract Connector {
         bytes memory _customData
     ) internal {
         if (_route == 1) {
-            aaveV2Resolver.withdraw(_token, _amt);
+            _delegatecall(
+                address(aaveV2Resolver),
+                abi.encodeWithSelector(aaveV2Resolver.withdraw.selector, _token, _amt)
+            );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
-            compoundV3Resolver.withdraw(market, _token, _amt);
+            _delegatecall(
+                address(compoundV3Resolver),
+                abi.encodeWithSelector(compoundV3Resolver.withdraw.selector, market, _token, _amt)
+            );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
             euler.withdraw(subAccount, _token, _amt);
