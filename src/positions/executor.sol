@@ -2,53 +2,7 @@
 pragma solidity ^0.8.13;
 
 contract Executor {
-	constructor() {}
 
-	function decodeEvent(
-		bytes memory response
-	) internal pure returns (string memory _eventCode, bytes memory _eventParams) {
-		if (response.length > 0) {
-			(_eventCode, _eventParams) = abi.decode(response, (string, bytes));
-		}
-	}
-
-	event LogCast(
-		address indexed origin,
-		address indexed sender,
-		uint256 value,
-		address[] targets,
-		string[] eventNames,
-		bytes[] eventParams
-	);
-
-	function execute(
-		address[] memory _targets,
-		bytes[] memory _datas,
-		address _origin
-	) public payable {
-		uint256 _length = _targets.length;
-		require(_length != 0, "Length invalid");
-		require(_length == _datas.length , "Array has different lenght");
-
-		string[] memory eventNames = new string[](_length);
-		bytes[] memory eventParams = new bytes[](_length);
-
-		for (uint i = 0; i < _length; i++) {
-			bytes memory response = _delegatecall(_targets[i], _datas[i]);
-			(eventNames[i], eventParams[i]) = decodeEvent(response);
-		}
-
-		emit LogCast(
-			_origin,
-			msg.sender,
-			msg.value,
-			_targets,
-			eventNames,
-			eventParams
-		);
-	}
-
-	// internal
 	function _delegatecall(
 		address _target,
 		bytes memory _data

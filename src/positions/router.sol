@@ -6,9 +6,6 @@ import "../lib/UniversalERC20.sol";
 
 import { Connector } from "./connector.sol";
 import { FlashReceiver } from "./receiver.sol";
-
-import "forge-std/Test.sol";
-
 import { IExchanges, SharedStructs } from "./interfaces.sol";
 
 contract PositionRouter is Connector, FlashReceiver {
@@ -23,8 +20,6 @@ contract PositionRouter is Connector, FlashReceiver {
 
     mapping (bytes32 => SharedStructs.Position) public positions;
     mapping (address => uint256) public positionsIndex;
-
-    mapping (address => PositionRouter) public users;
 
     modifier onlyCallback() {
         require(msg.sender == address(this), "Access denied");
@@ -92,9 +87,8 @@ contract PositionRouter is Connector, FlashReceiver {
         uint256 route,
         bytes calldata _data,
         bytes calldata _customData
-    ) external payable {
+    ) external {
         SharedStructs.Position memory position = positions[key];
-
         require(msg.sender == position.account, "Can close own position");
 
         flashloan(_tokens, _amts, route, _data, _customData);
@@ -117,7 +111,6 @@ contract PositionRouter is Connector, FlashReceiver {
         borrow(repayAmount, _datas[2]);
 
         bytes32 key = bytes32(_customDatas[0]);
-        
 
         positions[key].collateralAmount = value;
         positions[key].borrowAmount = repayAmount;
@@ -134,7 +127,6 @@ contract PositionRouter is Connector, FlashReceiver {
         payback(_datas[0]);
         withdraw(_datas[1]);
 
-        console.log("CLOSE");
         SharedStructs.Position memory position = positions[bytes32(_customDatas[0])];
 
         (uint256 returnedAmt, /* address collateral */,/* address debt */) = exchange(_datas[2]);

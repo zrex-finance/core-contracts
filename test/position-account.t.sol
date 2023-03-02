@@ -98,15 +98,14 @@ contract PositionAccount is LendingHelper {
         regestry = new Regestry(address(accountProxy), address(router));
     }
 
-    function testAccountLongPosition() public {
-
+    function testCreateAccountWithOpenLongPosition() public {
         vm.prank(msg.sender);
-        address account = regestry.createAccount(msg.sender);
+        address account = regestry.predictDeterministicAddress();
 
         SharedStructs.Position memory _position = SharedStructs.Position(
             account,
             address(daiC),
-            ethC,
+            wethC,
             1000 ether,
             2,
             0,
@@ -115,21 +114,137 @@ contract PositionAccount is LendingHelper {
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
         
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(account, _position.amountIn);
-        
-        openPosition(_position);
-    
-        uint256 index = router.positionsIndex(_position.account);
-        bytes32 key = router.getKey(_position.account, index);
-
-        (,,,,,uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
-
-        closePosition(_position, index, collateralAmount, borrowAmount);
+        openPositionWithCreateAccount(_position);
+        closePosition(_position);
     }
 
-    function openPosition(SharedStructs.Position memory _position) public {
+    function testLongPositionAccount() public {
+        vm.prank(msg.sender);
+        address account = regestry.createAccount(msg.sender);
+
+        SharedStructs.Position memory _position = SharedStructs.Position(
+            account,
+            address(daiC),
+            wethC,
+            1000 ether,
+            2,
+            0,
+            0
+        );
+
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn);
+        
+        openPosition(_position);
+        closePosition(_position);
+    }
+
+    function ShortPosition() public {
+        vm.prank(msg.sender);
+        address account = regestry.createAccount(msg.sender);
+
+        uint256 shortAmt = 2000 ether;
+
+        bytes memory _uniData = getMulticalSwapData(daiC, wethC, address(account), shortAmt);
+        bytes memory datas =  abi.encode(wethC, daiC, shortAmt, 1, _uniData);
+
+        topUpTokenBalance(daiC, daiWhale, shortAmt);
+
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(daiC).approve(address(account), shortAmt);
+
+        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
+
+        SharedStructs.Position memory _position = SharedStructs.Position(
+            msg.sender,
+            wethC,
+            usdcC,
+            exchangeAmt,
+            2,
+            0,
+            0
+        );
+
+        openShort(_position, datas);
+
+        closePosition(_position);
+    }
+
+    function openShort(SharedStructs.Position memory _position, bytes memory _swap) 
+        public 
+    {
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(_position.account, _position.amountIn);
+
+        (
+            /* bool isShort */,
+            address[] memory _tokens,
+            uint256[] memory _amts,
+            uint256 route,
+            bytes memory _data,
+            /* bytes memory _customdata */
+        ) = _openPosition(_position);
+
+        bytes memory _open = abi.encodeWithSelector(
+            implementation.openPosition.selector, _position, true, _tokens, _amts, route, _data, _swap
+        );
+        
+        vm.prank(msg.sender);
+        (bool success, ) = _position.account.call(_open);
+        console.log("success", success);
+    }
+
+    function openPosition(SharedStructs.Position memory _position) 
+        public 
+    {
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(_position.account, _position.amountIn);
+
+        (
+            bool isShort,
+            address[] memory _tokens,
+            uint256[] memory _amts,
+            uint256 route,
+            bytes memory _data,
+            bytes memory _customdata
+        ) = _openPosition(_position);
+
+        bytes memory _open = abi.encodeWithSelector(
+            implementation.openPosition.selector, _position, isShort, _tokens, _amts, route, _data, _customdata
+        );
+        
+        vm.prank(msg.sender);
+        (bool success, ) = _position.account.call(_open);
+        console.log("success", success);
+    }
+
+    function openPositionWithCreateAccount(SharedStructs.Position memory _position) 
+        public 
+    {
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(address(regestry), _position.amountIn);
+
+        (
+            bool isShort,
+            address[] memory _tokens,
+            uint256[] memory _amts,
+            uint256 route,
+            bytes memory _data,
+            bytes memory _customdata
+        ) = _openPosition(_position);
+
+        vm.prank(msg.sender);
+        regestry.createWithOpen(_position, isShort, _tokens, _amts, route, _data, _customdata);
+    }
+
+    function _openPosition(SharedStructs.Position memory _position) 
+        public 
+        view 
+        returns (bool, address[] memory, uint256[] memory, uint256, bytes memory, bytes memory)
+    {
         uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 
         (   
@@ -142,30 +257,20 @@ contract PositionAccount is LendingHelper {
         // protocol fee 3% denominator 10000
         uint256 swapAmountWithoutFee = swapAmount - (swapAmount * 3 / 10000);
 
-        bytes memory _calldata = getOpenCallbackData(
-            _position.debt,
-            _position.collateral,
-            swapAmountWithoutFee,
-            _position.account
-        );
+        bytes memory _calldata = getOpenCallbackData(_position, swapAmountWithoutFee);
 
-        bytes memory _open = abi.encodeWithSelector(
-            implementation.openPosition.selector, _position, false, _tokens, _amts, route, _calldata, bytes("")
-        );
-
-        vm.prank(msg.sender);
-        (bool success, bytes memory resp) = _position.account.call(_open);
-        console.log("success", success);
+        return (false, _tokens, _amts, route, _calldata, bytes(""));
     }
 
-    function closePosition(
-        SharedStructs.Position memory _position,
-        uint256 _index,
-        uint256 _collateralAmount,
-        uint256 _borrowAmount
-    ) public {
-        bytes32 key = router.getKey(_position.account, _index);
-        console.logBytes32(key);
+    function closePosition(SharedStructs.Position memory _position)
+        public 
+    {
+
+        uint256 index = router.positionsIndex(_position.account);
+        bytes32 key = router.getKey(_position.account, index);
+
+        (,,,,,uint256 _collateralAmount, uint256 _borrowAmount) = router.positions(key);
+
         (   
             address[] memory _tokens,
             uint256[] memory _amts,
@@ -185,7 +290,7 @@ contract PositionAccount is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        (bool success, bytes memory resp) = _position.account.call(_close);
+        (bool success, ) = _position.account.call(_close);
         console.log("success", success);
     }
 
@@ -229,25 +334,25 @@ contract PositionAccount is LendingHelper {
     }
 
     function getOpenCallbackData(
-        address debt,
-        address collateral,
-        uint256 swapAmount,
-        address account
+        SharedStructs.Position memory _position,
+        uint256 swapAmount
     ) public view returns(bytes memory _calldata) {
-        bytes memory _uniData = getMulticalSwapData(debt, collateral, address(router), swapAmount);
+        bytes memory _uniData = getMulticalSwapData(
+            _position.debt, _position.collateral, address(router), swapAmount
+        );
         bytes[] memory _customDatas = new bytes[](1);
 
-        uint256 index = router.positionsIndex(address(account));
-        bytes32 key = router.getKey(address(account), index + 1);
+        uint256 index = router.positionsIndex(address(_position.account));
+        bytes32 key = router.getKey(address(_position.account), index + 1);
 
         _customDatas[0] = abi.encode(key);
 
         bytes[] memory _datas = new bytes[](3);
-        _datas[0] = abi.encode(collateral, debt, swapAmount, 1, _uniData);
+        _datas[0] = abi.encode(_position.collateral, _position.debt, swapAmount, 1, _uniData);
         // deposit(dynamic amt,token,route)
-        _datas[1] = abi.encode(collateral, 1, bytes(""));
+        _datas[1] = abi.encode(_position.collateral, 1, bytes(""));
         // borrow(dynamic amt,token,route,mode)
-        _datas[2] = abi.encode(debt, 1, abi.encode(1));
+        _datas[2] = abi.encode(_position.debt, 1, abi.encode(1));
 
         _calldata = abi.encode(
             router.openPositionCallback.selector,

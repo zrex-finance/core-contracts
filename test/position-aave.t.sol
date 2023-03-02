@@ -84,7 +84,7 @@ contract PositionAave is LendingHelper {
         );
     }
 
-    function testLongPosition() public {
+    function LongPosition() public {
         SharedStructs.Position memory _position = SharedStructs.Position(
             msg.sender,
             address(daiC),

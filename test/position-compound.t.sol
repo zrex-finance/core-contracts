@@ -87,7 +87,7 @@ contract PositionCompound is LendingHelper {
         console.log("router", address(router));
     }
 
-    function testOpenAndClosePosition() public {
+    function OpenAndClosePosition() public {
         position = SharedStructs.Position(
             msg.sender,
             address(usdcC),
