@@ -11,7 +11,7 @@ import { HelperContract, Deployer } from "./deployer.sol";
 
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
-    uint256 RATE_TYPE = 1;
+    uint256 RATE_TYPE = 2;
     uint256 ROUTE = 4;
 
     function getCollateralAmt(
