@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Euler } from "../connectors/protocols/euler/main.sol";
-import { AaveResolver } from "../connectors/protocols/aave/v2/main.sol";
-import { CompoundV3Resolver } from "../connectors/protocols/compound/v3/main.sol";
+import { EulerConnector } from "../connectors/Euler.sol";
+import { AaveV2Connector } from "../connectors/AaveV2.sol";
+import { CompoundV3Connector } from "../connectors/CompoundV3.sol";
 
-import { Executor } from "./executor.sol";
+contract Connector {
 
-contract Connector is Executor {
-
-    Euler internal euler;
-    AaveResolver internal aaveV2Resolver;
-    CompoundV3Resolver internal compoundV3Resolver;
+    EulerConnector internal euler;
+    AaveV2Connector internal aaveV2connector;
+    CompoundV3Connector internal compoundV3Connector;
 
     constructor(
         address _euler,
-        address _aaveV2Resolver,
-        address _compoundV3Resolver
+        address _aaveV2connector,
+        address _compoundV3Connector
     ) {
-        euler = Euler(_euler);
-        aaveV2Resolver = AaveResolver(_aaveV2Resolver);
-        compoundV3Resolver = CompoundV3Resolver(_compoundV3Resolver);
+        euler = EulerConnector(_euler);
+        aaveV2connector = AaveV2Connector(_aaveV2connector);
+        compoundV3Connector = CompoundV3Connector(_compoundV3Connector);
     }
 
     function deposit(uint256 _amt, bytes memory _data) public payable {
@@ -40,14 +38,14 @@ contract Connector is Executor {
     ) internal {
         if (_route == 1) {
             _delegatecall(
-                address(aaveV2Resolver),
-                abi.encodeWithSelector(aaveV2Resolver.deposit.selector, _token, _amt)
+                address(aaveV2connector),
+                abi.encodeWithSelector(aaveV2connector.deposit.selector, _token, _amt)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
             _delegatecall(
-                address(compoundV3Resolver),
-                abi.encodeWithSelector(compoundV3Resolver.deposit.selector, market, _token, _amt)
+                address(compoundV3Connector),
+                abi.encodeWithSelector(compoundV3Connector.deposit.selector, market, _token, _amt)
             );
         } else if (_route == 3) {
             (uint256 subAccount, bool enableCollateral) = abi.decode(_customData, (uint256, bool));
@@ -75,14 +73,14 @@ contract Connector is Executor {
         if (_route == 1) {
             uint256 rateMode = abi.decode(_customData, (uint256));
             _delegatecall(
-                address(aaveV2Resolver),
-                abi.encodeWithSelector(aaveV2Resolver.borrow.selector, _token, _amt, rateMode)
+                address(aaveV2connector),
+                abi.encodeWithSelector(aaveV2connector.borrow.selector, _token, _amt, rateMode)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
             _delegatecall(
-                address(compoundV3Resolver),
-                abi.encodeWithSelector(compoundV3Resolver.borrow.selector, market, _token, _amt)
+                address(compoundV3Connector),
+                abi.encodeWithSelector(compoundV3Connector.borrow.selector, market, _token, _amt)
             );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
@@ -111,14 +109,14 @@ contract Connector is Executor {
         if (_route == 1) {
             uint256 rateMode = abi.decode(_customData, (uint256));
             _delegatecall(
-                address(aaveV2Resolver),
-                abi.encodeWithSelector(aaveV2Resolver.payback.selector, _token, _amt, rateMode)
+                address(aaveV2connector),
+                abi.encodeWithSelector(aaveV2connector.payback.selector, _token, _amt, rateMode)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
             _delegatecall(
-                address(compoundV3Resolver),
-                abi.encodeWithSelector(compoundV3Resolver.payback.selector, market, _token, _amt)
+                address(compoundV3Connector),
+                abi.encodeWithSelector(compoundV3Connector.payback.selector, market, _token, _amt)
             );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
@@ -146,14 +144,14 @@ contract Connector is Executor {
     ) internal {
         if (_route == 1) {
             _delegatecall(
-                address(aaveV2Resolver),
-                abi.encodeWithSelector(aaveV2Resolver.withdraw.selector, _token, _amt)
+                address(aaveV2connector),
+                abi.encodeWithSelector(aaveV2connector.withdraw.selector, _token, _amt)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
             _delegatecall(
-                address(compoundV3Resolver),
-                abi.encodeWithSelector(compoundV3Resolver.withdraw.selector, market, _token, _amt)
+                address(compoundV3Connector),
+                abi.encodeWithSelector(compoundV3Connector.withdraw.selector, market, _token, _amt)
             );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
@@ -162,4 +160,27 @@ contract Connector is Executor {
             revert("route-does-not-exist");
         }
     }
+
+    function _delegatecall(
+		address _target,
+		bytes memory _data
+	) internal returns (bytes memory response) {
+		require(_target != address(0), "Target invalid");
+		assembly {
+			let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
+			let size := returndatasize()
+
+			response := mload(0x40)
+			mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+			mstore(response, size)
+			returndatacopy(add(response, 0x20), 0, size)
+
+			switch iszero(succeeded)
+			case 1 {
+				// throw if delegatecall failed
+				returndatacopy(0x00, 0x00, size)
+				revert(0x00, size)
+			}
+		}
+	}
 }

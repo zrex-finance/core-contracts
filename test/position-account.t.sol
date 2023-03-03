@@ -4,21 +4,21 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import "../src/positions/router.sol";
-import "../src/positions/interfaces.sol";
+import { SharedStructs } from "../src/lib/SharedStructs.sol";
 
-import "../src/connectors/protocols/aave/v2/main.sol";
+import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
 
-import "../src/exchanges/main.sol";
-import "../src/flashloans/resolver/main.sol";
-import "../src/flashloans/aggregator/main.sol";
+import { PositionRouter } from "../src/positions/PositionRouter.sol";
+import { FlashReceiver } from "../src/positions/FlashReceiver.sol";
 
-import { AccountProxy } from "../src/positions/accountProxy.sol";
-import { Implementation } from "../src/positions/implementation.sol";
-import { Implementations } from "../src/positions/implementations.sol";
+import { SwapRouter } from "../src/swap/SwapRouter.sol";
+import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
+import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 
-import { Regestry } from "../src/positions/regestry.sol";
-import { FlashReceiver } from "../src/positions/receiver.sol";
+import { Regestry } from "../src/accounts/regestry.sol";
+import { Proxy } from "../src/accounts/Proxy.sol";
+import { Implementation } from "../src/accounts/implementation.sol";
+import { Implementations } from "../src/accounts/implementations.sol";
 
 import { UniswapHelper } from "./uniswap-helper.t.sol";
 
@@ -64,24 +64,24 @@ contract LendingHelper is HelperContract {
 
 contract PositionAccount is LendingHelper {
 
-    Exchanges exchanges;
+    SwapRouter swapRouter;
     FlashResolver flashResolver;
 
     Regestry regestry;
     PositionRouter router;
 
-    AccountProxy accountProxy;
+    Proxy accountProxy;
     Implementation implementation;
     Implementations implementations;
 
     constructor() {
-        exchanges = new Exchanges();
+        swapRouter = new SwapRouter();
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
         router = new PositionRouter(
             address(flashloanAggregator),
-            address(exchanges),
+            address(swapRouter),
             3,
             msg.sender,
             address(0),
@@ -94,7 +94,7 @@ contract PositionAccount is LendingHelper {
 
         implementations.setDefaultImplementation(address(implementation));
 
-        accountProxy = new AccountProxy(address(implementations));
+        accountProxy = new Proxy(address(implementations));
         regestry = new Regestry(address(accountProxy), address(router));
     }
 
@@ -138,7 +138,7 @@ contract PositionAccount is LendingHelper {
         closePosition(_position);
     }
 
-    function ShortPosition() public {
+    function testShortPosition() public {
         vm.prank(msg.sender);
         address account = regestry.createAccount(msg.sender);
 
@@ -156,7 +156,7 @@ contract PositionAccount is LendingHelper {
         uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
 
         SharedStructs.Position memory _position = SharedStructs.Position(
-            msg.sender,
+            account,
             wethC,
             usdcC,
             exchangeAmt,
@@ -173,10 +173,6 @@ contract PositionAccount is LendingHelper {
     function openShort(SharedStructs.Position memory _position, bytes memory _swap) 
         public 
     {
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(_position.account, _position.amountIn);
-
         (
             /* bool isShort */,
             address[] memory _tokens,
@@ -191,8 +187,7 @@ contract PositionAccount is LendingHelper {
         );
         
         vm.prank(msg.sender);
-        (bool success, ) = _position.account.call(_open);
-        console.log("success", success);
+        _position.account.call(_open);
     }
 
     function openPosition(SharedStructs.Position memory _position) 
@@ -216,8 +211,7 @@ contract PositionAccount is LendingHelper {
         );
         
         vm.prank(msg.sender);
-        (bool success, ) = _position.account.call(_open);
-        console.log("success", success);
+        _position.account.call(_open);
     }
 
     function openPositionWithCreateAccount(SharedStructs.Position memory _position) 
@@ -290,8 +284,7 @@ contract PositionAccount is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        (bool success, ) = _position.account.call(_close);
-        console.log("success", success);
+        _position.account.call(_close);
     }
 
     function getFlashloanData(

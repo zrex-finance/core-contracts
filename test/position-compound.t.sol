@@ -4,14 +4,13 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import "../src/positions/router.sol";
-import "../src/positions/interfaces.sol";
+import "../src/positions/PositionRouter.sol";
 
-import "../src/connectors/protocols/compound/v3/main.sol";
+import "../src/connectors/CompoundV3.sol";
 
-import "../src/exchanges/main.sol";
-import "../src/flashloans/resolver/main.sol";
-import "../src/flashloans/aggregator/main.sol";
+import "../src/swap/SwapRouter.sol";
+import "../src/flashloans/FlashResolver.sol";
+import "../src/flashloans/FlashAggregator.sol";
 
 import { UniswapHelper } from "./uniswap-helper.t.sol";
 
@@ -28,12 +27,12 @@ contract HelperContract is UniswapHelper, Test {
 }
 
 contract LendingHelper is HelperContract {
-    CompoundV3Resolver compResolver;
+    CompoundV3Connector compResolver;
 
     address USDC_MARKET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
 
     constructor() {
-        compResolver = new CompoundV3Resolver();
+        compResolver = new CompoundV3Connector();
     }
 
     function getCollateralAmt(
@@ -57,7 +56,7 @@ contract LendingHelper is HelperContract {
 
 contract PositionCompound is LendingHelper {
 
-    Exchanges exchanges;
+    SwapRouter swapRouter;
     PositionRouter router;
     FlashResolver flashResolver;
 
@@ -68,7 +67,7 @@ contract PositionCompound is LendingHelper {
     }
 
     function setUp() public {
-        exchanges = new Exchanges();
+        swapRouter = new SwapRouter();
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
@@ -77,7 +76,7 @@ contract PositionCompound is LendingHelper {
 
         router = new PositionRouter(
             address(flashloanAggregator),
-            address(exchanges),
+            address(swapRouter),
             fee,
             treasury,
             address(compResolver),
@@ -128,7 +127,7 @@ contract PositionCompound is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.openPosition(position, false, _tokens, _amts, route, _calldata, bytes(""));
+        router.openPosition(position, _tokens, _amts, route, _calldata, bytes(""));
     }
 
       function closePosition() public {
@@ -184,7 +183,7 @@ contract PositionCompound is LendingHelper {
         _datas[0] = abi.encode(borrowAmt, debt, 2, abi.encode(USDC_MARKET));
         _datas[1] = abi.encode(swapAmt, collateral, 2, abi.encode(USDC_MARKET));
 
-        bytes memory _uniData = getMulticalSwapData(collateral, debt, address(exchanges), swapAmt);
+        bytes memory _uniData = getMulticalSwapData(collateral, debt, address(swapRouter), swapAmt);
         _datas[2] = abi.encode(debt, collateral, swapAmt, 1, _uniData);
 
         _calldata = abi.encode(
@@ -199,7 +198,7 @@ contract PositionCompound is LendingHelper {
         address collateral,
         uint256 swapAmount
     ) public view returns(bytes memory _calldata) {
-        bytes memory _uniData = getMulticalSwapData(debt, collateral, address(exchanges), swapAmount);
+        bytes memory _uniData = getMulticalSwapData(debt, collateral, address(swapRouter), swapAmount);
         bytes[] memory _customDatas = new bytes[](1);
 
         uint256 index = router.positionsIndex(msg.sender);
