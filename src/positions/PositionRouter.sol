@@ -6,7 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SharedStructs } from "../lib/SharedStructs.sol";
 import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
-import { Connector } from "./Connector.sol";
+import { Connector } from "./Connectors.sol";
 import { FlashReceiver } from "./FlashReceiver.sol";
 import { ISwapRouter } from "./interfaces/PositionRouter.sol";
 

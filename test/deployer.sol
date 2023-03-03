@@ -19,9 +19,9 @@ import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
 import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
 
 import { Proxy } from "../src/accounts/Proxy.sol";
-import { Regestry } from "../src/accounts/regestry.sol";
-import { Implementation } from "../src/accounts/implementation.sol";
-import { Implementations } from "../src/accounts/implementations.sol";
+import { Regestry } from "../src/accounts/Regestry.sol";
+import { Implementation } from "../src/accounts/Implementation.sol";
+import { Implementations } from "../src/accounts/Implementations.sol";
 
 contract Deployer {
     SwapRouter swapRouter;
