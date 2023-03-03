@@ -48,7 +48,7 @@ contract AaveV3Connector {
 
 		aave.supply(token, amount, address(this), referralCode);
 
-		if (getCollateralBalance(token) > 0 && getIsColl(token)) {
+		if (getCollateralBalance(token, address(this)) > 0 && getIsColl(token)) {
 			aave.setUserUseReserveAsCollateral(token, false);
 		}
 	}
@@ -88,7 +88,7 @@ contract AaveV3Connector {
 		IERC20 tokenC = IERC20(token);
 
 		amount = amount == type(uint256).max 
-			? getPaybackBalance(token, rateMode) 
+			? getPaybackBalance(token, address(this), rateMode) 
 			: amount;
 
 		tokenC.universalApprove(address(aave), amount);
@@ -101,7 +101,7 @@ contract AaveV3Connector {
 		IERC20 tokenC = IERC20(token);
 
 		amount = amount == type(uint256).max 
-			? getPaybackBalance(token, rateMode) 
+			? getPaybackBalance(token,address(this), rateMode) 
 			: amount;
 
 		tokenC.universalApprove(address(aave), amount);
@@ -135,7 +135,7 @@ contract AaveV3Connector {
 		for (uint256 i = 0; i < _length; i++) {
 			address token = tokens[i];
 
-			if (getCollateralBalance(token) > 0 && !getIsColl(token)) {
+			if (getCollateralBalance(token, address(this)) > 0 && !getIsColl(token)) {
 				aave.setUserUseReserveAsCollateral(token, true);
 			}
 		}
@@ -144,7 +144,7 @@ contract AaveV3Connector {
 	function swapBorrowRateMode(address token, uint256 rateMode) external payable {
 		IAave aave = IAave(aaveProvider.getPool());
 
-		if (getPaybackBalance(token, rateMode) > 0) {
+		if (getPaybackBalance(token,address(this), rateMode) > 0) {
 			aave.swapBorrowRateMode(token, rateMode);
 		}
 	}
@@ -170,8 +170,10 @@ contract AaveV3Connector {
 		(, , , , , , , , isCol) = aaveData.getUserReserveData(token,address(this));
 	}
 
-	function getPaybackBalance(address token, uint256 rateMode) internal view returns (uint256){
-		(, uint256 stableDebt, uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(token, address(this));
+	function getPaybackBalance(address token, address recipeint, uint256 rateMode) 
+		public view returns (uint256)
+	{
+		(, uint256 stableDebt, uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(token, recipeint);
 		return rateMode == 1 ? stableDebt : variableDebt;
 	}
 
@@ -184,8 +186,8 @@ contract AaveV3Connector {
 		return rateMode == 1 ? stableDebt : variableDebt;
 	}
 
-	function getCollateralBalance(address token) internal view returns (uint256 bal) {
-		(bal, , , , , , , , ) = aaveData.getUserReserveData(token,address(this));
+	function getCollateralBalance(address token, address recipeint) public view returns (uint256 bal) {
+		(bal, , , , , , , , ) = aaveData.getUserReserveData(token,recipeint);
 	}
 
 	function getDTokenAddr(address token, uint256 rateMode)	internal view returns(address dToken) {

@@ -39,8 +39,12 @@ contract PositionRouter is Connector, FlashReceiver {
         address _treasury,
         address _euler,
         address _aaveV2Resolver,
+        address _aaveV3Resolver,
         address _compoundV3Resolver
-    ) FlashReceiver(_flashloanAggregator) Connector(_euler, _aaveV2Resolver, _compoundV3Resolver)  {
+    ) 
+        FlashReceiver(_flashloanAggregator) 
+        Connector(_euler, _aaveV2Resolver,_aaveV3Resolver, _compoundV3Resolver)  
+    {
         require(_fee <= MAX_FEE, "Invalid fee"); // max fee 5%
 
         swapRouter = ISwapRouter(_swapRouter);

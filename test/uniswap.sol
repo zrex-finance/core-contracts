@@ -1,6 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "forge-std/Test.sol";
+
+contract Tokens {
+    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address ethC = 0x0000000000000000000000000000000000000000;
+    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+}
+
 interface IUni {
     struct ExactInputSingleParams {
         address tokenIn;
@@ -26,12 +37,9 @@ interface IQouter {
     ) external returns (uint256 amountOut);
 }
 
-abstract contract UniswapHelper {
+contract UniswapHelper is Tokens, Test {
 
-    address ethC = 0x0000000000000000000000000000000000000000;
-    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-
+    uint256 UNI_ROUTE = 1;
     IQouter quoter = IQouter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
     function getMulticalSwapData(
@@ -52,9 +60,13 @@ abstract contract UniswapHelper {
         address _recipient,
         uint256 _amount
     ) public view returns (bytes memory data) {
+
+        _fromToken = _fromToken == ethC || _fromToken == ethC2 ? wethC : _fromToken;
+        _toToken = _toToken == ethC || _toToken == ethC2 ? wethC : _toToken;
+
         IUni.ExactInputSingleParams memory params = IUni.ExactInputSingleParams(
-            _fromToken == ethC || _fromToken == ethC2 ? wethC : _fromToken,
-            _toToken == ethC || _toToken == ethC2 ? wethC : _toToken,
+            _fromToken,
+            _toToken,
             500, // pool fee
             _recipient,
             _amount,
@@ -71,5 +83,15 @@ abstract contract UniswapHelper {
         uint256 amountIn
     ) public returns (uint256 amountOut) {
         amountOut = quoter.quoteExactInputSingle(tokenIn, tokenOut, 500, amountIn, 0);
+    }
+
+    function getSwapData(
+        address _fromToken,
+        address _toToken,
+        address _recipient,
+        uint256 _amount
+    ) public view returns (bytes memory _data) {
+        bytes memory swapdata = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
+        _data = abi.encode(_toToken, _fromToken, _amount, UNI_ROUTE, swapdata);
     }
 }

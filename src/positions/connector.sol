@@ -3,21 +3,25 @@ pragma solidity ^0.8.13;
 
 import { EulerConnector } from "../connectors/Euler.sol";
 import { AaveV2Connector } from "../connectors/AaveV2.sol";
+import { AaveV3Connector } from "../connectors/AaveV3.sol";
 import { CompoundV3Connector } from "../connectors/CompoundV3.sol";
 
 contract Connector {
 
     EulerConnector internal euler;
-    AaveV2Connector internal aaveV2connector;
+    AaveV2Connector internal aaveV2Connector;
+    AaveV3Connector internal aaveV3Connector;
     CompoundV3Connector internal compoundV3Connector;
 
     constructor(
         address _euler,
-        address _aaveV2connector,
+        address _aaveV2Connector,
+        address _aaveV3Connector,
         address _compoundV3Connector
     ) {
         euler = EulerConnector(_euler);
-        aaveV2connector = AaveV2Connector(_aaveV2connector);
+        aaveV2Connector = AaveV2Connector(_aaveV2Connector);
+        aaveV3Connector = AaveV3Connector(_aaveV3Connector);
         compoundV3Connector = CompoundV3Connector(_compoundV3Connector);
     }
 
@@ -38,8 +42,8 @@ contract Connector {
     ) internal {
         if (_route == 1) {
             _delegatecall(
-                address(aaveV2connector),
-                abi.encodeWithSelector(aaveV2connector.deposit.selector, _token, _amt)
+                address(aaveV2Connector),
+                abi.encodeWithSelector(aaveV2Connector.deposit.selector, _token, _amt)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
@@ -49,7 +53,15 @@ contract Connector {
             );
         } else if (_route == 3) {
             (uint256 subAccount, bool enableCollateral) = abi.decode(_customData, (uint256, bool));
-            euler.deposit(subAccount, _token, _amt, enableCollateral);
+            _delegatecall(
+                address(euler),
+                abi.encodeWithSelector(euler.deposit.selector, subAccount, _token, _amt, enableCollateral)
+            );
+        } else if (_route == 4) {
+            _delegatecall(
+                address(aaveV3Connector),
+                abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token, _amt)
+            );
         } else {
             revert("route-does-not-exist");
         }
@@ -73,8 +85,8 @@ contract Connector {
         if (_route == 1) {
             uint256 rateMode = abi.decode(_customData, (uint256));
             _delegatecall(
-                address(aaveV2connector),
-                abi.encodeWithSelector(aaveV2connector.borrow.selector, _token, _amt, rateMode)
+                address(aaveV2Connector),
+                abi.encodeWithSelector(aaveV2Connector.borrow.selector, _token, _amt, rateMode)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
@@ -84,7 +96,16 @@ contract Connector {
             );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
-            euler.borrow(subAccount, _token, _amt);
+            _delegatecall(
+                address(euler),
+                abi.encodeWithSelector(euler.borrow.selector, subAccount, _token, _amt)
+            );
+        } else if (_route == 4) {
+            uint256 rateMode = abi.decode(_customData, (uint256));
+            _delegatecall(
+                address(aaveV3Connector),
+                abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, _amt, rateMode)
+            );
         } else {
             revert("route-does-not-exist");
         }
@@ -109,8 +130,8 @@ contract Connector {
         if (_route == 1) {
             uint256 rateMode = abi.decode(_customData, (uint256));
             _delegatecall(
-                address(aaveV2connector),
-                abi.encodeWithSelector(aaveV2connector.payback.selector, _token, _amt, rateMode)
+                address(aaveV2Connector),
+                abi.encodeWithSelector(aaveV2Connector.payback.selector, _token, _amt, rateMode)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
@@ -120,7 +141,16 @@ contract Connector {
             );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
-            euler.repay(subAccount, _token, _amt);
+            _delegatecall(
+                address(euler),
+                abi.encodeWithSelector(euler.repay.selector, subAccount, _token, _amt)
+            );
+        } else if (_route == 4) {
+            uint256 rateMode = abi.decode(_customData, (uint256));
+            _delegatecall(
+                address(aaveV3Connector),
+                abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amt, rateMode)
+            );
         } else {
             revert("route-does-not-exist");
         }
@@ -144,8 +174,8 @@ contract Connector {
     ) internal {
         if (_route == 1) {
             _delegatecall(
-                address(aaveV2connector),
-                abi.encodeWithSelector(aaveV2connector.withdraw.selector, _token, _amt)
+                address(aaveV2Connector),
+                abi.encodeWithSelector(aaveV2Connector.withdraw.selector, _token, _amt)
             );
         } else if (_route == 2) {
             address market = abi.decode(_customData, (address));
@@ -155,7 +185,15 @@ contract Connector {
             );
         } else if (_route == 3) {
             (uint256 subAccount) = abi.decode(_customData, (uint256));
-            euler.withdraw(subAccount, _token, _amt);
+            _delegatecall(
+                address(euler),
+                abi.encodeWithSelector(euler.withdraw.selector, subAccount, _token, _amt)
+            );
+        } else if (_route == 4) {
+            _delegatecall(
+                address(aaveV3Connector),
+                abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amt)
+            );
         } else {
             revert("route-does-not-exist");
         }
