@@ -12,6 +12,7 @@ import { HelperContract, Deployer } from "./deployer.sol";
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
     address USDC_MARKET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    string NAME = "CompoundV3";
 
     function getCollateralAmt(
         address _token,
@@ -32,19 +33,27 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, 2, abi.encode(USDC_MARKET));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(compoundV3Connector.payback.selector, USDC_MARKET, _token, _amount)
+        );
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, 2, abi.encode(USDC_MARKET));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(compoundV3Connector.withdraw.selector, USDC_MARKET, _token, _amount)
+        );
     }
 
     function getDepositData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, 2, abi.encode(USDC_MARKET));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(compoundV3Connector.deposit.selector, USDC_MARKET, _token)
+        );
     }
 
     function getBorrowData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, 2, abi.encode(USDC_MARKET));
+        _data = abi.encode(NAME, 
+            abi.encodeWithSelector(compoundV3Connector.borrow.selector, USDC_MARKET, _token)
+        );
     }
 }
 

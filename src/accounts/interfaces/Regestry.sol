@@ -23,5 +23,5 @@ interface IAccount {
         bytes calldata _customData
     ) external payable;
 
-    function initialize(address _positionRouter) external;
+    function initialize(address _account, address _positionRouter) external;
 }

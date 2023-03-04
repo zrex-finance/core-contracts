@@ -30,6 +30,8 @@ contract CompoundV3Connector {
 		DEPOSIT
 	}
 
+	string public constant name = "CompoundV3";
+
 	function deposit(address market,address token,uint256 amount) public payable {
 		require(market != address(0) && token != address(0), "invalid market/token address");
 

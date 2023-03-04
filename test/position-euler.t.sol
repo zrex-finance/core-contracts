@@ -12,6 +12,7 @@ import { HelperContract, Deployer } from "./deployer.sol";
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
     uint256 SUB_ACCOUNT_ID = 0;
+    string NAME = "Euler";
     uint256 route = 3;
 
     function getCollateralAmt(
@@ -33,19 +34,27 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, route, abi.encode(SUB_ACCOUNT_ID));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(eulerConnector.repay.selector, SUB_ACCOUNT_ID, _token, _amount)
+        );
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, route, abi.encode(SUB_ACCOUNT_ID));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(eulerConnector.withdraw.selector, SUB_ACCOUNT_ID, _token, _amount)
+        );
     }
 
     function getDepositData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, route, abi.encode(SUB_ACCOUNT_ID, true));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(eulerConnector.deposit.selector, SUB_ACCOUNT_ID, _token, true)
+        );
     }
 
     function getBorrowData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, route, abi.encode(SUB_ACCOUNT_ID));
+        _data = abi.encode(NAME, 
+            abi.encodeWithSelector(eulerConnector.borrow.selector, SUB_ACCOUNT_ID, _token)
+        );
     }
 }
 

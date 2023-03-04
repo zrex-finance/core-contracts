@@ -10,7 +10,7 @@ interface CTokenInterface {
     function underlying() external view returns (address);
 }
 
-abstract contract Helpers {
+contract Helpers {
 
     struct TokenMap {
         address ctoken;
@@ -26,13 +26,21 @@ abstract contract Helpers {
 
     mapping (string => TokenMap) public cTokenMapping;
 
+    string constant public name = "Compound Mapping";
+
     modifier isChief {
         require(connectors.chief(msg.sender), "not-an-chief");
         _;
     }
 
-    constructor(address _connectors) {
+    constructor(
+        address _connectors,
+        string[] memory _ctokenNames,
+        address[] memory _tokens,
+        address[] memory _ctokens
+    ) {
         connectors = ConnectorsInterface(_connectors);
+        _addCtokenMapping(_ctokenNames, _tokens, _ctokens);
     }
 
     function _addCtokenMapping(
@@ -114,17 +122,4 @@ abstract contract Helpers {
         return (_data.token, _data.ctoken);
     }
 
-}
-
-contract CompoundMapping is Helpers {
-    string constant public name = "Compound-Mapping-v1.1";
-
-    constructor(
-        address _connectors,
-        string[] memory _ctokenNames,
-        address[] memory _tokens,
-        address[] memory _ctokens
-    ) Helpers(_connectors) {
-        _addCtokenMapping(_ctokenNames, _tokens, _ctokens);
-    }
 }

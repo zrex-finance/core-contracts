@@ -6,19 +6,26 @@ import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable
 
 import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
-import { IPositionRouter, SharedStructs, ISwapRouter } from "./interfaces/Implementation.sol";
+import { IPositionRouter, SharedStructs } from "./interfaces/Implementation.sol";
 
-contract Implementation is Initializable {
-	 using UniversalERC20 for IERC20;
+import "forge-std/Test.sol";
 
-	 ISwapRouter private swapRouter;
-	 IPositionRouter private positionRouter;
+contract Implementation is Initializable, Test {
+    using UniversalERC20 for IERC20;
+
+    address private _owner;
+    IPositionRouter private positionRouter;
 
     receive() external payable {}
 
-	function initialize(address _positionRouter) public initializer {
+    modifier onlyOwner() {
+        require(_owner == msg.sender, "caller is not the owner or regesry");
+        _;
+    }
+
+	function initialize(address _account, address _positionRouter) public initializer {
+        _owner = _account;
         positionRouter = IPositionRouter(_positionRouter);
-		swapRouter = ISwapRouter(positionRouter.swapRouter());
     }
 
     function openPosition(
@@ -50,26 +57,12 @@ contract Implementation is Initializable {
         uint256 route,
         bytes calldata _data,
         bytes calldata _customData
-    ) external payable {
+    ) external {
         positionRouter.closePosition(key, _tokens, _amts, route, _data, _customData);
     }
 
-	function swap(bytes calldata _customData) internal returns(uint256 value) {
-		(
-            address buyAddr,
-            address sellAddr,
-            uint256 sellAmt,
-            uint256 _route,
-            bytes memory callData
-        ) = abi.decode(_customData, (address, address, uint256, uint256, bytes));
-
-		IERC20(sellAddr).universalTransferFrom(msg.sender, address(this), sellAmt);
-
-        (bool success, bytes memory response) = address(swapRouter).delegatecall(
-            abi.encodeWithSelector(swapRouter.swap.selector, buyAddr, sellAddr, sellAmt, _route, callData)
-        );
-		require(success);
-
-		value = abi.decode(response, (uint256));
-	}
+	function swap(bytes memory _customdata) internal returns(uint256 value) {
+        bytes memory response = positionRouter.decodeAndExecute(_customdata);
+        value = abi.decode(response, (uint256));
+    }
 }

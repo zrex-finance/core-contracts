@@ -13,6 +13,7 @@ import { SwapRouter } from "../src/swap/SwapRouter.sol";
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 
+import { Connectors } from "../src/connectors/Connectors.sol";
 import { EulerConnector } from "../src/connectors/Euler.sol";
 import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
 import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
@@ -23,48 +24,62 @@ import { Regestry } from "../src/accounts/Regestry.sol";
 import { Implementation } from "../src/accounts/Implementation.sol";
 import { Implementations } from "../src/accounts/Implementations.sol";
 
-contract Deployer {
-    SwapRouter swapRouter;
+contract Deployer is Test {
     FlashResolver flashResolver;
 
     Regestry regestry;
     PositionRouter router;
 
     Proxy accountProxy;
-    Implementation implementation;
-    Implementations implementations;
 
+    Connectors connectors;
+    SwapRouter swapRouter;
+    EulerConnector eulerConnector;
     AaveV2Connector aaveV2Connector;
     AaveV3Connector aaveV3Connector;
-
-    EulerConnector eulerConnector;
     CompoundV3Connector compoundV3Connector;
 
-    constructor() {
+    Implementation implementation;
+
+    function setUp() public {
+        string memory url = vm.rpcUrl("mainnet");
+        uint256 forkId = vm.createFork(url);
+        vm.selectFork(forkId);
+        
+        connectors = new Connectors();
+
+        swapRouter = new SwapRouter();
         eulerConnector = new EulerConnector();
         aaveV2Connector = new AaveV2Connector();
         aaveV3Connector = new AaveV3Connector();
         compoundV3Connector = new CompoundV3Connector();
-        swapRouter = new SwapRouter();
+
+        string[] memory _names = new string[](5);
+        _names[0] = eulerConnector.name();
+        _names[1] = aaveV2Connector.name();
+        _names[2] = aaveV3Connector.name();
+        _names[3] = compoundV3Connector.name();
+        _names[4] = swapRouter.name();
+
+        address[] memory _connectors = new address[](5);
+        _connectors[0] = address(eulerConnector);
+        _connectors[1] = address(aaveV2Connector);
+        _connectors[2] = address(aaveV3Connector);
+        _connectors[3] = address(compoundV3Connector);
+        _connectors[4] = address(swapRouter);
+
+        connectors.addConnectors(_names, _connectors);
+ 
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
         uint256 fee = 3;
         address treasary = msg.sender;
 
-        router = new PositionRouter(
-            address(flashloanAggregator),
-            address(swapRouter),
-            fee,
-            treasary,
-            address(eulerConnector),
-            address(aaveV2Connector),
-            address(aaveV3Connector),
-            address(compoundV3Connector)
-        );
+        router = new PositionRouter(address(flashloanAggregator), address(connectors), fee, treasary);
 
         implementation = new Implementation();
-        implementations = new Implementations();
+        Implementations implementations = new Implementations();
 
         implementations.setDefaultImplementation(address(implementation));
 

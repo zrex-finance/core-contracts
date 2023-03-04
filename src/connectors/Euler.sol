@@ -12,11 +12,13 @@ contract EulerConnector {
 	address internal constant EULER_MAINNET = 0x27182842E098f60e3D576794A5bFFb0777E025d3;
 	IEulerMarkets internal constant markets = IEulerMarkets(0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3);
 
+	string public constant name = "Euler";
+
 	function deposit(
 		uint256 subAccount,
 		address token,
-		uint256 amount,
-		bool enableCollateral
+		bool enableCollateral,
+		uint256 amount
 	)
 		external
 		payable

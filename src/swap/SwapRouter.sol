@@ -14,6 +14,8 @@ contract SwapRouter is Utils, EthConverter {
     address internal constant uniAutoRouter = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
 	address internal constant oneInchV5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
+    string public constant name = "SwapRouterV1";
+
     function swap(
         address toToken,
 		address fromToken,

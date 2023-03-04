@@ -7,4 +7,7 @@ libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'cache'
 
+[rpc_endpoints]
+mainnet = "https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q"
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

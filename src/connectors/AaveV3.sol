@@ -16,6 +16,8 @@ contract AaveV3Connector {
 		IAaveDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
 
 	uint16 internal constant referralCode = 0;
+
+	string public constant name = "AaveV3";
 	
 	function deposit(address token,uint256 amount) external payable {
 		IAave aave = IAave(aaveProvider.getPool());
@@ -65,7 +67,7 @@ contract AaveV3Connector {
 		amount = finalBalance - initialBalance;
 	}
 
-	function borrow(address token,uint256 amount,uint256 rateMode) external payable {
+	function borrow(address token,uint256 rateMode, uint256 amount) external payable {
 		IAave aave = IAave(aaveProvider.getPool());
 
 		aave.borrow(token, amount, rateMode, referralCode, address(this));

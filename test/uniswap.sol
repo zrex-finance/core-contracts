@@ -25,6 +25,14 @@ interface IUni {
 
     function multicall(uint256 deadline, bytes[] calldata data) external payable returns (bytes[] memory);
     function exactInputSingle(ExactInputSingleParams memory params) external payable returns (uint256 amountOut);
+
+    function swap(
+        address toToken,
+		address fromToken,
+		uint256 amount,
+        uint256 _route,
+		bytes calldata callData
+    ) external payable returns (uint256 _buyAmt);
 }
 
 interface IQouter {
@@ -40,6 +48,7 @@ interface IQouter {
 contract UniswapHelper is Tokens, Test {
 
     uint256 UNI_ROUTE = 1;
+    string UNI_NAME = "SwapRouterV1";
     IQouter quoter = IQouter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
     function getMulticalSwapData(
@@ -92,6 +101,10 @@ contract UniswapHelper is Tokens, Test {
         uint256 _amount
     ) public view returns (bytes memory _data) {
         bytes memory swapdata = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
-        _data = abi.encode(_toToken, _fromToken, _amount, UNI_ROUTE, swapdata);
+        _data = abi.encode(UNI_NAME,
+            abi.encodeWithSelector(
+                IUni.swap.selector, _toToken, _fromToken, _amount, UNI_ROUTE, swapdata
+            )
+        );
     }
 }

@@ -52,7 +52,7 @@ contract Regestry {
 
         require(_account == address(0), "account already exists");
         _account = Clones.cloneDeterministic(accountProxy, salt);
-        IAccount(_account).initialize(positionRouter);
+        IAccount(_account).initialize(_owner, positionRouter);
         accounts[_owner] = _account;
     }
 

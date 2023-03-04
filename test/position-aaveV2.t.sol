@@ -13,6 +13,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
     uint256 RATE_TYPE = 1;
     uint256 ROUTE = 1;
+    string NAME = "AaveV2";
 
     function getCollateralAmt(
         address _token,
@@ -31,23 +32,31 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, ROUTE, abi.encode(RATE_TYPE));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(aaveV2Connector.payback.selector, _token, _amount, RATE_TYPE)
+        );
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, ROUTE, bytes(""));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(aaveV2Connector.withdraw.selector, _token, _amount)
+        );
     }
 
     function getDepositData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, ROUTE, bytes(""));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(aaveV2Connector.deposit.selector, _token)
+        );
     }
 
     function getBorrowData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, ROUTE, abi.encode(RATE_TYPE));
+        _data = abi.encode(NAME, 
+            abi.encodeWithSelector(aaveV2Connector.borrow.selector, _token, RATE_TYPE)
+        );
     }
 }
 
-contract PositionAaaveV2 is LendingHelper {
+contract PositionAaveV2 is LendingHelper {
 
     function testCreateAccountWithOpenLongPosition() public {
         vm.prank(msg.sender);
@@ -83,8 +92,7 @@ contract PositionAaaveV2 is LendingHelper {
 
         uint256 shortAmt = 2000 ether;
 
-        bytes memory _uniData = getMulticalSwapData(daiC, wethC, address(account), shortAmt);
-        bytes memory datas =  abi.encode(wethC, daiC, shortAmt, 1, _uniData);
+        bytes memory _unidata = getSwapData(daiC, wethC, address(account), shortAmt);
 
         topUpTokenBalance(daiC, daiWhale, shortAmt);
 
@@ -98,7 +106,7 @@ contract PositionAaaveV2 is LendingHelper {
             account,wethC,usdcC,exchangeAmt,2,0,0
         );
 
-        openShort(_position, datas);
+        openShort(_position, _unidata);
 
         closePosition(_position);
     }

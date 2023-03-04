@@ -6,7 +6,9 @@ import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
 import { IAave, IAaveLendingPoolProvider, IAaveDataProvider } from "./interfaces/AaveV2.sol";
 
-contract AaveV2Connector {
+import "forge-std/Test.sol";
+
+contract AaveV2Connector is Test {
 	using UniversalERC20 for IERC20;
 
 	IAaveLendingPoolProvider constant internal aaveProvider = 
@@ -15,6 +17,8 @@ contract AaveV2Connector {
         IAaveDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
 
     uint16 constant internal referralCode = 0;
+
+	string public constant name = "AaveV2";
 
 	function deposit(address token,uint256 amount) external payable {
 		IAave aave = IAave(aaveProvider.getLendingPool());
@@ -45,7 +49,7 @@ contract AaveV2Connector {
 		amount = finalBal - initialBal;
 	}
 
-	function borrow(address token,uint256 amount,uint256 rateMode) external payable {
+	function borrow(address token,uint256 rateMode, uint256 amount) external payable {
 		IAave aave = IAave(aaveProvider.getLendingPool());
 
 		aave.borrow(token, amount, rateMode, referralCode, address(this));

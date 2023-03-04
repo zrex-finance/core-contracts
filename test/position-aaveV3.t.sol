@@ -13,6 +13,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
     uint256 RATE_TYPE = 2;
     uint256 ROUTE = 4;
+    string NAME = "AaveV3";
 
     function getCollateralAmt(
         address _token,
@@ -31,19 +32,27 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, ROUTE, abi.encode(RATE_TYPE));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE)
+        );
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_amount, _token, ROUTE, bytes(""));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount)
+        );
     }
 
     function getDepositData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, ROUTE, bytes(""));
+        _data = abi.encode(NAME,
+            abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token)
+        );
     }
 
     function getBorrowData(address _token) public view returns(bytes memory _data) {
-      _data = abi.encode(_token, ROUTE, abi.encode(RATE_TYPE));
+        _data = abi.encode(NAME, 
+            abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE)
+        );
     }
 }
 
