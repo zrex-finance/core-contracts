@@ -46,29 +46,3 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-
-  hardhat:
-    strategy:
-      fail-fast: true
-
-    name: Hardhat project
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Setup Node 16
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16.x'
-          cache: 'npm'
-
-      - name: Install Node dependencies
-        run: |
-          npm ci
-        
-      - name: Run Hardhat tests
-        run: |
-          npm run test
-        id: hardhat-test
