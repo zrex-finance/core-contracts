@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --fork-url https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q
+          forge test -vv
         id: forge-test
 
       - name: Run Forge coverage
