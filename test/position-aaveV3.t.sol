@@ -92,8 +92,7 @@ contract PositionAaveV3 is LendingHelper {
 
         uint256 shortAmt = 2000 ether;
 
-        bytes memory _uniData = getMulticalSwapData(daiC, wethC, address(account), shortAmt);
-        bytes memory datas =  abi.encode(wethC, daiC, shortAmt, 1, _uniData);
+        bytes memory _uniData = getSwapData(daiC, wethC, address(account), shortAmt);
 
         topUpTokenBalance(daiC, daiWhale, shortAmt);
 
@@ -107,7 +106,7 @@ contract PositionAaveV3 is LendingHelper {
             account,wethC,usdcC,exchangeAmt,2,0,0
         );
 
-        openShort(_position, datas);
+        openShort(_position, _uniData);
 
         closePosition(_position);
     }

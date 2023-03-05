@@ -6,9 +6,7 @@ import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
 import { IAave, IAaveLendingPoolProvider, IAaveDataProvider } from "./interfaces/AaveV2.sol";
 
-import "forge-std/Test.sol";
-
-contract AaveV2Connector is Test {
+contract AaveV2Connector {
 	using UniversalERC20 for IERC20;
 
 	IAaveLendingPoolProvider constant internal aaveProvider = 

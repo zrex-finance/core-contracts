@@ -6,11 +6,9 @@ import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable
 
 import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
-import { IPositionRouter, SharedStructs } from "./interfaces/Implementation.sol";
+import { IPositionRouter, SharedStructs, IConnectors } from "./interfaces/Implementation.sol";
 
-import "forge-std/Test.sol";
-
-contract Implementation is Initializable, Test {
+contract Implementation is Initializable {
     using UniversalERC20 for IERC20;
 
     address private _owner;
@@ -61,8 +59,25 @@ contract Implementation is Initializable, Test {
         positionRouter.closePosition(key, _tokens, _amts, route, _data, _customData);
     }
 
-	function swap(bytes memory _customdata) internal returns(uint256 value) {
-        bytes memory response = positionRouter.decodeAndExecute(_customdata);
+	function swap(bytes calldata _customdata) internal returns(uint256 value) {
+        (address fromToken, uint256 amount) = getSwapData(_customdata);
+        IERC20(fromToken).universalTransferFrom(msg.sender, address(this), amount);
+
+        (string memory name, bytes memory _calldata) = abi.decode(_customdata, (string, bytes));
+        (bool isConnector, address _target) = IConnectors(positionRouter.connectors()).isConnector(name);
+        require(isConnector, "not connector");
+
+        (bool success, bytes memory response) = _target.delegatecall(_calldata);
+        require(success);
         value = abi.decode(response, (uint256));
+    }
+
+    function getSwapData(bytes calldata _customdata) private pure returns (address fromToken, uint256 amount) {
+        (, bytes memory _swapdata) = abi.decode(_customdata, (string,bytes));
+
+        (,,fromToken,amount,) = abi.decode(
+            // https://github.com/ethereum/solidity/issues/6012
+            abi.encodePacked(bytes28(0), _swapdata), (bytes32,address,address,uint256,bytes)
+        );
     }
 }

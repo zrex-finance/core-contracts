@@ -23,4 +23,9 @@ interface IPositionRouter {
     ) external payable;
 
     function decodeAndExecute(bytes memory _data) external returns (bytes memory response);
+    function connectors() external returns (address);
+}
+
+interface IConnectors {
+    function isConnector(string calldata _name) external view returns (bool isOk, address _connector);
 }

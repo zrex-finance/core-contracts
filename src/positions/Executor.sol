@@ -23,7 +23,7 @@ contract Executor {
         response = execute(name, _calldata);
     }
 
-    function execute(string memory _targetName, bytes memory _data) internal returns (bytes memory response) {   
+    function execute(string memory _targetName, bytes memory _data) internal returns (bytes memory response) {
         (bool isOk, address _target) = IConnectors(connectors).isConnector(_targetName);
         require(isOk, "not connector");
 
