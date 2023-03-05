@@ -61,7 +61,7 @@ contract PositionCompoundV3 is LendingHelper {
 
     function testCreateAccountWithOpenLongPosition() public {
         vm.prank(msg.sender);
-        address account = regestry.predictDeterministicAddress();
+        address account = registry.predictDeterministicAddress();
 
         SharedStructs.Position memory _position = SharedStructs.Position(
             account,address(usdcC),wethC,1000000000,2,0,0
@@ -75,7 +75,7 @@ contract PositionCompoundV3 is LendingHelper {
 
     function testShortPosition() public {
         vm.prank(msg.sender);
-        address account = regestry.createAccount(msg.sender);
+        address account = registry.createAccount(msg.sender);
 
         uint256 shortAmt = 2000 ether;
 
@@ -100,7 +100,7 @@ contract PositionCompoundV3 is LendingHelper {
 
     function testLongPositionAccount() public {
         vm.prank(msg.sender);
-        address account = regestry.createAccount(msg.sender);
+        address account = registry.createAccount(msg.sender);
 
         SharedStructs.Position memory _position = SharedStructs.Position(
             account,address(usdcC),wethC,1000000000,2,0,0
@@ -163,7 +163,7 @@ contract PositionCompoundV3 is LendingHelper {
     {
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(regestry), _position.amountIn);
+        ERC20(_position.debt).approve(address(registry), _position.amountIn);
 
         (
             bool isShort,
@@ -175,7 +175,7 @@ contract PositionCompoundV3 is LendingHelper {
         ) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        regestry.createWithOpen(_position, isShort, _tokens, _amts, route, _data, _customdata);
+        registry.createWithOpen(_position, isShort, _tokens, _amts, route, _data, _customdata);
     }
 
     function closePosition(SharedStructs.Position memory _position)

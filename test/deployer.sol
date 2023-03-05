@@ -21,14 +21,14 @@ import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
 import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
 
 import { Proxy } from "../src/accounts/Proxy.sol";
-import { Regestry } from "../src/accounts/Regestry.sol";
+import { Registry } from "../src/accounts/Registry.sol";
 import { Implementation } from "../src/accounts/Implementation.sol";
 import { Implementations } from "../src/accounts/Implementations.sol";
 
 contract Deployer is Test {
     FlashResolver flashResolver;
 
-    Regestry regestry;
+    Registry registry;
     PositionRouter router;
 
     Proxy accountProxy;
@@ -90,7 +90,7 @@ contract Deployer is Test {
         implementations.setDefaultImplementation(address(implementation));
 
         accountProxy = new Proxy(address(implementations));
-        regestry = new Regestry(address(accountProxy), address(router));
+        registry = new Registry(address(accountProxy), address(router));
     }
 }
 

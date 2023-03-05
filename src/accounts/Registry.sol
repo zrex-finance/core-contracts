@@ -7,9 +7,9 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SharedStructs } from "../lib/SharedStructs.sol";
 import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
-import { IAccount } from "./interfaces/Regestry.sol";
+import { IAccount } from "./interfaces/Registry.sol";
 
-contract Regestry {
+contract Registry {
     using UniversalERC20 for IERC20;
 
     address public accountProxy;
