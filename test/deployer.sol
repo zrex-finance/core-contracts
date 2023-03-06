@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SharedStructs } from "../src/lib/SharedStructs.sol";
 
 import { PositionRouter } from "../src/positions/PositionRouter.sol";
-import { FlashReceiver } from "../src/positions/FlashReceiver.sol";
+import { Implementation } from "../src/positions/Implementation.sol";
 
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
@@ -21,14 +21,11 @@ import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
 import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
 
 import { Proxy } from "../src/accounts/Proxy.sol";
-import { Registry } from "../src/accounts/Registry.sol";
-import { Implementation } from "../src/accounts/Implementation.sol";
 import { Implementations } from "../src/accounts/Implementations.sol";
 
 contract Deployer is Test {
     FlashResolver flashResolver;
 
-    Registry registry;
     PositionRouter router;
 
     Proxy accountProxy;
@@ -43,6 +40,13 @@ contract Deployer is Test {
     CompoundV3Connector compoundV3Connector;
 
     Implementation implementation;
+
+    struct SwapParams {
+        address fromToken;
+        uint256 amount;
+        string targetName;
+        bytes data;
+    }
 
     function setUp() public {
         string memory url = vm.rpcUrl("mainnet");
@@ -79,18 +83,23 @@ contract Deployer is Test {
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
-        uint256 fee = 3;
-        address treasary = msg.sender;
-
-        router = new PositionRouter(address(flashloanAggregator), address(connectors), fee, treasary);
-
         implementation = new Implementation();
         Implementations implementations = new Implementations();
 
         implementations.setDefaultImplementation(address(implementation));
 
         accountProxy = new Proxy(address(implementations));
-        registry = new Registry(address(accountProxy), address(router));
+
+        uint256 fee = 3;
+        address treasary = msg.sender;
+
+        router = new PositionRouter(
+            address(flashloanAggregator),
+            address(connectors),
+            address(accountProxy),
+            fee,
+            treasary
+        );
     }
 }
 

@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import { Utils } from "../utils/Utils.sol";
 
 import { IImplimentation, IFlashLoan } from "./interfaces/FlashReceiver.sol";
 
-contract FlashReceiver is Ownable, Utils {
-    using SafeERC20 for IERC20;
-
+contract FlashReceiver is Initializable, Utils {
     IFlashLoan public flashloanAggregator;
 
     modifier onlyAggregator() {
@@ -19,18 +15,23 @@ contract FlashReceiver is Ownable, Utils {
         _;
     }
 
-    constructor(address flashloanAggregator_) {
-        flashloanAggregator = IFlashLoan(flashloanAggregator_);
-    }
+    function __FlashReceiver_init(address _flashloanAggregator) internal onlyInitializing {
+		flashloanAggregator = IFlashLoan(_flashloanAggregator);
+	}
 
     function flashloan(
-        address[] calldata _tokens,
-        uint256[] calldata _amts,
+        address _token,
+        uint256 _amount,
         uint256 route,
-        bytes calldata _data,
-        bytes calldata _customData
+        bytes calldata _data
     ) public {
-        flashloanAggregator.flashLoan(_tokens, _amts, route, _data, _customData);
+        address[] memory _tokens = new address[](1);
+        _tokens[0] = _token;
+
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = _amount;
+
+        flashloanAggregator.flashLoan(_tokens, _amounts, route, _data, bytes(""));
     }
 
     // Function which
@@ -54,10 +55,11 @@ contract FlashReceiver is Ownable, Utils {
     function encodingParams(bytes memory params, uint256 amount) internal pure returns (bytes memory encode) {
         (
             bytes4 selector,
+            string[] memory _targetNames,
             bytes[] memory _datas,
             bytes[] memory _customDatas
-        ) = abi.decode(params, (bytes4, bytes[], bytes[]));
+        ) = abi.decode(params, (bytes4, string[], bytes[], bytes[]));
 
-        encode = abi.encodeWithSelector(selector, _datas, _customDatas, amount);
+        encode = abi.encodeWithSelector(selector, _targetNames, _datas, _customDatas, amount);
     }
 }

@@ -1,27 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-interface IConnectors {
-    function isConnectors(string[] calldata _names) external view returns (bool isOk, address[] memory _connectors);
-    function isConnector(string calldata _name) external view returns (bool isOk, address _connector);
-}
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract Executor {
+import { IConnectors } from "./interfaces/PositionRouter.sol";
+
+contract Executor is Initializable {
     IConnectors public connectors;
 
-	constructor(address _connectors) {
-        connectors = IConnectors(_connectors);
-    }
-
-    function encodeAndExecute(bytes memory _merge, bytes memory _data) public returns (bytes memory response) {
-        (string memory name, bytes memory _calldata) = abi.decode(_data, (string, bytes));
-        response = execute(name, abi.encodePacked(_calldata, _merge));
-    }
-
-    function decodeAndExecute(bytes memory _data) public returns (bytes memory response) {
-        (string memory name, bytes memory _calldata) = abi.decode(_data, (string, bytes));
-        response = execute(name, _calldata);
-    }
+	function __Executor_init(address _connectors) internal onlyInitializing {
+		connectors = IConnectors(_connectors);
+	}
 
     function execute(string memory _targetName, bytes memory _data) internal returns (bytes memory response) {
         (bool isOk, address _target) = IConnectors(connectors).isConnector(_targetName);

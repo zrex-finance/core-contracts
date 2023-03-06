@@ -11,4 +11,11 @@ library SharedStructs {
         uint256 collateralAmount;
         uint256 borrowAmount;
     }
+
+    struct SwapParams {
+        address fromToken;
+        uint256 amount;
+        string targetName;
+        bytes data;
+    }
 }

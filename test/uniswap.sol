@@ -99,10 +99,8 @@ contract UniswapHelper is Tokens, Test {
         uint256 _amount
     ) public view returns (bytes memory _data) {
         bytes memory swapdata = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
-        _data = abi.encode(UNI_NAME,
-            abi.encodeWithSelector(
-                IUni.swap.selector, _toToken, _fromToken, _amount, swapdata
-            )
+        _data = abi.encodeWithSelector(
+            IUni.swap.selector, _toToken, _fromToken, _amount, swapdata
         );
     }
 }

@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { SharedStructs } from "../lib/SharedStructs.sol";
 import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
-import { Executor } from "./Executor.sol";
-import { FlashReceiver } from "./FlashReceiver.sol";
-import { ISwapRouter } from "./interfaces/PositionRouter.sol";
+import { IAccount, IConnectors } from "./interfaces/PositionRouter.sol";
 
-contract PositionRouter is Executor, FlashReceiver {
+import "forge-std/Test.sol";
+
+contract PositionRouter is Test {
     using UniversalERC20 for IERC20;
 
     uint256 private constant MAX_FEE = 500; // 5%
@@ -18,128 +19,169 @@ contract PositionRouter is Executor, FlashReceiver {
 
     uint256 public fee;
     address public treasury;
+    address public accountProxy;
 
-    mapping (bytes32 => SharedStructs.Position) public positions;
+    address public connectors;
+    address public flashloanAggregator;
+
+    bytes32 public constant salt = 0x0000000000000000000000000000000000000000000000000000000047941987; 
+
     mapping (address => uint256) public positionsIndex;
+    mapping (bytes32 => SharedStructs.Position) public positions;
 
-    modifier onlyCallback() {
-        require(msg.sender == address(this), "Access denied");
-        _;
-    }
+    // user -> account proxy
+    mapping (address => address) public accounts;
 
     receive() external payable {}
-
     fallback() external payable {}
 
     constructor(
         address _flashloanAggregator,
         address _connectors,
+        address _accountProxy,
         uint256 _fee,
         address _treasury
-    ) 
-        Executor(_connectors)
-        FlashReceiver(_flashloanAggregator)
-    {
+    ) {
         require(_fee <= MAX_FEE, "Invalid fee"); // max fee 5%
 
+        flashloanAggregator = _flashloanAggregator; 
+        connectors = _connectors; 
+        accountProxy = _accountProxy; 
         fee = _fee;
         treasury = _treasury;
     }
 
+    function swapAndOpen(
+        SharedStructs.Position memory position,
+        address _token,
+        uint256 _amount,
+        uint256 _route,
+        bytes calldata _data,
+        SharedStructs.SwapParams memory _params
+    ) external payable {
+        IERC20(_params.fromToken).universalTransferFrom(msg.sender, address(this), _params.amount);
+        position.amountIn = swap(_params);
+        _openPosition(position, _token, _amount, _route, _data);
+    }
+
     function openPosition(
         SharedStructs.Position memory position,
-        address[] calldata _tokens,
-        uint256[] calldata _amts,
-        uint256 route,
-        bytes calldata _data,
-        bytes calldata _customData
-    ) external payable {
-        require(position.account == msg.sender, "Only owner");
+        address _token,
+        uint256 _amount,
+        uint256 _route,
+        bytes calldata _data
+    ) public payable {
         IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
+        _openPosition(position, _token, _amount, _route, _data);
+    }
 
-        address account = position.account;
-        uint256 index = positionsIndex[account] += 1;
+    function _openPosition(
+        SharedStructs.Position memory position,
+        address _token,
+        uint256 _amount,
+        uint256 _route,
+        bytes calldata _data
+    ) private {
+        require(position.account == msg.sender, "Only owner");
 
-        positionsIndex[account] = index;
+        address account = getOrCreateAccount(msg.sender);
 
-        bytes32 key = getKey(account, index);
+        uint256 index = positionsIndex[position.account] += 1;
+        positionsIndex[position.account] = index;
+
+        bytes32 key = getKey(position.account, index);
         positions[key] = position;
 
-        flashloan(_tokens, _amts, route, _data, _customData);
-
-        require(
-            chargeFee(position.amountIn + _amts[0], position.debt), 
-            "transfer fee"
-        );
+        IERC20(position.debt).universalApprove(account, position.amountIn);
+        IAccount(account).openPosition{value: msg.value}(position, _token, _amount, _route, _data);
     }
 
     function closePosition(
         bytes32 key,
-        address[] calldata _tokens,
-        uint256[] calldata _amts,
-        uint256 route,
-        bytes calldata _data,
-        bytes calldata _customData
+        address _token,
+        uint256 _amount,
+        uint256 _route,
+        bytes calldata _data
     ) external {
         SharedStructs.Position memory position = positions[key];
-        require(msg.sender == position.account, "Can close own position");
+        require(msg.sender == position.account, "can close own position");
 
-        flashloan(_tokens, _amts, route, _data, _customData);
+        address account = accounts[msg.sender];
+        require(account != address(0), "account doesnt exist");
+
+        IAccount(account).closePosition(key, _token, _amount, _route, _data);
 
         delete positions[key];
+    }
+
+    function updatePosition(SharedStructs.Position memory position) public {
+        require(msg.sender == accounts[position.account], "Can close own position");
+
+        bytes32 key = getKey(position.account, positionsIndex[position.account]);
+        positions[key] = position;
     }
 
     function getKey(address _account, uint256 _index) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(_account, _index));
     }
 
-    function openPositionCallback(
-        bytes[] memory _datas,
-        bytes[] calldata _customDatas,
-        uint256 repayAmount
-    ) external payable onlyCallback {
-        uint256 value = swap(_datas[0]);
-
-        encodeAndExecute(abi.encode(value), _datas[1]);
-        encodeAndExecute(abi.encode(repayAmount), _datas[2]);
-
-        bytes32 key = bytes32(_customDatas[0]);
-
-        positions[key].collateralAmount = value;
-        positions[key].borrowAmount = repayAmount;
-        
-        IERC20(positions[key].debt).transfer(address(flashloanAggregator), repayAmount);
+    function getFeeAmount(uint256 _amount) public view returns (uint256 feeAmount) {
+        feeAmount = (_amount * fee) / DENOMINATOR;
     }
 
-    function closePositionCallback(
-        bytes[] memory _datas,
-        bytes[] calldata _customDatas,
-        uint256 repayAmount
-    ) external payable onlyCallback {
+    function getOrCreateAccount(address _owner) public returns (address) {
+        require(_owner == msg.sender, "sender not owner");
+        address _account = address(accounts[_owner]);
 
-        decodeAndExecute(_datas[0]);
-        decodeAndExecute(_datas[1]);
+        if (_account == address(0)) {
+            _account = Clones.cloneDeterministic(accountProxy, salt);
+            IAccount(_account).initialize(
+                _owner,
+                connectors,
+                address(this),
+                flashloanAggregator
+            );
+            accounts[_owner] = _account;
+        }
 
-        uint256 returnedAmt = swap(_datas[2]);
-
-        SharedStructs.Position memory position = positions[bytes32(_customDatas[0])];
-
-        IERC20(position.debt).universalTransfer(address(flashloanAggregator), repayAmount);
-        IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
+        return _account;
     }
 
-    function swap(bytes memory _exchangeData) internal returns(uint256 value) {
-        bytes memory response = decodeAndExecute(_exchangeData);
+    function predictDeterministicAddress() public view returns (address predicted) {
+        return Clones.predictDeterministicAddress(accountProxy, salt, address(this));
+    }
+
+    function swap(SharedStructs.SwapParams memory _params) private returns (uint256 value) {
+        bytes memory response = execute(_params.targetName, _params.data);
         value = abi.decode(response, (uint256));
     }
 
-    function chargeFee(uint256 _amt, address _token) internal returns (bool) {
-        uint256 feeAmount = (_amt * fee) / DENOMINATOR;
-
-        if (feeAmount <= 0) {
-            return false;
-        }
-
-        return IERC20(_token).universalTransfer(treasury, feeAmount);
+    function execute(string memory _targetName, bytes memory _data) internal returns (bytes memory response) {
+        (bool isOk, address _target) = IConnectors(connectors).isConnector(_targetName);
+        require(isOk, "not connector");
+        response = _delegatecall(_target, _data);
     }
+
+    function _delegatecall(
+		address _target,
+		bytes memory _data
+	) internal returns (bytes memory response) {
+		require(_target != address(0), "Target invalid");
+		assembly {
+			let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
+			let size := returndatasize()
+
+			response := mload(0x40)
+			mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+			mstore(response, size)
+			returndatacopy(add(response, 0x20), 0, size)
+
+			switch iszero(succeeded)
+			case 1 {
+				// throw if delegatecall failed
+				returndatacopy(0x00, 0x00, size)
+				revert(0x00, size)
+			}
+		}
+	}
 }

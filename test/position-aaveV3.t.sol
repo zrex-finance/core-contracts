@@ -32,52 +32,27 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-        _data = abi.encode(NAME,
-            abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE)
-        );
+        _data = abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE);
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns(bytes memory _data) {
-        _data = abi.encode(NAME,
-            abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount)
-        );
+        _data = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount);
     }
 
     function getDepositData(address _token) public view returns(bytes memory _data) {
-        _data = abi.encode(NAME,
-            abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token)
-        );
+        _data = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token);
     }
 
     function getBorrowData(address _token) public view returns(bytes memory _data) {
-        _data = abi.encode(NAME, 
-            abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE)
-        );
+        _data = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE);
     }
 }
 
 contract PositionAaveV3 is LendingHelper {
 
-    function testCreateAccountWithOpenLongPositionAaveV3() public {
-        vm.prank(msg.sender);
-        address account = registry.predictDeterministicAddress();
-
-        SharedStructs.Position memory _position = SharedStructs.Position(
-            account, address(daiC), wethC, 1000 ether, 2, 0, 0
-        );
-
-        topUpTokenBalance(daiC, daiWhale, _position.amountIn);
-        
-        openPositionWithCreateAccount(_position);
-        closePosition(_position);
-    }
-
     function testLongPositionAccount() public {
-        vm.prank(msg.sender);
-        address account = registry.createAccount(msg.sender);
-
         SharedStructs.Position memory _position = SharedStructs.Position(
-            account,address(daiC),wethC,1000 ether,2,0,0
+            msg.sender,address(daiC),wethC,1000 ether,2,0,0
         );
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
@@ -86,127 +61,124 @@ contract PositionAaveV3 is LendingHelper {
         closePosition(_position);
     }
 
-    function testShortPosition() public {
-        vm.prank(msg.sender);
-        address account = registry.createAccount(msg.sender);
-
-        uint256 shortAmt = 2000 ether;
-
-        bytes memory _uniData = getSwapData(daiC, wethC, address(account), shortAmt);
-
-        topUpTokenBalance(daiC, daiWhale, shortAmt);
-
+    function openPosition(SharedStructs.Position memory _position) public {
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(daiC).approve(address(account), shortAmt);
+        ERC20(_position.debt).approve(address(router), _position.amountIn);
 
-        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
-
-        SharedStructs.Position memory _position = SharedStructs.Position(
-            account,wethC,usdcC,exchangeAmt,2,0,0
-        );
-
-        openShort(_position, _uniData);
-
-        closePosition(_position);
-    }
-
-    function openShort(SharedStructs.Position memory _position, bytes memory _swap) 
-        public 
-    {
         (
-            /* bool isShort */,
-            address[] memory _tokens,
-            uint256[] memory _amts,
-            uint256 route,
-            bytes memory _data,
-            /* bytes memory _customdata */
+            address _token,
+            uint256 _amount,
+            uint256 _route,
+            bytes memory _data
         ) = _openPosition(_position);
 
-        bytes memory _open = abi.encodeWithSelector(
-            implementation.openPosition.selector, _position, true, _tokens, _amts, route, _data, _swap
-        );
         
         vm.prank(msg.sender);
-        (bool success, ) = _position.account.call(_open);
-        require(success);
+        router.openPosition(_position, _token, _amount, _route, _data);
     }
 
-    function openPositionWithCreateAccount(SharedStructs.Position memory _position) 
-        public 
-    {
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(registry), _position.amountIn);
-
-        (
-            bool isShort,
-            address[] memory _tokens,
-            uint256[] memory _amts,
-            uint256 route,
-            bytes memory _data,
-            bytes memory _customdata
-        ) = _openPosition(_position);
-
-        vm.prank(msg.sender);
-        registry.createWithOpen(_position, isShort, _tokens, _amts, route, _data, _customdata);
-    }
-
-    function openPosition(SharedStructs.Position memory _position) 
-        public 
-    {
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(_position.account, _position.amountIn);
-
-        (
-            bool isShort,
-            address[] memory _tokens,
-            uint256[] memory _amts,
-            uint256 route,
-            bytes memory _data,
-            bytes memory _customdata
-        ) = _openPosition(_position);
-
-        bytes memory _open = abi.encodeWithSelector(
-            implementation.openPosition.selector, _position, isShort, _tokens, _amts, route, _data, _customdata
-        );
-        
-        vm.prank(msg.sender);
-        (bool success, ) = _position.account.call(_open);
-        require(success);
-    }
-
-    function closePosition(SharedStructs.Position memory _position)
-        public 
-    {
-
+    function closePosition(SharedStructs.Position memory _position) public {
         uint256 index = router.positionsIndex(_position.account);
         bytes32 key = router.getKey(_position.account, index);
 
         (,,,,,uint256 _collateralAmount, uint256 _borrowAmount) = router.positions(key);
 
         (   
-            address[] memory _tokens,
-            uint256[] memory _amts,
+            address _token,
+            uint256 _amount,
             uint16 _route
         ) = getFlashloanData(_position.debt, _borrowAmount);
+
+        address account = router.accounts(_position.account);
 
         bytes memory _calldata = getCloseCallbackData(
             _position.debt,
             _position.collateral,
             _collateralAmount,
             _borrowAmount,
+            account,
             key
         );
 
-        bytes memory _close = abi.encodeWithSelector(
-            implementation.closePosition.selector, key, _tokens, _amts, _route, _calldata, bytes("")
+        vm.prank(msg.sender);
+        router.closePosition(key, _token, _amount, _route, _calldata);
+    }
+
+    function testShortPosition() public {
+        uint256 shortAmt = 2000 ether;
+
+        bytes memory swapdata = getMulticalSwapData(daiC, wethC, address(router), shortAmt);
+        bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, wethC, daiC, shortAmt, swapdata);
+
+        SharedStructs.SwapParams memory _params = SharedStructs.SwapParams(
+            daiC,
+            shortAmt,
+            "UniswapAuto",
+            _unidata
         );
 
+        topUpTokenBalance(daiC, daiWhale, shortAmt);
+
+        // approve tokens
         vm.prank(msg.sender);
-        (bool success, ) = _position.account.call(_close);
-        require(success);
+        ERC20(daiC).approve(address(router), shortAmt);
+
+        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
+
+        SharedStructs.Position memory _position = SharedStructs.Position(
+            msg.sender,wethC,usdcC,exchangeAmt,2,0,0
+        );
+
+        openShort(_position, _params);
+
+        closePosition(_position);
+    }
+
+    function openShort(SharedStructs.Position memory _position, SharedStructs.SwapParams memory _params) public {
+        (
+            address _token,
+            uint256 _amount,
+            uint256 _route,
+            bytes memory _data
+        ) = _openPosition(_position);
+        
+        vm.prank(msg.sender);
+        router.swapAndOpen(_position, _token, _amount, _route, _data, _params);
+    }
+
+    function getOpenCallbackData(
+        SharedStructs.Position memory _position,
+        uint256 swapAmount
+    ) public view returns(bytes memory _calldata) {
+        uint256 index = router.positionsIndex(_position.account);
+        bytes32 key = router.getKey(_position.account, index + 1);
+
+        string[] memory _targetNames = new string[](3);
+        _targetNames[0] = uniswapConnector.name();
+        _targetNames[1] = aaveV3Connector.name();
+        _targetNames[2] = aaveV3Connector.name();
+
+        bytes[] memory _customDatas = new bytes[](1);
+        _customDatas[0] = abi.encode(key);
+
+        address account = router.accounts(_position.account);
+
+        if (account == address(0)) {
+            account = router.predictDeterministicAddress();
+        }
+
+        bytes[] memory _datas = new bytes[](3);
+        _datas[0] = getSwapData(_position.debt, _position.collateral, account, swapAmount);
+        _datas[1] = getDepositData(_position.collateral);
+        _datas[2] = getBorrowData(_position.debt);
+
+        _calldata = abi.encode(
+            implementation.openPositionCallback.selector,
+            _targetNames,
+            _datas,
+            _customDatas
+        );
     }
 
     function getCloseCallbackData(
@@ -214,41 +186,26 @@ contract PositionAaveV3 is LendingHelper {
         address collateral,
         uint256 swapAmt,
         uint256 borrowAmt,
+        address account,
         bytes32 key
     ) public view returns(bytes memory _calldata) {
 
         bytes[] memory _customDatas = new bytes[](1);
         _customDatas[0] = abi.encodePacked(key);
 
+        string[] memory _targetNames = new string[](3);
+        _targetNames[0] = aaveV3Connector.name();
+        _targetNames[1] = aaveV3Connector.name();
+        _targetNames[2] = uniswapConnector.name();
+
         bytes[] memory _datas = new bytes[](3);
         _datas[0] = getPaybackData(borrowAmt, debt);
         _datas[1] = getWithdrawData(swapAmt, collateral);
-        _datas[2] = getSwapData(collateral, debt, address(router), swapAmt);
+        _datas[2] = getSwapData(collateral, debt, account, swapAmt);
 
         _calldata = abi.encode(
-            router.closePositionCallback.selector,
-            _datas,
-            _customDatas
-        );
-    }
-
-    function getOpenCallbackData(
-        SharedStructs.Position memory _position,
-        uint256 swapAmount
-    ) public view returns(bytes memory _calldata) {
-        uint256 index = router.positionsIndex(address(_position.account));
-        bytes32 key = router.getKey(address(_position.account), index + 1);
-
-        bytes[] memory _customDatas = new bytes[](1);
-        _customDatas[0] = abi.encode(key);
-
-        bytes[] memory _datas = new bytes[](3);
-        _datas[0] = getSwapData( _position.debt, _position.collateral, address(router), swapAmount);
-        _datas[1] = getDepositData(_position.collateral);
-        _datas[2] = getBorrowData(_position.debt);
-
-        _calldata = abi.encode(
-            router.openPositionCallback.selector,
+            implementation.closePositionCallback.selector,
+            _targetNames,
             _datas,
             _customDatas
         );
@@ -257,7 +214,7 @@ contract PositionAaveV3 is LendingHelper {
     function getFlashloanData(
         address lT,
         uint256 lA
-    ) public view returns(address[] memory, uint256[] memory, uint16) {
+    ) public view returns(address, uint256, uint16) {
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);
         _tokens[0] = lT;
@@ -265,21 +222,17 @@ contract PositionAaveV3 is LendingHelper {
 
         (,,uint16[] memory _bestRoutes,) = flashResolver.getData(_tokens, _amts);
 
-        return (_tokens, _amts, _bestRoutes[0]);
+        return (lT, lA, _bestRoutes[0]);
     }
 
     function _openPosition(SharedStructs.Position memory _position) 
         public 
         view 
-        returns (bool, address[] memory, uint256[] memory, uint256, bytes memory, bytes memory)
+        returns (address, uint256, uint256, bytes memory)
     {
         uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 
-        (   
-            address[] memory _tokens,
-            uint256[] memory _amts,
-            uint16 route
-        ) = getFlashloanData(_position.debt, loanAmt);
+        (address _token,uint256 _amount,uint16 _route) = getFlashloanData(_position.debt, loanAmt);
 
         uint256 swapAmount = _position.amountIn * _position.sizeDelta;
         // protocol fee 3% denominator 10000
@@ -287,6 +240,6 @@ contract PositionAaveV3 is LendingHelper {
 
         bytes memory _calldata = getOpenCallbackData(_position, swapAmountWithoutFee);
 
-        return (false, _tokens, _amts, route, _calldata, bytes(""));
+        return (_token, _amount, _route, _calldata);
     }
 }
