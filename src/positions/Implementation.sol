@@ -46,6 +46,7 @@ contract Implementation is Executor, FlashReceiver {
         uint256 route,
         bytes calldata _data
     ) external payable {
+        require(position.account == _owner, "not owner");
         IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
 
         flashloan(_token, _amount, route, _data);
@@ -57,15 +58,14 @@ contract Implementation is Executor, FlashReceiver {
     }
 
     function closePosition(
-        bytes32 key,
+        bytes32 _key,
         address _token,
         uint256 _amount,
         uint256 route,
         bytes calldata _data
     ) external {
-        // SharedStructs.Position memory position = positionRouter.positions(key);
-        // require(msg.sender == position.account, "Can close own position");
-        // msg.sender account == owner 
+        SharedStructs.Position memory position = positionRouter.positions(_key);
+        require(position.account == _owner, "only own position");
 
         flashloan(_token, _amount, route, _data);
     }
@@ -81,9 +81,7 @@ contract Implementation is Executor, FlashReceiver {
         execute(_targetNames[1], abi.encodePacked(_datas[1], value));
         execute(_targetNames[1], abi.encodePacked(_datas[2], repayAmount));
 
-        bytes32 key = bytes32(_customDatas[0]);
-        SharedStructs.Position memory position = positionRouter.positions(key);
-        // require position account = origin sender
+        SharedStructs.Position memory position = getPosition(bytes32(_customDatas[0]));
 
         position.collateralAmount = value;
         position.borrowAmount = repayAmount;
@@ -91,6 +89,12 @@ contract Implementation is Executor, FlashReceiver {
         positionRouter.updatePosition(position);
         
         IERC20(position.debt).transfer(address(flashloanAggregator), repayAmount);
+    }
+
+    function getPosition(bytes32 _key) private returns (SharedStructs.Position memory) {
+        SharedStructs.Position memory position = positionRouter.positions(_key);
+        require(position.account == _owner, "only own position");
+        return position;
     }
 
     function closePositionCallback(
@@ -105,8 +109,7 @@ contract Implementation is Executor, FlashReceiver {
 
         uint256 returnedAmt = swap(_targetNames[2], _datas[2]);
 
-        SharedStructs.Position memory position = positionRouter.positions(bytes32(_customDatas[0]));
-        // require position account = origin sender
+        SharedStructs.Position memory position = getPosition(bytes32(_customDatas[0]));
 
         IERC20(position.debt).universalTransfer(address(flashloanAggregator), repayAmount);
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);

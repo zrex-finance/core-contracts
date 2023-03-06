@@ -18,7 +18,7 @@ abstract contract EthConverter {
     }
 
     function convertWethToEth(address token, uint amount) internal {
-       if(IERC20(token).isETH()) {
+       if(token == address(wethAddr)) {
             IERC20(token).universalApprove(address(wethAddr), amount);
             wethAddr.withdraw(amount);
         }

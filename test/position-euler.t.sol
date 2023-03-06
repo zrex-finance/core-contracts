@@ -97,7 +97,7 @@ contract PositionEuler is LendingHelper {
         bytes memory _calldata = getCloseCallbackData(
             _position.debt,
             _position.collateral,
-            _collateralAmount - 1, // TODO exlpain this
+            _collateralAmount - 2, // TODO exlpain this
             _borrowAmount,
             account,
             key

@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import { SharedStructs } from "../src/lib/SharedStructs.sol";
+import { UniversalERC20 } from "../src/lib/UniversalERC20.sol";
 
 import { UniswapHelper } from "./uniswap.sol";
 import { HelperContract, Deployer } from "./deployer.sol";
@@ -12,7 +13,6 @@ import { HelperContract, Deployer } from "./deployer.sol";
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
     uint256 RATE_TYPE = 1;
-    uint256 ROUTE = 1;
     string NAME = "AaveV2";
 
     function getCollateralAmt(
@@ -49,6 +49,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 }
 
 contract PositionAaveV2 is LendingHelper {
+    using UniversalERC20 for ERC20;
 
     function testLongPositionAccount() public {
         SharedStructs.Position memory _position = SharedStructs.Position(
@@ -61,10 +62,23 @@ contract PositionAaveV2 is LendingHelper {
         closePosition(_position);
     }
 
+    function LongPositionETH() public {
+        SharedStructs.Position memory _position = SharedStructs.Position(
+            msg.sender,address(0),wethC,2 ether,2,0,0
+        );
+        
+        openPosition(_position);
+        closePosition(_position);
+    }
+
     function openPosition(SharedStructs.Position memory _position) public {
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(router), _position.amountIn);
+
+        bool isEth = ERC20(_position.debt).isETH();
+
+        if (!isEth) {
+            vm.prank(msg.sender);
+            ERC20(_position.debt).approve(address(router), _position.amountIn);
+        }
 
         (
             address _token,
@@ -73,9 +87,10 @@ contract PositionAaveV2 is LendingHelper {
             bytes memory _data
         ) = _openPosition(_position);
 
+        uint256 value = isEth ? _position.amountIn : 0;
         
         vm.prank(msg.sender);
-        router.openPosition(_position, _token, _amount, _route, _data);
+        router.openPosition{value: value}(_position, _token, _amount, _route, _data);
     }
 
     function closePosition(SharedStructs.Position memory _position) public {
@@ -215,6 +230,8 @@ contract PositionAaveV2 is LendingHelper {
         address lT,
         uint256 lA
     ) public view returns(address, uint256, uint16) {
+        lT = ERC20(lT).isETH() ? wethC : lT;
+
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);
         _tokens[0] = lT;
