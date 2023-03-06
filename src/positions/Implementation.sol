@@ -9,9 +9,7 @@ import { Executor } from "./Executor.sol";
 import { FlashReceiver } from "./FlashReceiver.sol";
 import { IPositionRouter, SharedStructs, IConnectors } from "./interfaces/Implementation.sol";
 
-import "forge-std/Test.sol";
-
-contract Implementation is Executor, FlashReceiver, Test {
+contract Implementation is Executor, FlashReceiver {
     using UniversalERC20 for IERC20;
 
     address private _owner;

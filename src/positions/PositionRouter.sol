@@ -9,9 +9,7 @@ import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
 import { IAccount, IConnectors } from "./interfaces/PositionRouter.sol";
 
-import "forge-std/Test.sol";
-
-contract PositionRouter is Test {
+contract PositionRouter {
     using UniversalERC20 for IERC20;
 
     uint256 private constant MAX_FEE = 500; // 5%
