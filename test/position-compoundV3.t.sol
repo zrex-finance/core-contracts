@@ -114,6 +114,7 @@ contract PositionCompoundV3 is LendingHelper {
 
         SharedStructs.SwapParams memory _params = SharedStructs.SwapParams(
             daiC,
+            usdcC,
             shortAmt,
             "UniswapAuto",
             _unidata

@@ -57,7 +57,7 @@ contract PositionRouter {
         bytes calldata _data,
         SharedStructs.SwapParams memory _params
     ) external payable {
-        position.amountIn = swap(_params);
+        position.amountIn = _swap(_params);
         _openPosition(position, _token, _amount, _route, _data);
     }
 
@@ -148,7 +148,16 @@ contract PositionRouter {
         return Clones.predictDeterministicAddress(accountProxy, salt, address(this));
     }
 
-    function swap(SharedStructs.SwapParams memory _params) public payable returns (uint256 value) {
+    function swap(SharedStructs.SwapParams memory _params) public payable {
+        uint256 initialBalance = IERC20(_params.toToken).balanceOf(address(this));
+        uint256 value = _swap(_params);
+        uint256 finalBalance = IERC20(_params.toToken).balanceOf(address(this));
+        require(finalBalance - initialBalance == value, "value is not valid");
+
+        IERC20(_params.toToken).universalTransferFrom(address(this), msg.sender, value);
+    }
+
+    function _swap(SharedStructs.SwapParams memory _params) private returns (uint256 value) {
         IERC20(_params.fromToken).universalTransferFrom(msg.sender, address(this), _params.amount);
         bytes memory response = execute(_params.targetName, _params.data);
         value = abi.decode(response, (uint256));

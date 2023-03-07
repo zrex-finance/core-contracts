@@ -128,6 +128,7 @@ contract PositionAaveV2 is LendingHelper {
 
         SharedStructs.SwapParams memory _params = SharedStructs.SwapParams(
             daiC,
+            wethC,
             shortAmt,
             "UniswapAuto",
             _unidata

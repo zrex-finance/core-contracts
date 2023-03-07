@@ -14,6 +14,7 @@ library SharedStructs {
 
     struct SwapParams {
         address fromToken;
+        address toToken;
         uint256 amount;
         string targetName;
         bytes data;
