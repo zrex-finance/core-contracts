@@ -148,7 +148,7 @@ contract PositionRouter {
         return Clones.predictDeterministicAddress(accountProxy, salt, address(this));
     }
 
-    function swap(SharedStructs.SwapParams memory _params) public returns (uint256 value) {
+    function swap(SharedStructs.SwapParams memory _params) public payable returns (uint256 value) {
         IERC20(_params.fromToken).universalTransferFrom(msg.sender, address(this), _params.amount);
         bytes memory response = execute(_params.targetName, _params.data);
         value = abi.decode(response, (uint256));
