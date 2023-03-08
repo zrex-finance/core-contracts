@@ -76,7 +76,7 @@ contract Implementation is Executor, FlashReceiver {
         bytes[] calldata _customDatas,
         uint256 repayAmount
     ) external payable onlyCallback {
-        uint256 value = swap(_targetNames[0], _datas[0]);
+        uint256 value = _swap(_targetNames[0], _datas[0]);
 
         execute(_targetNames[1], abi.encodePacked(_datas[1], value));
         execute(_targetNames[1], abi.encodePacked(_datas[2], repayAmount));
@@ -107,7 +107,7 @@ contract Implementation is Executor, FlashReceiver {
         execute(_targetNames[0], _datas[0]);
         execute(_targetNames[1], _datas[1]);
 
-        uint256 returnedAmt = swap(_targetNames[2], _datas[2]);
+        uint256 returnedAmt = _swap(_targetNames[2], _datas[2]);
 
         SharedStructs.Position memory position = getPosition(bytes32(_customDatas[0]));
 
@@ -115,7 +115,7 @@ contract Implementation is Executor, FlashReceiver {
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
 
-    function swap(string memory _name, bytes memory _data) internal returns(uint256 value) {
+    function _swap(string memory _name, bytes memory _data) internal returns(uint256 value) {
         bytes memory response = execute(_name, _data);
         value = abi.decode(response, (uint256));
     }
