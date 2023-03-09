@@ -21,13 +21,13 @@ contract TestEthConverter is Test, EthConverter {
     vm.selectFork(forkId);
   }
 
-  function testConvertEthToWeth() public {
+  function test_ConvertEthToWeth() public {
     convertEthToWeth(ethC, amount);
     
     assertEq(amount, IERC20(wethC).balanceOf(address(this)));
   }
 
-  function testConvertWethToEth() public {
+  function test_ConvertWethToEth() public {
     convertEthToWeth(ethC, amount);
 
     uint256 initialBalance = address(this).balance;
@@ -37,13 +37,13 @@ contract TestEthConverter is Test, EthConverter {
     assertEq(amount, finalBalance - initialBalance);
   }
 
-  function testWrongTokenEthToWeth() public {
+  function test_WrongTokenEthToWeth() public {
     convertEthToWeth(wrongToken, amount);
     
     assertGt(amount, IERC20(wethC).balanceOf(address(this)));
   }
 
-  function testWrongTokenWethToEth() public {
+  function test_WrongTokenWethToEth() public {
     convertEthToWeth(ethC, amount);
     convertWethToEth(wrongToken, amount);
     
