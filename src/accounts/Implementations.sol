@@ -35,8 +35,8 @@ contract Implementations is Ownable {
     }
 
     function addImplementation(address _implementation, bytes4[] calldata _sigs) external onlyOwner {
-        require(_implementation != address(0), "not valid.");
-        require(implementationSigs[_implementation].length == 0, "already added.");
+        require(_implementation != address(0), "not valid");
+        require(implementationSigs[_implementation].length == 0, "already added");
         for (uint i = 0; i < _sigs.length; i++) {
             bytes4 _sig = _sigs[i];
             require(sigImplementations[_sig] == address(0), "_sig already added");
@@ -47,8 +47,8 @@ contract Implementations is Ownable {
     }
 
     function removeImplementation(address _implementation) external onlyOwner {
-        require(_implementation != address(0), "not valid.");
-        require(implementationSigs[_implementation].length != 0, "not found.");
+        require(_implementation != address(0), "not valid");
+        require(implementationSigs[_implementation].length != 0, "not found");
         bytes4[] memory sigs = implementationSigs[_implementation];
         for (uint i = 0; i < sigs.length; i++) {
             bytes4 sig = sigs[i];
