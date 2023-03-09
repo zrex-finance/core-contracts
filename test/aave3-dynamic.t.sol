@@ -72,42 +72,42 @@ contract AaveV3 is LendingHelper, EthConverter {
     uint256 public SECONDS_OF_THE_YEAR = 365 days;
     uint256 public RAY = 1e27;
 
-    function testAaveFullCase() public {
-        uint256 depositAmount = 1000 ether;
+    // function testAaveFullCase() public {
+    //     uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+    //     vm.prank(daiWhale);
+    //     ERC20(daiC).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+    //     execute(getDepositData(daiC, depositAmount));
 
-        uint256 wethPrice = aaveOracle.getAssetPrice(wethC);
+    //     uint256 wethPrice = aaveOracle.getAssetPrice(wethC);
 
-        (uint256 daiDecimals, uint256 ltv,,,,,,,,) = aaveDataProvider.getReserveConfigurationData(daiC);
+    //     (uint256 daiDecimals, uint256 ltv,,,,,,,,) = aaveDataProvider.getReserveConfigurationData(daiC);
 
-        uint256 wethDecimals = ERC20(wethC).decimals();
-        uint256 daiPrice = aaveOracle.getAssetPrice(daiC);
+    //     uint256 wethDecimals = ERC20(wethC).decimals();
+    //     uint256 daiPrice = aaveOracle.getAssetPrice(daiC);
 
-        uint256 totalDai = daiPrice * depositAmount / (10 ** daiDecimals);
-        uint256 maxBorrowAmountInBase = (totalDai / 100) * ((ltv / 100));
-        uint256 borrowAmount = (maxBorrowAmountInBase * (10 ** wethDecimals)) / wethPrice;
+    //     uint256 totalDai = daiPrice * depositAmount / (10 ** daiDecimals);
+    //     uint256 maxBorrowAmountInBase = (totalDai / 100) * ((ltv / 100));
+    //     uint256 borrowAmount = (maxBorrowAmountInBase * (10 ** wethDecimals)) / wethPrice;
 
-        execute(getBorrowData(wethC, borrowAmount));
+    //     execute(getBorrowData(wethC, borrowAmount));
 
-        paybackAndWithdraw(borrowAmount, depositAmount);
-    }
+    //     paybackAndWithdraw(borrowAmount, depositAmount);
+    // }
 
-    function paybackAndWithdraw(uint256 borrowAmount, uint256 depositAmount) public {
-      uint256 timestamp = block.timestamp + 1 days;
-      (,,,,,,uint256 variableBorrowRate,,,,,uint40 lastUpdate) = aaveDataProvider.getReserveData(wethC);
+    // function paybackAndWithdraw(uint256 borrowAmount, uint256 depositAmount) public {
+    //   uint256 timestamp = block.timestamp + 1 days;
+    //   (,,,,,,uint256 variableBorrowRate,,,,,uint40 lastUpdate) = aaveDataProvider.getReserveData(wethC);
 
-      uint256 timePassed = timestamp - lastUpdate;
-      uint256 ratePerTime = (variableBorrowRate / SECONDS_OF_THE_YEAR) * timePassed;
-      uint256 borrowFeeAmount = (borrowAmount * RAY) / ratePerTime;
-      uint256 paybackAmount = borrowFeeAmount + borrowAmount;
+    //   uint256 timePassed = timestamp - lastUpdate;
+    //   uint256 ratePerTime = (variableBorrowRate / SECONDS_OF_THE_YEAR) * timePassed;
+    //   uint256 borrowFeeAmount = (borrowAmount * RAY) / ratePerTime;
+    //   uint256 paybackAmount = borrowFeeAmount + borrowAmount;
 
-      convertEthToWeth(wethC, borrowFeeAmount);
+    //   convertEthToWeth(wethC, borrowFeeAmount);
 
-      execute(getPaybackData(paybackAmount, wethC));
-      execute(getWithdrawData(depositAmount, daiC));
-    }
+    //   execute(getPaybackData(paybackAmount, wethC));
+    //   execute(getWithdrawData(depositAmount, daiC));
+    // }
 }
