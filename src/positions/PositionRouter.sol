@@ -22,15 +22,16 @@ contract PositionRouter {
     address public connectors;
     address public flashloanAggregator;
 
-    bytes32 public constant salt = 0x0000000000000000000000000000000000000000000000000000000047941987; 
+    bytes32 public constant salt = 0x0000000000000000000000000000000000000000000000000000000047941987;
 
-    mapping (address => uint256) public positionsIndex;
-    mapping (bytes32 => SharedStructs.Position) public positions;
+    mapping(address => uint256) public positionsIndex;
+    mapping(bytes32 => SharedStructs.Position) public positions;
 
     // user -> account proxy
-    mapping (address => address) public accounts;
+    mapping(address => address) public accounts;
 
     receive() external payable {}
+
     fallback() external payable {}
 
     constructor(
@@ -42,9 +43,9 @@ contract PositionRouter {
     ) {
         require(_fee <= MAX_FEE, "Invalid fee"); // max fee 5%
 
-        flashloanAggregator = _flashloanAggregator; 
-        connectors = _connectors; 
-        accountProxy = _accountProxy; 
+        flashloanAggregator = _flashloanAggregator;
+        connectors = _connectors;
+        accountProxy = _accountProxy;
         fee = _fee;
         treasury = _treasury;
     }
@@ -91,7 +92,7 @@ contract PositionRouter {
         positions[key] = position;
 
         IERC20(position.debt).universalApprove(account, position.amountIn);
-        IAccount(account).openPosition{value: msg.value}(position, _token, _amount, _route, _data);
+        IAccount(account).openPosition{ value: msg.value }(position, _token, _amount, _route, _data);
     }
 
     function closePosition(
@@ -133,12 +134,7 @@ contract PositionRouter {
 
         if (_account == address(0)) {
             _account = Clones.cloneDeterministic(accountProxy, salt);
-            IAccount(_account).initialize(
-                _owner,
-                connectors,
-                address(this),
-                flashloanAggregator
-            );
+            IAccount(_account).initialize(_owner, connectors, address(this), flashloanAggregator);
             accounts[_owner] = _account;
         }
 
@@ -160,26 +156,23 @@ contract PositionRouter {
         response = _delegatecall(_target, _data);
     }
 
-    function _delegatecall(
-		address _target,
-		bytes memory _data
-	) internal returns (bytes memory response) {
-		require(_target != address(0), "Target invalid");
-		assembly {
-			let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
-			let size := returndatasize()
+    function _delegatecall(address _target, bytes memory _data) internal returns (bytes memory response) {
+        require(_target != address(0), "Target invalid");
+        assembly {
+            let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
+            let size := returndatasize()
 
-			response := mload(0x40)
-			mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-			mstore(response, size)
-			returndatacopy(add(response, 0x20), 0, size)
+            response := mload(0x40)
+            mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+            mstore(response, size)
+            returndatacopy(add(response, 0x20), 0, size)
 
-			switch iszero(succeeded)
-			case 1 {
-				// throw if delegatecall failed
-				returndatacopy(0x00, 0x00, size)
-				revert(0x00, size)
-			}
-		}
-	}
+            switch iszero(succeeded)
+            case 1 {
+                // throw if delegatecall failed
+                returndatacopy(0x00, 0x00, size)
+                revert(0x00, size)
+            }
+        }
+    }
 }

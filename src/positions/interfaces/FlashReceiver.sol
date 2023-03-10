@@ -12,9 +12,5 @@ interface IFlashLoan {
 }
 
 interface IImplimentation {
-    function execute(
-		address[] memory _targets,
-		bytes[] memory _datas,
-		address _origin
-	) external;
+    function execute(address[] memory _targets, bytes[] memory _datas, address _origin) external;
 }

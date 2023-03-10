@@ -5,6 +5,7 @@ import { SharedStructs } from "../../lib/SharedStructs.sol";
 
 interface IConnectors {
     function isConnectors(string[] calldata _names) external view returns (bool isOk, address[] memory _connectors);
+
     function isConnector(string calldata _name) external view returns (bool isOk, address _connector);
 }
 

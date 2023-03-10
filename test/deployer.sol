@@ -123,7 +123,6 @@ contract Deployer is Test {
         }
 
         Mapping _mapping = new Mapping(_tokens, _ctokens);
-        console.log("_mapping", address(_mapping));
 
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();

@@ -27,7 +27,6 @@ interface AaveOracle {
 }
 
 contract LendingHelper is HelperContract, Tokens {
-
     uint256 RATE_TYPE = 2;
     string NAME = "AaveV3";
 
@@ -35,7 +34,8 @@ contract LendingHelper is HelperContract, Tokens {
 
     AaveOracle public aaveOracle = AaveOracle(0x54586bE62E3c3580375aE3723C145253060Ca0C2);
     IAavePoolProvider internal constant aaveProvider = IAavePoolProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
-    IAaveDataProvider internal constant aaveDataProvider = IAaveDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
+    IAaveDataProvider internal constant aaveDataProvider =
+        IAaveDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
 
     function setUp() public {
         string memory url = vm.rpcUrl("mainnet");
@@ -45,30 +45,29 @@ contract LendingHelper is HelperContract, Tokens {
         aaveV3Connector = new AaveV3Connector();
     }
 
-    function getPaybackData(uint256 _amount, address _token) public view returns(bytes memory _data) {
+    function getPaybackData(uint256 _amount, address _token) public view returns (bytes memory _data) {
         _data = abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE);
     }
 
-    function getWithdrawData(uint256 _amount, address _token) public view returns(bytes memory _data) {
+    function getWithdrawData(uint256 _amount, address _token) public view returns (bytes memory _data) {
         _data = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount);
     }
 
-    function getDepositData(address _token, uint256 _amount) public view returns(bytes memory _data) {
+    function getDepositData(address _token, uint256 _amount) public view returns (bytes memory _data) {
         _data = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token, _amount);
     }
 
-    function getBorrowData(address _token, uint256 _amount) public view returns(bytes memory _data) {
+    function getBorrowData(address _token, uint256 _amount) public view returns (bytes memory _data) {
         _data = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE, _amount);
     }
 
     function execute(bytes memory _data) public {
-      (bool success,) = address(aaveV3Connector).delegatecall(_data);
-      require(success);
+        (bool success, ) = address(aaveV3Connector).delegatecall(_data);
+        require(success);
     }
 }
 
 contract AaveV3 is LendingHelper, EthConverter {
-
     uint256 public SECONDS_OF_THE_YEAR = 365 days;
     uint256 public RAY = 1e27;
 

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {UniversalERC20} from "../lib/UniversalERC20.sol";
+import { UniversalERC20 } from "../lib/UniversalERC20.sol";
 
-import {ICToken} from "./interfaces/Mapping.sol";
+import { ICToken } from "./interfaces/Mapping.sol";
 
 contract Mapping is Ownable {
     using UniversalERC20 for IERC20;

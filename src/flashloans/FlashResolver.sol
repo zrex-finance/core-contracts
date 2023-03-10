@@ -7,10 +7,10 @@ import { IERC3156FlashLender } from "./interfaces/FlashAggregator.sol";
 import { IAaveProtocolDataProvider, FlashloanAggregatorInterface } from "./interfaces/FlashResolver.sol";
 
 contract FlashResolver {
-    IERC3156FlashLender internal constant makerLending = 
+    IERC3156FlashLender internal constant makerLending =
         IERC3156FlashLender(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
 
-    IAaveProtocolDataProvider public constant aaveProtocolDataProvider = 
+    IAaveProtocolDataProvider public constant aaveProtocolDataProvider =
         IAaveProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
 
     address public constant balancerLendingAddr = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
@@ -22,11 +22,7 @@ contract FlashResolver {
         flashloanAggregator = FlashloanAggregatorInterface(_flashloanAggregatorAddr);
     }
 
-    function getRoutesInfo()
-        public
-        view
-        returns (uint16[] memory routes_, uint256[] memory fees_)
-    {
+    function getRoutesInfo() public view returns (uint16[] memory routes_, uint256[] memory fees_) {
         routes_ = flashloanAggregator.getRoutes();
         fees_ = new uint256[](routes_.length);
         for (uint256 i = 0; i < routes_.length; i++) {
@@ -34,11 +30,10 @@ contract FlashResolver {
         }
     }
 
-    function getBestRoutes(address[] memory _tokens, uint256[] memory _amounts)
-        public
-        view
-        returns (uint16[] memory, uint256)
-    {
+    function getBestRoutes(
+        address[] memory _tokens,
+        uint256[] memory _amounts
+    ) public view returns (uint16[] memory, uint256) {
         require(_tokens.length == _amounts.length, "array-lengths-not-same");
 
         validateTokens(_tokens);
@@ -46,7 +41,7 @@ contract FlashResolver {
         uint16[] memory bRoutes_;
         uint256 feeBPS_;
         uint16[] memory routes_ = flashloanAggregator.getRoutes();
-        uint16[] memory routesWithAvailability_ = getRoutesWithAvailability(routes_,_tokens,_amounts);
+        uint16[] memory routesWithAvailability_ = getRoutesWithAvailability(routes_, _tokens, _amounts);
         uint16 j = 0;
         bRoutes_ = new uint16[](routes_.length);
         feeBPS_ = type(uint256).max;
@@ -71,25 +66,20 @@ contract FlashResolver {
         return (bestRoutes_, feeBPS_);
     }
 
-    function getData(address[] memory _tokens, uint256[] memory _amounts)
+    function getData(
+        address[] memory _tokens,
+        uint256[] memory _amounts
+    )
         public
         view
-        returns (
-            uint16[] memory routes_,
-            uint256[] memory fees_,
-            uint16[] memory bestRoutes_,
-            uint256 bestFee_
-        )
+        returns (uint16[] memory routes_, uint256[] memory fees_, uint16[] memory bestRoutes_, uint256 bestFee_)
     {
         (routes_, fees_) = getRoutesInfo();
         (bestRoutes_, bestFee_) = getBestRoutes(_tokens, _amounts);
         return (routes_, fees_, bestRoutes_, bestFee_);
     }
 
-    function getAaveAvailability(
-        address[] memory _tokens,
-        uint256[] memory _amounts
-    ) internal view returns (bool) {
+    function getAaveAvailability(address[] memory _tokens, uint256[] memory _amounts) internal view returns (bool) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             IERC20 token_ = IERC20(_tokens[i]);
             (, , , , , , , , bool isActive, ) = aaveProtocolDataProvider.getReserveConfigurationData(_tokens[i]);
@@ -104,10 +94,7 @@ contract FlashResolver {
         return true;
     }
 
-    function getMakerAvailability(
-        address[] memory _tokens,
-        uint256[] memory _amounts
-    ) internal view returns (bool) {
+    function getMakerAvailability(address[] memory _tokens, uint256[] memory _amounts) internal view returns (bool) {
         if (_tokens.length == 1 && _tokens[0] == daiToken) {
             uint256 loanAmt = makerLending.maxFlashLoan(daiToken);
             return _amounts[0] <= loanAmt;
@@ -115,10 +102,7 @@ contract FlashResolver {
         return false;
     }
 
-    function getBalancerAvailability(
-        address[] memory _tokens,
-        uint256[] memory _amounts
-    ) internal view returns (bool) {
+    function getBalancerAvailability(address[] memory _tokens, uint256[] memory _amounts) internal view returns (bool) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             IERC20 token_ = IERC20(_tokens[i]);
             if (token_.balanceOf(balancerLendingAddr) < _amounts[i]) {

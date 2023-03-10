@@ -14,12 +14,12 @@ contract InchV5Connector is Utils, EthConverter {
     string public name = "1Inch-v5";
 
     address internal constant oneInchV5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
-    
+
     function swap(
         address toToken,
-		address fromToken,
-		uint256 amount,
-		bytes calldata callData
+        address fromToken,
+        uint256 amount,
+        bytes calldata callData
     ) external payable returns (uint256 _buyAmt) {
         _buyAmt = _swap(toToken, fromToken, amount, callData);
         convertEthToWeth(toToken, _buyAmt);
@@ -28,9 +28,9 @@ contract InchV5Connector is Utils, EthConverter {
 
     function _swap(
         address toToken,
-		address fromToken,
-		uint256 amount,
-		bytes calldata callData
+        address fromToken,
+        uint256 amount,
+        bytes calldata callData
     ) internal returns (uint256 buyAmount) {
         IERC20(fromToken).universalApprove(oneInchV5, amount);
 
@@ -38,9 +38,9 @@ contract InchV5Connector is Utils, EthConverter {
 
         uint256 initalBalalance = IERC20(toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = oneInchV5.call{value: value}(callData);
-        
-		if (!success) {
+        (bool success, bytes memory results) = oneInchV5.call{ value: value }(callData);
+
+        if (!success) {
             revert(getRevertMsg(results));
         }
 
@@ -49,11 +49,5 @@ contract InchV5Connector is Utils, EthConverter {
         buyAmount = finalBalalance - initalBalalance;
     }
 
-    event LogExchange(
-        address indexed account,
-        address buyAddr,
-		address sellAddr,
-		uint256 sellAmt
-    );
+    event LogExchange(address indexed account, address buyAddr, address sellAddr, uint256 sellAmt);
 }
-

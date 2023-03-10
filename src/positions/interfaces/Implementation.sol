@@ -23,10 +23,15 @@ interface IPositionRouter {
     ) external payable;
 
     function decodeAndExecute(bytes memory _data) external returns (bytes memory response);
+
     function connectors() external returns (address);
+
     function treasury() external returns (address);
+
     function positions(bytes32 key) external returns (SharedStructs.Position memory);
+
     function updatePosition(SharedStructs.Position memory position) external;
+
     function getFeeAmount(uint256 _amount) external view returns (uint256 feeAmount);
 }
 

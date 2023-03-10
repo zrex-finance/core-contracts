@@ -17,9 +17,9 @@ contract UniswapConnector is Utils, EthConverter {
 
     function swap(
         address toToken,
-		address fromToken,
-		uint256 amount,
-		bytes calldata callData
+        address fromToken,
+        uint256 amount,
+        bytes calldata callData
     ) external payable returns (uint256 _buyAmt) {
         _buyAmt = _swap(toToken, fromToken, amount, callData);
         emit LogExchange(msg.sender, toToken, fromToken, amount);
@@ -27,17 +27,17 @@ contract UniswapConnector is Utils, EthConverter {
 
     function _swap(
         address toToken,
-		address fromToken,
-		uint256 amount,
-		bytes calldata callData
+        address fromToken,
+        uint256 amount,
+        bytes calldata callData
     ) internal returns (uint256 buyAmount) {
         IERC20(fromToken).universalApprove(uniAutoRouter, amount);
 
         uint256 initalBalalance = IERC20(toToken).universalBalanceOf(address(this));
 
         (bool success, bytes memory results) = uniAutoRouter.call(callData);
-        
-		if (!success) {
+
+        if (!success) {
             revert(getRevertMsg(results));
         }
 
@@ -46,11 +46,5 @@ contract UniswapConnector is Utils, EthConverter {
         buyAmount = finalBalalance - initalBalalance;
     }
 
-    event LogExchange(
-        address indexed account,
-        address buyAddr,
-		address sellAddr,
-		uint256 sellAmt
-    );
+    event LogExchange(address indexed account, address buyAddr, address sellAddr, uint256 sellAmt);
 }
-

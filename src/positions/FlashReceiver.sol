@@ -17,15 +17,10 @@ contract FlashReceiver is Initializable, Utils, EthConverter {
     }
 
     function __FlashReceiver_init(address _flashloanAggregator) internal onlyInitializing {
-		flashloanAggregator = IFlashLoan(_flashloanAggregator);
-	}
+        flashloanAggregator = IFlashLoan(_flashloanAggregator);
+    }
 
-    function flashloan(
-        address _token,
-        uint256 _amount,
-        uint256 route,
-        bytes calldata _data
-    ) public {
+    function flashloan(address _token, uint256 _amount, uint256 route, bytes calldata _data) public {
         address[] memory _tokens = new address[](1);
         _tokens[0] = _token;
 
@@ -54,14 +49,9 @@ contract FlashReceiver is Initializable, Utils, EthConverter {
         return true;
     }
 
-
     function encodingParams(bytes memory params, uint256 amount) internal pure returns (bytes memory encode) {
-        (
-            bytes4 selector,
-            string[] memory _targetNames,
-            bytes[] memory _datas,
-            bytes[] memory _customDatas
-        ) = abi.decode(params, (bytes4, string[], bytes[], bytes[]));
+        (bytes4 selector, string[] memory _targetNames, bytes[] memory _datas, bytes[] memory _customDatas) = abi
+            .decode(params, (bytes4, string[], bytes[], bytes[]));
 
         encode = abi.encodeWithSelector(selector, _targetNames, _datas, _customDatas, amount);
     }

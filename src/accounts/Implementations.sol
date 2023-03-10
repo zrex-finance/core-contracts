@@ -4,11 +4,10 @@ pragma solidity ^0.8.13;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Implementations is Ownable {
-
     address public defaultImplementation;
 
-    mapping (bytes4 => address) internal sigImplementations;
-    mapping (address => bytes4[]) internal implementationSigs;
+    mapping(bytes4 => address) internal sigImplementations;
+    mapping(address => bytes4[]) internal implementationSigs;
 
     event LogSetDefaultImplementation(address indexed oldImplementation, address indexed newImplementation);
     event LogAddImplementation(address indexed implementation, bytes4[] sigs);
@@ -56,6 +55,5 @@ contract Implementations is Ownable {
         }
         delete implementationSigs[_implementation];
         emit LogRemoveImplementation(_implementation, sigs);
-
     }
 }

@@ -41,7 +41,7 @@ contract Connectors is Ownable {
         isOk = true;
         uint len = _names.length;
         _connectors = new address[](len);
-        
+
         for (uint i = 0; i < _connectors.length; i++) {
             _connectors[i] = connectors[_names[i]];
             if (_connectors[i] == address(0)) {

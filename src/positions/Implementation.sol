@@ -27,7 +27,7 @@ contract Implementation is Executor, FlashReceiver {
         _;
     }
 
-	function initialize(
+    function initialize(
         address _account,
         address _connectors,
         address _positionRouter,
@@ -51,10 +51,7 @@ contract Implementation is Executor, FlashReceiver {
 
         flashloan(_token, _amount, route, _data);
 
-        require(
-            chargeFee(position.amountIn + _amount, position.debt), 
-            "transfer fee"
-        );
+        require(chargeFee(position.amountIn + _amount, position.debt), "transfer fee");
     }
 
     function closePosition(
@@ -87,7 +84,7 @@ contract Implementation is Executor, FlashReceiver {
         position.borrowAmount = repayAmount;
 
         positionRouter.updatePosition(position);
-        
+
         IERC20(position.debt).transfer(address(flashloanAggregator), repayAmount);
     }
 
@@ -103,7 +100,6 @@ contract Implementation is Executor, FlashReceiver {
         bytes[] calldata _customDatas,
         uint256 repayAmount
     ) external payable onlyCallback {
-
         execute(_targetNames[0], _datas[0]);
         execute(_targetNames[1], _datas[1]);
 
@@ -115,7 +111,7 @@ contract Implementation is Executor, FlashReceiver {
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - repayAmount);
     }
 
-    function _swap(string memory _name, bytes memory _data) internal returns(uint256 value) {
+    function _swap(string memory _name, bytes memory _data) internal returns (uint256 value) {
         bytes memory response = execute(_name, _data);
         value = abi.decode(response, (uint256));
     }

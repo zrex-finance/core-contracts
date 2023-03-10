@@ -1,48 +1,48 @@
 name: test
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
+    push:
+        branches:
+            - master
+    pull_request:
 
 env:
-  FOUNDRY_PROFILE: ci
+    FOUNDRY_PROFILE: ci
 
 jobs:
-  foundry:
-    strategy:
-      fail-fast: true
+    foundry:
+        strategy:
+            fail-fast: true
 
-    name: Foundry project
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+        name: Foundry project
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+              with:
+                  version: nightly
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
+            - name: Run Forge build
+              run: |
+                  forge --version
+                  forge build --sizes
+              id: build
 
-      - name: Run Forge tests
-        run: |
-          forge test -vv
-        id: forge-test
+            - name: Run Forge tests
+              run: |
+                  forge test -vv
+              id: forge-test
 
-      - name: Run Forge coverage
-        run: |
-          forge coverage --report lcov
-        id: forge-coverage
+            - name: Run Forge coverage
+              run: |
+                  forge coverage --report lcov
+              id: forge-coverage
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v3
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
