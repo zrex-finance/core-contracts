@@ -9,6 +9,7 @@
     "scripts": {
         "test": "TS_NODE_TRANSPILE_ONLY=true hardhat test",
         "fix:prettier": "prettier --write \"**/*.*\"",
+        "check:prettier": "prettier --check \"**/*.*\"",
         "deploy": "hardhat run tasks/deploy.ts"
     },
     "author": "Devan Non <devanon@chainstride.capital>",

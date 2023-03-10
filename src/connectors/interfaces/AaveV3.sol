@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 interface IAave {
     function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;

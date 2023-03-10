@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -122,7 +122,7 @@ contract Deployer is Test {
             }
         }
 
-        Mapping _mapping = new Mapping(_tokens, _ctokens);
+        new Mapping(_tokens, _ctokens);
 
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();
