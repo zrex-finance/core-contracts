@@ -10,30 +10,25 @@ contract CompoundV2Connector {
     using UniversalERC20 for IERC20;
 
     IComptroller internal constant troller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-    ICompoundMapping internal constant compMapping = ICompoundMapping(0xe7a85d0adDB972A4f0A4e57B698B37f171519e88);
+    ICompoundMapping internal constant compMapping = ICompoundMapping(0x2e234DAe75C793f67A35089C9d99245E1C58470b);
 
     string public constant name = "CompoundV2";
 
-    function depositRaw(address token,address cToken,uint256 amount) public payable {
+    function deposit(address token, uint256 amount) external payable {
+        address cToken = compMapping.cTokenMapping(token);
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         enterMarket(cToken);
 
         IERC20 tokenC = IERC20(token);
-        amount = amount == type(uint).max 
-            ? tokenC.balanceOf(address(this)) 
-            : amount;
+        amount = amount == type(uint).max ? tokenC.balanceOf(address(this)) : amount;
         tokenC.universalApprove(cToken, amount);
 
         require(ICToken(cToken).mint(amount) == 0, "deposit failed");
     }
 
-    function deposit(string calldata tokenId,uint256 amount) external payable {
-        (address token, address cToken) = compMapping.getMapping(tokenId);
-        depositRaw(token, cToken, amount);
-    }
-
-    function withdrawRaw(address token,address cToken,uint256 amount) public payable {
+    function withdraw(address token, uint256 amount) external payable {
+        address cToken = compMapping.cTokenMapping(token);
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         ICToken ctokenC = ICToken(cToken);
@@ -45,30 +40,20 @@ contract CompoundV2Connector {
         }
     }
 
-    function withdraw(string calldata tokenId,uint256 amount) external payable {
-        (address token, address cToken) = compMapping.getMapping(tokenId);
-        withdrawRaw(token, cToken, amount);
-    }
-
-    function borrowRaw(address token,address cToken,uint256 amount) public payable {
+    function borrow(address token, uint256 amount) external payable {
+        address cToken = compMapping.cTokenMapping(token);
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         enterMarket(cToken);
         require(ICToken(cToken).borrow(amount) == 0, "borrow failed");
     }
 
-    function borrow(string calldata tokenId,uint256 amount) external payable {
-        (address token, address cToken) = compMapping.getMapping(tokenId);
-        borrowRaw(token, cToken, amount);
-    }
-
-    function paybackRaw(address token,address cToken,uint256 amount) public payable {
+    function payback(address token, uint256 amount) external payable {
+        address cToken = compMapping.cTokenMapping(token);
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         ICToken ctokenC = ICToken(cToken);
-        amount = amount == type(uint).max 
-            ? ctokenC.borrowBalanceCurrent(address(this)) 
-            : amount;
+        amount = amount == type(uint).max ? ctokenC.borrowBalanceCurrent(address(this)) : amount;
 
         IERC20 tokenC = IERC20(token);
         require(tokenC.balanceOf(address(this)) >= amount, "not enough token");
@@ -77,12 +62,8 @@ contract CompoundV2Connector {
         require(ctokenC.repayBorrow(amount) == 0, "repay failed.");
     }
 
-    function payback(string calldata tokenId,uint256 amount) external payable {
-        (address token, address cToken) = compMapping.getMapping(tokenId);
-        paybackRaw(token, cToken, amount);
-    }
-
-    function depositCTokenRaw(address token,address cToken,uint256 amount) public payable {
+    function depositCToken(address token, uint256 amount) external payable {
+        address cToken = compMapping.cTokenMapping(token);
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         enterMarket(cToken);
@@ -90,80 +71,54 @@ contract CompoundV2Connector {
         ICToken ctokenC = ICToken(cToken);
         IERC20 tokenC = IERC20(token);
 
-        amount = amount == type(uint).max 
-            ? tokenC.balanceOf(address(this)) 
-            : amount;
+        amount = amount == type(uint).max ? tokenC.balanceOf(address(this)) : amount;
 
         tokenC.universalApprove(cToken, amount);
         require(ctokenC.mint(amount) == 0, "deposit-ctoken-failed.");
     }
 
-    function depositCToken(string calldata tokenId,uint256 amount) external payable {
-        (address token, address cToken) = compMapping.getMapping(tokenId);
-        depositCTokenRaw(token, cToken, amount);
-    }
-
-    function withdrawCTokenRaw(address token,address cToken,uint cTokenAmount) public payable {
+    function withdrawCToken(address token, uint cTokenAmount) external payable {
+        address cToken = compMapping.cTokenMapping(token);
         require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
 
         ICToken ctokenC = ICToken(cToken);
 
-        cTokenAmount = cTokenAmount == type(uint).max 
-            ? ctokenC.balanceOf(address(this)) 
-            : cTokenAmount;
+        cTokenAmount = cTokenAmount == type(uint).max ? ctokenC.balanceOf(address(this)) : cTokenAmount;
 
         require(ctokenC.redeem(cTokenAmount) == 0, "redeem-failed");
     }
 
-    function withdrawCToken(string calldata tokenId,uint cTokenamount) external payable {
-        (address token, address cToken) = compMapping.getMapping(tokenId);
-        withdrawCTokenRaw(token, cToken, cTokenamount);
-    }
+    function liquidate(address borrower, address tokenToPay, address tokenInReturn, uint256 amount) external payable {
+        address cTokenToPay = compMapping.cTokenMapping(tokenToPay);
+        address cTokenColl = compMapping.cTokenMapping(tokenInReturn);
 
-    function liquidateRaw(
-        address borrower,
-        address tokenToPay,
-        address cTokenPay,
-        address tokenInReturn,
-        address cTokenColl,
-        uint256 amount
-    ) public payable {
-        require(tokenToPay != address(0) && cTokenPay != address(0), "invalid token/ctoken address");
+        require(tokenToPay != address(0) && cTokenToPay != address(0), "invalid token/ctoken address");
         require(tokenInReturn != address(0) && cTokenColl != address(0), "invalid token/ctoken address");
 
-        ICToken ctokenC = ICToken(cTokenPay);
+        ICToken ctokenC = ICToken(cTokenToPay);
 
-        (,, uint shortfal) = troller.getAccountLiquidity(borrower);
+        (, , uint shortfal) = troller.getAccountLiquidity(borrower);
         require(shortfal != 0, "account cannot be liquidated");
-            
-        amount = amount == type(uint).max 
-            ? ctokenC.borrowBalanceCurrent(borrower) 
-            : amount;
+
+        amount = amount == type(uint).max ? ctokenC.borrowBalanceCurrent(borrower) : amount;
 
         IERC20 tokenC = IERC20(tokenToPay);
         require(tokenC.balanceOf(address(this)) >= amount, "not enough token");
 
-        tokenC.universalApprove(cTokenPay, amount);
+        tokenC.universalApprove(cTokenToPay, amount);
         require(ctokenC.liquidateBorrow(borrower, amount, cTokenColl) == 0, "liquidate failed");
     }
 
-    function liquidate(
-        address borrower,
-        string calldata tokenIdToPay,
-        string calldata tokenIdInReturn,
-        uint256 amount
-    ) external payable {
-        (address tokenToPay, address cTokenToPay) = compMapping.getMapping(tokenIdToPay);
-        (address tokenInReturn, address cTokenColl) = compMapping.getMapping(tokenIdInReturn);
+    function borrowBalanceOf(address _token, address _recipient) public returns (uint256) {
+        address cToken = compMapping.cTokenMapping(_token);
+        require(_token != address(0) && cToken != address(0), "invalid token/ctoken address");
+        return ICToken(cToken).borrowBalanceCurrent(_recipient);
+    }
 
-        liquidateRaw(
-            borrower,
-            tokenToPay,
-            cTokenToPay,
-            tokenInReturn,
-            cTokenColl,
-            amount
-        );
+    function collateralBalanceOf(address _token, address _recipient) public returns (uint256) {
+        address cToken = compMapping.cTokenMapping(_token);
+        require(_token != address(0) && cToken != address(0), "invalid token/ctoken address");
+        return ICToken(cToken).balanceOfUnderlying(_recipient);
     }
 
     function enterMarket(address cToken) internal {
@@ -181,4 +136,3 @@ contract CompoundV2Connector {
         }
     }
 }
-

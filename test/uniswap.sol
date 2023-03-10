@@ -10,6 +10,8 @@ contract Tokens {
     address ethC = 0x0000000000000000000000000000000000000000;
     address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
 }
 
 interface IUni {
@@ -24,13 +26,14 @@ interface IUni {
     }
 
     function multicall(uint256 deadline, bytes[] calldata data) external payable returns (bytes[] memory);
+
     function exactInputSingle(ExactInputSingleParams memory params) external payable returns (uint256 amountOut);
 
     function swap(
         address toToken,
-		address fromToken,
-		uint256 amount,
-		bytes calldata callData
+        address fromToken,
+        uint256 amount,
+        bytes calldata callData
     ) external payable returns (uint256 _buyAmt);
 }
 
@@ -45,7 +48,6 @@ interface IQouter {
 }
 
 contract UniswapHelper is Tokens, Test {
-
     string UNI_NAME = "UniswapAuto";
     IQouter quoter = IQouter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
@@ -54,7 +56,7 @@ contract UniswapHelper is Tokens, Test {
         address _toToken,
         address _recipient,
         uint256 _amount
-    ) public view returns(bytes memory data) {
+    ) public view returns (bytes memory data) {
         bytes[] memory _calldata = new bytes[](1);
         _calldata[0] = getExactInputSingleData(_fromToken, _toToken, _recipient, _amount);
 
@@ -67,7 +69,6 @@ contract UniswapHelper is Tokens, Test {
         address _recipient,
         uint256 _amount
     ) public view returns (bytes memory data) {
-
         _fromToken = _fromToken == ethC || _fromToken == ethC2 ? wethC : _fromToken;
         _toToken = _toToken == ethC || _toToken == ethC2 ? wethC : _toToken;
 
@@ -81,10 +82,10 @@ contract UniswapHelper is Tokens, Test {
             0
         );
 
-        data = abi.encodeWithSelector(IUni.exactInputSingle.selector, params); 
+        data = abi.encodeWithSelector(IUni.exactInputSingle.selector, params);
     }
 
-     function quoteExactInputSingle(
+    function quoteExactInputSingle(
         address tokenIn,
         address tokenOut,
         uint256 amountIn
@@ -99,8 +100,6 @@ contract UniswapHelper is Tokens, Test {
         uint256 _amount
     ) public view returns (bytes memory _data) {
         bytes memory swapdata = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
-        _data = abi.encodeWithSelector(
-            IUni.swap.selector, _toToken, _fromToken, _amount, swapdata
-        );
+        _data = abi.encodeWithSelector(IUni.swap.selector, _toToken, _fromToken, _amount, swapdata);
     }
 }
