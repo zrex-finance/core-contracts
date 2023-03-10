@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { Implementations } from "../src/accounts/Implementations.sol";
+import { Implementations } from "../src/protocol/configuration/Implementations.sol";
 
 contract TestImplementations is Test {
     Implementations implementations;
@@ -18,15 +18,8 @@ contract TestImplementations is Test {
     }
 
     function test_setDefaultImplementation_with_0_address() public {
-        vm.expectRevert(abi.encodePacked("address not valid"));
+        vm.expectRevert(abi.encodePacked("13"));
         implementations.setDefaultImplementation(address(0));
-    }
-
-    function test_setDefaultImplementation_same_address() public {
-        implementations.setDefaultImplementation(defaultImpl);
-
-        vm.expectRevert(abi.encodePacked("cannot be same"));
-        implementations.setDefaultImplementation(defaultImpl);
     }
 
     function test_addImplementation() public {
@@ -53,7 +46,7 @@ contract TestImplementations is Test {
         bytes4[] memory _sigs = new bytes4[](1);
         _sigs[0] = implementations.setDefaultImplementation.selector;
 
-        vm.expectRevert(abi.encodePacked("not valid"));
+        vm.expectRevert(abi.encodePacked("13"));
         implementations.addImplementation(address(0), _sigs);
     }
 
@@ -62,7 +55,7 @@ contract TestImplementations is Test {
         _sigs[0] = implementations.setDefaultImplementation.selector;
 
         implementations.addImplementation(defaultImpl, _sigs);
-        vm.expectRevert(abi.encodePacked("already added"));
+        vm.expectRevert(abi.encodePacked("15"));
         implementations.addImplementation(defaultImpl, _sigs);
     }
 
@@ -71,7 +64,7 @@ contract TestImplementations is Test {
         _sigs[0] = implementations.setDefaultImplementation.selector;
 
         implementations.addImplementation(defaultImpl, _sigs);
-        vm.expectRevert(abi.encodePacked("_sig already added"));
+        vm.expectRevert(abi.encodePacked("16"));
         address addr = address(uint160(uint256(keccak256(abi.encodePacked(block.timestamp)))));
         implementations.addImplementation(addr, _sigs);
     }
@@ -87,13 +80,13 @@ contract TestImplementations is Test {
     }
 
     function test_removeImplementation_with_0_address() public {
-        vm.expectRevert(abi.encodePacked("not valid"));
+        vm.expectRevert(abi.encodePacked("13"));
         implementations.removeImplementation(address(0));
     }
 
     function test_removeImplementation_not_found() public {
         address addr = address(uint160(uint256(keccak256(abi.encodePacked(block.timestamp)))));
-        vm.expectRevert(abi.encodePacked("not found"));
+        vm.expectRevert(abi.encodePacked("14"));
         implementations.removeImplementation(addr);
     }
 

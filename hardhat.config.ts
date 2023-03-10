@@ -23,7 +23,7 @@ const { INFURA_TOKEN, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.13",
+        version: "0.8.17",
         settings: {
             optimizer: {
                 enabled: true,

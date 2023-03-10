@@ -4,9 +4,10 @@ pragma solidity ^0.8.17;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { UniversalERC20 } from "../lib/UniversalERC20.sol";
+import { ICToken } from "../../interfaces/ICToken.sol";
 
-import { ICToken } from "./interfaces/Mapping.sol";
+import { Errors } from "../libraries/helpers/Errors.sol";
+import { UniversalERC20 } from "../../libraries/tokens/UniversalERC20.sol";
 
 contract Mapping is Ownable {
     using UniversalERC20 for IERC20;
@@ -24,21 +25,21 @@ contract Mapping is Ownable {
 
     function _updateCtokenMapping(address[] memory _tokens, address[] memory _ctokens) internal onlyOwner {
         uint256 _length = _ctokens.length;
-        require(_length == _tokens.length, "not same length");
+        require(_length == _tokens.length, Errors.TOKENS_HAS_DIFERENT_LENGTH);
 
         for (uint i = 0; i < _length; i++) {
             address _token = _tokens[i];
             address _ctoken = _ctokens[i];
 
-            require(cTokenMapping[_token] == address(0), "mapping added already");
-            require(_token != address(0), "_tokens address not vaild");
-            require(_ctoken != address(0), "_ctokens address not vaild");
+            require(cTokenMapping[_token] == address(0), Errors.MAPPING_ALREADY_ADDED);
+            require(_token != address(0), Errors.INVALID_TOKEN_ADDRESS);
+            require(_ctoken != address(0), Errors.INVALID_CTOKEN_ADDRESS);
 
             ICToken _ctokenC = ICToken(_ctoken);
 
-            require(_ctokenC.isCToken(), "not a cToken");
+            require(_ctokenC.isCToken(), Errors.NOT_CTOKEN);
             if (!IERC20(_token).isETH()) {
-                require(_ctokenC.underlying() == _token, "mapping mismatch");
+                require(_ctokenC.underlying() == _token, Errors.MAPPING_MISMATCH);
             }
 
             cTokenMapping[_token] = _ctoken;

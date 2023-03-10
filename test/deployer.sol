@@ -4,16 +4,21 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import { SharedStructs } from "../src/lib/SharedStructs.sol";
+import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
+import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
 
-import { PositionRouter } from "../src/positions/PositionRouter.sol";
-import { Implementation } from "../src/positions/Implementation.sol";
+import { Proxy } from "../src/protocol/router/Proxy.sol";
+import { Router } from "../src/protocol/router/Router.sol";
+import { Account } from "../src/protocol/router/Account.sol";
 
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 
-import { Connectors } from "../src/connectors/Connectors.sol";
-import { Mapping } from "../src/connectors/Mapping.sol";
+import { Mapping } from "../src/protocol/configuration/Mapping.sol";
+import { Connectors } from "../src/protocol/configuration/Connectors.sol";
+import { Implementations } from "../src/protocol/configuration/Implementations.sol";
+import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+
 import { InchV5Connector } from "../src/connectors/InchV5.sol";
 import { UniswapConnector } from "../src/connectors/Uniswap.sol";
 import { EulerConnector } from "../src/connectors/Euler.sol";
@@ -21,9 +26,6 @@ import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
 import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
 import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
 import { CompoundV2Connector } from "../src/connectors/CompoundV2.sol";
-
-import { Proxy } from "../src/accounts/Proxy.sol";
-import { Implementations } from "../src/accounts/Implementations.sol";
 
 interface ICToken {
     function isCToken() external view returns (bool);
@@ -34,10 +36,8 @@ interface ICToken {
 contract Deployer is Test {
     FlashResolver flashResolver;
 
-    PositionRouter router;
-
+    Router router;
     Proxy accountProxy;
-
     Connectors connectors;
 
     InchV5Connector inchV5Connector;
@@ -48,7 +48,8 @@ contract Deployer is Test {
     CompoundV3Connector compoundV3Connector;
     CompoundV2Connector compoundV2Connector;
 
-    Implementation implementation;
+    Account accountImpl;
+    Mapping mappingC;
 
     struct SwapParams {
         address fromToken;
@@ -64,26 +65,41 @@ contract Deployer is Test {
 
         setUpConnectors();
 
+        AddressesProvider addressesProvider = new AddressesProvider();
+
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
-        implementation = new Implementation();
+        accountImpl = new Account();
         Implementations implementations = new Implementations();
 
-        implementations.setDefaultImplementation(address(implementation));
+        implementations.setDefaultImplementation(address(accountImpl));
 
         accountProxy = new Proxy(address(implementations));
 
         uint256 fee = 3;
-        address treasary = msg.sender;
 
-        router = new PositionRouter(
-            address(flashloanAggregator),
-            address(connectors),
-            address(accountProxy),
-            fee,
-            treasary
-        );
+        router = new Router(fee, address(addressesProvider));
+
+        bytes32[] memory _namesA = new bytes32[](6);
+        _namesA[0] = bytes32("ROUTER");
+        _namesA[1] = bytes32("TREASURY");
+        _namesA[2] = bytes32("CONNECTORS");
+        _namesA[3] = bytes32("ACCOUNT_PROXY");
+        _namesA[4] = bytes32("IMPLEMENTATIONS");
+        _namesA[5] = bytes32("FLASHLOAN_AGGREGATOR");
+
+        address[] memory _addresses = new address[](6);
+        _addresses[0] = address(router);
+        _addresses[1] = msg.sender;
+        _addresses[2] = address(connectors);
+        _addresses[3] = address(accountProxy);
+        _addresses[4] = address(implementations);
+        _addresses[5] = address(flashloanAggregator);
+
+        for (uint i = 0; i < _namesA.length; i++) {
+            addressesProvider.setAddress(_namesA[i], _addresses[i]);
+        }
     }
 
     function setUpConnectors() public {
@@ -122,7 +138,7 @@ contract Deployer is Test {
             }
         }
 
-        new Mapping(_tokens, _ctokens);
+        mappingC = new Mapping(_tokens, _ctokens);
 
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();

@@ -3,6 +3,8 @@ pragma solidity ^0.8.17;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
+import { Errors } from "../libraries/helpers/Errors.sol";
+
 contract Implementations is Ownable {
     address public defaultImplementation;
 
@@ -27,18 +29,17 @@ contract Implementations is Ownable {
     }
 
     function setDefaultImplementation(address _defaultImplementation) external onlyOwner {
-        require(_defaultImplementation != address(0), "address not valid");
-        require(_defaultImplementation != defaultImplementation, "cannot be same");
-        emit LogSetDefaultImplementation(defaultImplementation, _defaultImplementation);
+        require(_defaultImplementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
         defaultImplementation = _defaultImplementation;
+        emit LogSetDefaultImplementation(defaultImplementation, _defaultImplementation);
     }
 
     function addImplementation(address _implementation, bytes4[] calldata _sigs) external onlyOwner {
-        require(_implementation != address(0), "not valid");
-        require(implementationSigs[_implementation].length == 0, "already added");
+        require(_implementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
+        require(implementationSigs[_implementation].length == 0, Errors.IMPLEMENTATION_ALREADY_EXIST);
         for (uint i = 0; i < _sigs.length; i++) {
             bytes4 _sig = _sigs[i];
-            require(sigImplementations[_sig] == address(0), "_sig already added");
+            require(sigImplementations[_sig] == address(0), Errors.SIGNATURE_ALREADY_ADDED);
             sigImplementations[_sig] = _implementation;
         }
         implementationSigs[_implementation] = _sigs;
@@ -46,8 +47,8 @@ contract Implementations is Ownable {
     }
 
     function removeImplementation(address _implementation) external onlyOwner {
-        require(_implementation != address(0), "not valid");
-        require(implementationSigs[_implementation].length != 0, "not found");
+        require(_implementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
+        require(implementationSigs[_implementation].length != 0, Errors.IMPLEMENTATION_DOES_NOT_EXIST);
         bytes4[] memory sigs = implementationSigs[_implementation];
         for (uint i = 0; i < sigs.length; i++) {
             bytes4 sig = sigs[i];

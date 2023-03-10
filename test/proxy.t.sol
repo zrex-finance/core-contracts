@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
-import { Proxy } from "../src/accounts/Proxy.sol";
-import { Implementations } from "../src/accounts/Implementations.sol";
+import { Proxy } from "../src/protocol/router/Proxy.sol";
+import { Implementations } from "../src/protocol/configuration/Implementations.sol";
 
 contract Impl {
     uint256 private count;
@@ -29,7 +29,7 @@ contract TestProxy is Test {
 
     function test_NotAbleFindImpl() public {
         address clone = Clones.cloneDeterministic(address(proxy), salt);
-        vm.expectRevert(abi.encodePacked("Not able to find _implementation"));
+        vm.expectRevert(abi.encodePacked("23"));
         Impl(clone).increaseCount();
     }
 

@@ -4,14 +4,13 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import { SharedStructs } from "../src/lib/SharedStructs.sol";
-
+import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
 import { HelperContract } from "./deployer.sol";
 
 import { EthConverter } from "../src/utils/EthConverter.sol";
 
-import { Connectors } from "../src/connectors/Connectors.sol";
 import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
+import { Connectors } from "../src/protocol/configuration/Connectors.sol";
 import { IAave, IAaveLendingPoolProvider, IAaveDataProvider } from "../src/connectors/interfaces/AaveV2.sol";
 
 contract Tokens {

@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import { SharedStructs } from "../src/lib/SharedStructs.sol";
+import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
 
 import { UniswapHelper } from "./uniswap.sol";
 import { HelperContract, Deployer } from "./deployer.sol";
@@ -45,7 +45,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
 contract PositionEuler is LendingHelper {
     function testLongPositionAccount() public {
-        SharedStructs.Position memory _position = SharedStructs.Position(msg.sender, usdcC, wethC, 1000000000, 2, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, wethC, 1000000000, 2, 0, 0);
 
         topUpTokenBalance(usdcC, usdcWhale, _position.amountIn);
 
@@ -53,7 +53,7 @@ contract PositionEuler is LendingHelper {
         closePosition(_position);
     }
 
-    function openPosition(SharedStructs.Position memory _position) public {
+    function openPosition(DataTypes.Position memory _position) public {
         // approve tokens
         vm.prank(msg.sender);
         ERC20(_position.debt).approve(address(router), _position.amountIn);
@@ -64,7 +64,7 @@ contract PositionEuler is LendingHelper {
         router.openPosition(_position, _token, _amount, _route, _data);
     }
 
-    function closePosition(SharedStructs.Position memory _position) public {
+    function closePosition(DataTypes.Position memory _position) public {
         uint256 index = router.positionsIndex(_position.account);
         bytes32 key = router.getKey(_position.account, index);
 
@@ -93,13 +93,7 @@ contract PositionEuler is LendingHelper {
         bytes memory swapdata = getMulticalSwapData(daiC, usdcC, address(router), shortAmt);
         bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, usdcC, daiC, shortAmt, swapdata);
 
-        SharedStructs.SwapParams memory _params = SharedStructs.SwapParams(
-            daiC,
-            usdcC,
-            shortAmt,
-            "UniswapAuto",
-            _unidata
-        );
+        DataTypes.SwapParams memory _params = DataTypes.SwapParams(daiC, usdcC, shortAmt, "UniswapAuto", _unidata);
 
         topUpTokenBalance(daiC, daiWhale, shortAmt);
 
@@ -109,22 +103,14 @@ contract PositionEuler is LendingHelper {
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, usdcC, shortAmt);
 
-        SharedStructs.Position memory _position = SharedStructs.Position(
-            msg.sender,
-            usdcC,
-            wethC,
-            exchangeAmt,
-            2,
-            0,
-            0
-        );
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, wethC, exchangeAmt, 2, 0, 0);
 
         openShort(_position, _params);
 
         closePosition(_position);
     }
 
-    function openShort(SharedStructs.Position memory _position, SharedStructs.SwapParams memory _params) public {
+    function openShort(DataTypes.Position memory _position, DataTypes.SwapParams memory _params) public {
         (address _token, uint256 _amount, uint256 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
@@ -132,7 +118,7 @@ contract PositionEuler is LendingHelper {
     }
 
     function getOpenCallbackData(
-        SharedStructs.Position memory _position,
+        DataTypes.Position memory _position,
         uint256 swapAmount
     ) public view returns (bytes memory _calldata) {
         uint256 index = router.positionsIndex(_position.account);
@@ -157,7 +143,7 @@ contract PositionEuler is LendingHelper {
         _datas[1] = getDepositData(_position.collateral);
         _datas[2] = getBorrowData(_position.debt);
 
-        _calldata = abi.encode(implementation.openPositionCallback.selector, _targetNames, _datas, _customDatas);
+        _calldata = abi.encode(accountImpl.openPositionCallback.selector, _targetNames, _datas, _customDatas);
     }
 
     function getCloseCallbackData(
@@ -181,7 +167,7 @@ contract PositionEuler is LendingHelper {
         _datas[1] = getWithdrawData(swapAmt, collateral);
         _datas[2] = getSwapData(collateral, debt, account, swapAmt);
 
-        _calldata = abi.encode(implementation.closePositionCallback.selector, _targetNames, _datas, _customDatas);
+        _calldata = abi.encode(accountImpl.closePositionCallback.selector, _targetNames, _datas, _customDatas);
     }
 
     function getFlashloanData(address lT, uint256 lA) public view returns (address, uint256, uint16) {
@@ -196,7 +182,7 @@ contract PositionEuler is LendingHelper {
     }
 
     function _openPosition(
-        SharedStructs.Position memory _position
+        DataTypes.Position memory _position
     ) public view returns (address, uint256, uint256, bytes memory) {
         uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 

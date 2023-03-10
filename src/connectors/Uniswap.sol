@@ -3,12 +3,10 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { Utils } from "../utils/Utils.sol";
 import { EthConverter } from "../utils/EthConverter.sol";
+import { UniversalERC20 } from "../libraries/tokens/UniversalERC20.sol";
 
-import { UniversalERC20 } from "../lib/UniversalERC20.sol";
-
-contract UniswapConnector is Utils, EthConverter {
+contract UniswapConnector is EthConverter {
     using UniversalERC20 for IERC20;
 
     string public name = "UniswapAuto";
@@ -38,7 +36,7 @@ contract UniswapConnector is Utils, EthConverter {
         (bool success, bytes memory results) = uniAutoRouter.call(callData);
 
         if (!success) {
-            revert(getRevertMsg(results));
+            revert(string(results));
         }
 
         uint256 finalBalalance = IERC20(toToken).universalBalanceOf(address(this));

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.17;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { UniversalERC20 } from "../lib/UniversalERC20.sol";
+import { UniversalERC20 } from "../libraries/tokens/UniversalERC20.sol";
 
-import { IWeth } from "./Interfaces.sol";
+import { IWeth } from "./interfaces/EthConverter.sol";
 
 abstract contract EthConverter {
     using UniversalERC20 for IERC20;

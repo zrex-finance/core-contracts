@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { AccountImplementations } from "./interfaces/Proxy.sol";
+import { IImplementations } from "../../interfaces/IImplementations.sol";
+import { Errors } from "../libraries/helpers/Errors.sol";
 
 contract Proxy {
-    AccountImplementations public immutable implementations;
+    IImplementations public immutable implementations;
 
     constructor(address _implementations) {
-        implementations = AccountImplementations(_implementations);
+        implementations = IImplementations(_implementations);
     }
 
     function _delegate(address implementation) internal {
@@ -28,7 +29,7 @@ contract Proxy {
 
     function _fallback(bytes4 _sig) internal {
         address _implementation = implementations.getImplementation(_sig);
-        require(_implementation != address(0), "Not able to find _implementation");
+        require(_implementation != address(0), Errors.NOT_FOUND_IMPLEMENTATION);
         _delegate(_implementation);
     }
 
