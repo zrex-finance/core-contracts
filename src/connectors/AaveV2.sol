@@ -66,22 +66,6 @@ contract AaveV2Connector {
         aave.repay(token, amount, rateMode, address(this));
     }
 
-    function paybackOnBehalfOf(address token, uint256 amount, uint256 rateMode, address onBehalfOf) external payable {
-        IAave aave = IAave(aaveProvider.getLendingPool());
-
-        IERC20 tokenC = IERC20(token);
-
-        if (amount == type(uint).max) {
-            uint256 _amount = tokenC.balanceOf(address(this));
-            uint256 _amountDebt = getOnBehalfOfPaybackBalance(token, rateMode, onBehalfOf);
-            amount = _amount <= _amountDebt ? _amount : _amountDebt;
-        }
-
-        tokenC.universalApprove(address(aave), amount);
-
-        aave.repay(token, amount, rateMode, onBehalfOf);
-    }
-
     function enableCollateral(address[] calldata tokens) external payable {
         uint256 _length = tokens.length;
         require(_length > 0, "tokens not allowed");

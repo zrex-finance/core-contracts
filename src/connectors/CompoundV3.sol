@@ -100,7 +100,8 @@ contract CompoundV3Connector {
             if (amount == type(uint).max) {
                 amount = initialBalance;
             } else {
-                //if there are supplies, ensure withdrawn amount is not greater than supplied i.e can't borrow using withdraw.
+                //if there are supplies, ensure withdrawn amount
+                // is not greater than supplied i.e can't borrow using withdraw.
                 require(amount <= initialBalance, "withdraw-amount-greater-than-supplies");
             }
 
@@ -328,7 +329,8 @@ contract CompoundV3Connector {
         uint256 initialBalance = _getAccountSupplyBalanceOfAsset(params.from, params.market, params.token);
 
         if (params.token == getBaseToken(params.market)) {
-            //if there are supplies, ensure withdrawn amount is not greater than supplied i.e can't borrow using withdraw.
+            //if there are supplies, ensure withdrawn amount is not greater
+            // than supplied i.e can't borrow using withdraw.
             if (amount == type(uint).max) {
                 amount = initialBalance;
             } else {
