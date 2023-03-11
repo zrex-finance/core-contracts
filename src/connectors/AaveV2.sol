@@ -66,29 +66,6 @@ contract AaveV2Connector {
         aave.repay(token, amount, rateMode, address(this));
     }
 
-    function enableCollateral(address[] calldata tokens) external payable {
-        uint256 _length = tokens.length;
-        require(_length > 0, "tokens not allowed");
-
-        IAave aave = IAave(aaveProvider.getLendingPool());
-
-        for (uint256 i = 0; i < _length; i++) {
-            address _token = tokens[i];
-
-            if (getCollateralBalance(_token, address(this)) > 0 && !getIsColl(_token)) {
-                aave.setUserUseReserveAsCollateral(_token, true);
-            }
-        }
-    }
-
-    function swapBorrowRateMode(address token, uint256 rateMode) external payable {
-        IAave aave = IAave(aaveProvider.getLendingPool());
-
-        if (getPaybackBalance(token, rateMode, address(this)) > 0) {
-            aave.swapBorrowRateMode(token, rateMode);
-        }
-    }
-
     function getIsColl(address token) internal view returns (bool isCol) {
         (, , , , , , , , isCol) = aaveData.getUserReserveData(token, address(this));
     }

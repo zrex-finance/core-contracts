@@ -9,7 +9,7 @@ import { UniversalERC20 } from "../libraries/tokens/UniversalERC20.sol";
 contract InchV5Connector is EthConverter {
     using UniversalERC20 for IERC20;
 
-    string public name = "1Inch-v5";
+    string public constant name = "1Inch-v5";
 
     address internal constant oneInchV5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 

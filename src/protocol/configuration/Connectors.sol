@@ -51,20 +51,6 @@ contract Connectors is Ownable {
         }
     }
 
-    function isConnectors(string[] calldata _names) external view returns (bool isOk, address[] memory _connectors) {
-        isOk = true;
-        uint len = _names.length;
-        _connectors = new address[](len);
-
-        for (uint i = 0; i < _connectors.length; i++) {
-            _connectors[i] = connectors[_names[i]];
-            if (_connectors[i] == address(0)) {
-                isOk = false;
-                break;
-            }
-        }
-    }
-
     function isConnector(string calldata _name) external view returns (bool isOk, address _connector) {
         isOk = true;
         _connector = connectors[_name];

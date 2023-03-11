@@ -68,10 +68,6 @@ contract LendingHelper is HelperContract, Tokens {
         _data = abi.encodeWithSelector(aaveV2Connector.borrow.selector, _token, _rate, _amount);
     }
 
-    function getSwapBorrowRateModeData(address _token, uint256 rateMode) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV2Connector.swapBorrowRateMode.selector, _token, rateMode);
-    }
-
     function execute(bytes memory _data) public {
         (bool success, ) = address(aaveV2Connector).delegatecall(_data);
         require(success);
@@ -104,18 +100,6 @@ contract AaveV2 is LendingHelper, EthConverter {
         uint256 borrowAmount = 0.1 ether;
         borrowWeth(borrowAmount, 2);
         assertEq(borrowAmount, getBorrowAmt(wethC, address(this)));
-    }
-
-    function test_SwapBorrowRate() public {
-        uint256 depositAmount = 1000 ether;
-        depositDai(depositAmount);
-
-        uint256 borrowAmount = 0.1 ether;
-        borrowWeth(borrowAmount, 2);
-        swapBorrowRateMode(wethC, 2);
-
-        assertEq(borrowAmount, aaveV2Connector.getPaybackBalance(wethC, 1, address(this)));
-        assertEq(0, aaveV2Connector.getPaybackBalance(wethC, 2, address(this)));
     }
 
     function test_Payback() public {
@@ -154,32 +138,6 @@ contract AaveV2 is LendingHelper, EthConverter {
         assertEq(0, getCollateralAmt(daiC, address(this)));
     }
 
-    function test_EnableCollateral_NotAllowed() public {
-        address[] memory _tokens = new address[](0);
-
-        vm.expectRevert(abi.encodePacked("tokens not allowed"));
-        execute(abi.encodeWithSelector(aaveV2Connector.enableCollateral.selector, _tokens));
-    }
-
-    function test_EnableCollateral() public {
-        uint256 depositAmount = 1000 ether;
-        depositDai(depositAmount);
-
-        IAave aave = IAave(aaveProvider.getLendingPool());
-
-        aave.setUserUseReserveAsCollateral(daiC, false);
-        (, , , , , , , , bool isCol1) = aaveDataProvider.getUserReserveData(daiC, address(this));
-        assertTrue(!isCol1);
-
-        address[] memory _tokens = new address[](1);
-        _tokens[0] = daiC;
-
-        execute(abi.encodeWithSelector(aaveV2Connector.enableCollateral.selector, _tokens));
-
-        (, , , , , , , , bool isCol2) = aaveDataProvider.getUserReserveData(daiC, address(this));
-        assertTrue(isCol2);
-    }
-
     function depositDai(uint256 _amount) public {
         vm.prank(daiWhale);
         ERC20(daiC).transfer(address(this), _amount);
@@ -197,9 +155,5 @@ contract AaveV2 is LendingHelper, EthConverter {
 
     function withdraw(uint256 _amount) public {
         execute(getWithdrawData(_amount, daiC));
-    }
-
-    function swapBorrowRateMode(address _token, uint256 _rate) public {
-        execute(getSwapBorrowRateModeData(_token, _rate));
     }
 }

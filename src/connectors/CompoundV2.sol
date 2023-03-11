@@ -62,53 +62,6 @@ contract CompoundV2Connector {
         require(ctokenC.repayBorrow(amount) == 0, "repay failed.");
     }
 
-    function depositCToken(address token, uint256 amount) external payable {
-        address cToken = compMapping.cTokenMapping(token);
-        require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
-
-        enterMarket(cToken);
-
-        ICToken ctokenC = ICToken(cToken);
-        IERC20 tokenC = IERC20(token);
-
-        amount = amount == type(uint).max ? tokenC.balanceOf(address(this)) : amount;
-
-        tokenC.universalApprove(cToken, amount);
-        require(ctokenC.mint(amount) == 0, "deposit-ctoken-failed.");
-    }
-
-    function withdrawCToken(address token, uint cTokenAmount) external payable {
-        address cToken = compMapping.cTokenMapping(token);
-        require(token != address(0) && cToken != address(0), "invalid token/ctoken address");
-
-        ICToken ctokenC = ICToken(cToken);
-
-        cTokenAmount = cTokenAmount == type(uint).max ? ctokenC.balanceOf(address(this)) : cTokenAmount;
-
-        require(ctokenC.redeem(cTokenAmount) == 0, "redeem-failed");
-    }
-
-    function liquidate(address borrower, address tokenToPay, address tokenInReturn, uint256 amount) external payable {
-        address cTokenToPay = compMapping.cTokenMapping(tokenToPay);
-        address cTokenColl = compMapping.cTokenMapping(tokenInReturn);
-
-        require(tokenToPay != address(0) && cTokenToPay != address(0), "invalid token/ctoken address");
-        require(tokenInReturn != address(0) && cTokenColl != address(0), "invalid token/ctoken address");
-
-        ICToken ctokenC = ICToken(cTokenToPay);
-
-        (, , uint shortfal) = troller.getAccountLiquidity(borrower);
-        require(shortfal != 0, "account cannot be liquidated");
-
-        amount = amount == type(uint).max ? ctokenC.borrowBalanceCurrent(borrower) : amount;
-
-        IERC20 tokenC = IERC20(tokenToPay);
-        require(tokenC.balanceOf(address(this)) >= amount, "not enough token");
-
-        tokenC.universalApprove(cTokenToPay, amount);
-        require(ctokenC.liquidateBorrow(borrower, amount, cTokenColl) == 0, "liquidate failed");
-    }
-
     function borrowBalanceOf(address _token, address _recipient) public returns (uint256) {
         address cToken = compMapping.cTokenMapping(_token);
         require(_token != address(0) && cToken != address(0), "invalid token/ctoken address");
