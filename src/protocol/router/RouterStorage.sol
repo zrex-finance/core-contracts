@@ -13,7 +13,7 @@ contract RouterStorage {
     // Count of user position
     mapping(address => uint256) public positionsIndex;
 
-    // Map of key (user address and position index) to position (userAddress => userAccount)
+    // Map of key (user address and position index) to position (key => postion)
     mapping(bytes32 => DataTypes.Position) public positions;
 
     // Map of users address and their account (userAddress => userAccount)
