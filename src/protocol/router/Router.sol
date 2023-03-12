@@ -20,6 +20,7 @@ contract Router is RouterStorage {
 
     IAddressesProvider public immutable ADDRESSES_PROVIDER;
 
+    // will come as a parameter from the UI
     bytes32 public constant SALT = 0x0000000000000000000000000000000000000000000000000000000047941987;
 
     constructor(uint256 _fee, address _provider) {
