@@ -41,7 +41,7 @@ jobs:
               run: |
                   forge coverage --report lcov
                   sudo apt-get install lcov
-                  lcov --remove lcov.info  -o lcov.info 'test/*' 'libraries/*' 'utils/*'
+                  lcov --remove lcov.info  -o lcov.info 'test/*' 'src/libraries/*' 'src/utils/*'
               id: forge-coverage
 
             - name: Upload coverage reports to Codecov
