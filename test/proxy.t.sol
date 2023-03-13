@@ -9,7 +9,7 @@ import { Proxy } from "../src/protocol/router/Proxy.sol";
 import { Implementations } from "../src/protocol/configuration/Implementations.sol";
 
 contract Impl {
-    uint256 private count;
+    uint256 public count;
 
     function increaseCount() external {
         count++;
@@ -17,6 +17,12 @@ contract Impl {
 
     function getCount() external view returns (uint256) {
         return count;
+    }
+}
+
+contract ImplNew is Impl {
+    function getIncreaseCount() external view returns (uint256) {
+        return count + 10;
     }
 }
 
@@ -57,6 +63,36 @@ contract TestProxy is Test {
         uint256 finalCount = Impl(clone).getCount();
 
         assertEq(1, finalCount - initialCount);
+    }
+
+    function test_callImpl_UpdateImpl() public {
+        implementations.setDefaultImplementation(address(impl));
+        address clone = Clones.cloneDeterministic(address(proxy), salt);
+
+        uint256 initialCount = Impl(clone).getCount();
+        Impl(clone).increaseCount();
+        uint256 finalCount = Impl(clone).getCount();
+        assertEq(1, finalCount - initialCount);
+
+        ImplNew impl2 = new ImplNew();
+        implementations.setDefaultImplementation(address(impl2));
+
+        uint256 initialCount2 = ImplNew(clone).getCount();
+        Impl(clone).increaseCount();
+        uint256 finalCount2 = ImplNew(clone).getCount();
+        uint256 increaseCount = ImplNew(clone).getIncreaseCount();
+        assertEq(1, finalCount2 - initialCount2);
+        assertEq(finalCount2 + 10, increaseCount);
+
+        address clone2 = Clones.cloneDeterministic(
+            address(proxy),
+            0x0000000000000000000000000000000000000000000000000000000047941984
+        );
+
+        uint256 initialCountClone2 = ImplNew(clone2).getCount();
+        uint256 increaseCountClone2 = ImplNew(clone2).getIncreaseCount();
+        assertEq(0, initialCountClone2);
+        assertEq(10, increaseCountClone2);
     }
 
     receive() external payable {}

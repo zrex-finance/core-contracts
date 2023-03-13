@@ -13,9 +13,7 @@ import { IConnectors } from "../../interfaces/IConnectors.sol";
 import { IFlashAggregator } from "../../interfaces/IFlashAggregator.sol";
 import { IAddressesProvider } from "../../interfaces/IAddressesProvider.sol";
 
-import "forge-std/Test.sol";
-
-contract Account is Initializable, Test {
+contract Account is Initializable {
     using UniversalERC20 for IERC20;
 
     address private _owner;
