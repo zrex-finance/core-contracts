@@ -4,6 +4,8 @@ pragma solidity ^0.8.17;
 interface ICToken {
     function mint(uint mintAmount) external returns (uint);
 
+    function underlying() external returns (address);
+
     function redeem(uint redeemTokens) external returns (uint);
 
     function borrow(uint borrowAmount) external returns (uint);
