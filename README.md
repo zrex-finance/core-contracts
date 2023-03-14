@@ -1,5 +1,5 @@
 # <img src="logo.svg" alt="NFTxCards" height="40px">
-[![codecov](https://codecov.io/gh/Leverage-Aggregator/core-contracts/branch/master/graph/badge.svg?token=94VIK7W295)](https://codecov.io/gh/Leverage-Aggregator/core-contracts)
+[![codecov](https://codecov.io/gh/Flash-Flow/core-contracts/branch/master/graph/badge.svg?token=94VIK7W295)](https://codecov.io/gh/Flash-Flow/core-contracts)
 
 ## Overview of the protocol
 
