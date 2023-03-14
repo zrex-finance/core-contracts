@@ -5,6 +5,9 @@ import { IImplementations } from "../../interfaces/IImplementations.sol";
 import { Errors } from "../libraries/helpers/Errors.sol";
 
 /**
+ * @title Account
+ * @author FlashFlow
+ * @notice Contract used as proxy for the user account.
  * @dev This abstract contract provides a fallback function that delegates all calls to another contract using the EVM
  * instruction `delegatecall`.
  *
