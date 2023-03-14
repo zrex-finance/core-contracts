@@ -20,7 +20,6 @@ import { AddressesProvider } from "../src/protocol/configuration/AddressesProvid
 
 import { InchV5Connector } from "../src/connectors/InchV5.sol";
 import { UniswapConnector } from "../src/connectors/Uniswap.sol";
-import { EulerConnector } from "../src/connectors/Euler.sol";
 import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
 import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
 import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
@@ -41,7 +40,6 @@ contract Deployer is Test {
 
     InchV5Connector inchV5Connector;
     UniswapConnector uniswapConnector;
-    EulerConnector eulerConnector;
     AaveV2Connector aaveV2Connector;
     AaveV3Connector aaveV3Connector;
     CompoundV3Connector compoundV3Connector;
@@ -105,29 +103,26 @@ contract Deployer is Test {
 
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();
-        eulerConnector = new EulerConnector();
         aaveV2Connector = new AaveV2Connector();
         aaveV3Connector = new AaveV3Connector();
         compoundV3Connector = new CompoundV3Connector();
         compoundV2Connector = new CompoundV2Connector();
 
-        string[] memory _names = new string[](7);
-        _names[0] = eulerConnector.name();
-        _names[1] = aaveV2Connector.name();
-        _names[2] = aaveV3Connector.name();
-        _names[3] = compoundV3Connector.name();
-        _names[4] = inchV5Connector.name();
-        _names[5] = uniswapConnector.name();
-        _names[6] = compoundV2Connector.name();
+        string[] memory _names = new string[](6);
+        _names[0] = aaveV2Connector.name();
+        _names[1] = aaveV3Connector.name();
+        _names[2] = compoundV3Connector.name();
+        _names[3] = inchV5Connector.name();
+        _names[4] = uniswapConnector.name();
+        _names[5] = compoundV2Connector.name();
 
-        address[] memory _connectors = new address[](7);
-        _connectors[0] = address(eulerConnector);
-        _connectors[1] = address(aaveV2Connector);
-        _connectors[2] = address(aaveV3Connector);
-        _connectors[3] = address(compoundV3Connector);
-        _connectors[4] = address(inchV5Connector);
-        _connectors[5] = address(uniswapConnector);
-        _connectors[6] = address(compoundV2Connector);
+        address[] memory _connectors = new address[](6);
+        _connectors[0] = address(aaveV2Connector);
+        _connectors[1] = address(aaveV3Connector);
+        _connectors[2] = address(compoundV3Connector);
+        _connectors[3] = address(inchV5Connector);
+        _connectors[4] = address(uniswapConnector);
+        _connectors[5] = address(compoundV2Connector);
 
         connectors.addConnectors(_names, _connectors);
     }
