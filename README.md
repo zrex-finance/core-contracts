@@ -69,9 +69,6 @@ If the user does not have a token from the list, the flash flow protocol will be
 - sets the address for the implementation that the proxy account gets.
 *Implementations will be merged with AddressesProvider in the future*
 
-### Mapping
-
-- serves as the storage for the compoundV2 tokens.
 
 ### FlashAggregator
 

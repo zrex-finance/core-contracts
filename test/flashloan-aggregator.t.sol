@@ -31,6 +31,168 @@ contract TestFlashAggregator is Test {
         }
     }
 
+    function test_executeOperation() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 900000000000000000;
+
+        bytes memory data_ = abi.encode(1, address(this), bytes("Hello"));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.prank(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
+        flashAggregator.executeOperation(_tokens, _amounts, _premiums, address(flashAggregator), data_);
+    }
+
+    function test_executeOperation_NotSameSender() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 900000000000000000;
+
+        bytes memory data_ = abi.encode(1, address(this), bytes("Hello"));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.expectRevert(abi.encodePacked("not same sender"));
+        vm.prank(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
+        flashAggregator.executeOperation(_tokens, _amounts, _premiums, msg.sender, data_);
+    }
+
+    function test_executeOperation_NotAaveSender() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 900000000000000000;
+
+        bytes memory data_ = abi.encode(1, address(this), bytes("Hello"));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.expectRevert(abi.encodePacked("not aave sender"));
+        flashAggregator.executeOperation(_tokens, _amounts, _premiums, address(flashAggregator), data_);
+    }
+
+    function test_onFlashLoan() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 0;
+
+        bytes memory data_ = abi.encode(2, _tokens, _amounts, address(this), bytes(""));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.prank(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
+        flashAggregator.onFlashLoan(address(flashAggregator), address(0), type(uint256).max, type(uint256).max, data_);
+    }
+
+    function test_onFlashLoan_NotSameSender() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 0;
+
+        bytes memory data_ = abi.encode(2, _tokens, _amounts, address(this), bytes(""));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.expectRevert(abi.encodePacked("not same sender"));
+        vm.prank(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
+        flashAggregator.onFlashLoan(address(msg.sender), address(0), type(uint256).max, type(uint256).max, data_);
+    }
+
+    function test_onFlashLoan_NotMakerSender() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 0;
+
+        bytes memory data_ = abi.encode(2, _tokens, _amounts, address(this), bytes(""));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.expectRevert(abi.encodePacked("not maker sender"));
+        flashAggregator.onFlashLoan(address(flashAggregator), address(0), type(uint256).max, type(uint256).max, data_);
+    }
+
+    function test_receiveFlashLoan() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 0;
+
+        bytes memory data_ = abi.encode(3, _tokens, _amounts, address(this), bytes(""));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.prank(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+        flashAggregator.receiveFlashLoan(_tokens, _amounts, _premiums, data_);
+    }
+
+    function test_receiveFlashLoan_NotBalancerSender() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        uint256[] memory _premiums = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+        _premiums[0] = 0;
+
+        bytes memory data_ = abi.encode(3, _tokens, _amounts, address(this), bytes(""));
+
+        vm.store(address(flashAggregator), bytes32(uint256(0)), bytes32(uint256(2)));
+        vm.store(address(flashAggregator), bytes32(uint256(1)), bytes32(keccak256(data_)));
+
+        vm.prank(0xb527a981e1d415AF696936B3174f2d7aC8D11369);
+        IERC20(token).transfer(address(flashAggregator), amount);
+
+        vm.expectRevert(abi.encodePacked("not balancer sender"));
+        flashAggregator.receiveFlashLoan(_tokens, _amounts, _premiums, data_);
+    }
+
     function executeOperation(
         address[] calldata tokens,
         uint256[] calldata amounts,
