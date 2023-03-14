@@ -67,46 +67,92 @@ contract LendingHelper is HelperContract, Tokens {
     }
 }
 
-contract AaveV3 is LendingHelper, EthConverter {
+contract AaveV3Logic is LendingHelper, EthConverter {
     uint256 public SECONDS_OF_THE_YEAR = 365 days;
     uint256 public RAY = 1e27;
 
-    // function testAaveFullCase() public {
-    //     uint256 depositAmount = 1000 ether;
+    function test_Deposit() public {
+        uint256 depositAmount = 1000 ether;
 
-    //     vm.prank(daiWhale);
-    //     ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
 
-    //     execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(daiC, depositAmount));
 
-    //     uint256 wethPrice = aaveOracle.getAssetPrice(wethC);
+        assertEq(depositAmount, aaveV3Connector.getCollateralBalance(daiC, address(this)));
+    }
 
-    //     (uint256 daiDecimals, uint256 ltv,,,,,,,,) = aaveDataProvider.getReserveConfigurationData(daiC);
+    function test_Deposit_Max() public {
+        uint256 depositAmount = 1000 ether;
 
-    //     uint256 wethDecimals = ERC20(wethC).decimals();
-    //     uint256 daiPrice = aaveOracle.getAssetPrice(daiC);
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
 
-    //     uint256 totalDai = daiPrice * depositAmount / (10 ** daiDecimals);
-    //     uint256 maxBorrowAmountInBase = (totalDai / 100) * ((ltv / 100));
-    //     uint256 borrowAmount = (maxBorrowAmountInBase * (10 ** wethDecimals)) / wethPrice;
+        execute(getDepositData(daiC, type(uint256).max));
 
-    //     execute(getBorrowData(wethC, borrowAmount));
+        assertEq(depositAmount, aaveV3Connector.getCollateralBalance(daiC, address(this)));
+    }
 
-    //     paybackAndWithdraw(borrowAmount, depositAmount);
-    // }
+    function test_borrow() public {
+        uint256 depositAmount = 1000 ether;
 
-    // function paybackAndWithdraw(uint256 borrowAmount, uint256 depositAmount) public {
-    //   uint256 timestamp = block.timestamp + 1 days;
-    //   (,,,,,,uint256 variableBorrowRate,,,,,uint40 lastUpdate) = aaveDataProvider.getReserveData(wethC);
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
 
-    //   uint256 timePassed = timestamp - lastUpdate;
-    //   uint256 ratePerTime = (variableBorrowRate / SECONDS_OF_THE_YEAR) * timePassed;
-    //   uint256 borrowFeeAmount = (borrowAmount * RAY) / ratePerTime;
-    //   uint256 paybackAmount = borrowFeeAmount + borrowAmount;
+        execute(getDepositData(daiC, depositAmount));
 
-    //   convertEthToWeth(wethC, borrowFeeAmount);
+        uint256 borrowAmount = 0.1 ether;
+        execute(getBorrowData(wethC, borrowAmount));
 
-    //   execute(getPaybackData(paybackAmount, wethC));
-    //   execute(getWithdrawData(depositAmount, daiC));
-    // }
+        assertEq(borrowAmount, aaveV3Connector.getPaybackBalance(wethC, address(this), RATE_TYPE));
+    }
+
+    function test_Payback() public {
+        uint256 depositAmount = 1000 ether;
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        uint256 borrowAmount = 0.1 ether;
+        execute(getBorrowData(wethC, borrowAmount));
+
+        execute(getPaybackData(borrowAmount, wethC));
+
+        assertEq(0, aaveV3Connector.getPaybackBalance(wethC, address(this), RATE_TYPE));
+    }
+
+    function test_Payback_Max() public {
+        uint256 depositAmount = 1000 ether;
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        uint256 borrowAmount = 0.1 ether;
+        execute(getBorrowData(wethC, borrowAmount));
+
+        execute(getPaybackData(type(uint256).max, wethC));
+
+        assertEq(0, aaveV3Connector.getPaybackBalance(wethC, address(this), RATE_TYPE));
+    }
+
+    function test_Withdraw() public {
+        uint256 depositAmount = 1000 ether;
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        uint256 borrowAmount = 0.1 ether;
+        execute(getBorrowData(wethC, borrowAmount));
+
+        execute(getPaybackData(borrowAmount, wethC));
+        execute(getWithdrawData(depositAmount, daiC));
+
+        assertEq(0, aaveV3Connector.getCollateralBalance(daiC, address(this)));
+    }
 }
