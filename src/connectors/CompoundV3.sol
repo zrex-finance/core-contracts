@@ -89,8 +89,7 @@ contract CompoundV3Connector {
 
     function payback(address market, address token, uint256 amount) external payable {
         require(market != address(0) && token != address(0), "invalid market/token address");
-
-        require(token == getBaseToken(market), "invalid-token");
+        require(token == getBaseToken(market), "invalid token");
 
         IERC20 tokenC = IERC20(token);
 
@@ -112,59 +111,6 @@ contract CompoundV3Connector {
 
     function getBaseToken(address market) internal view returns (address baseToken) {
         baseToken = IComet(market).baseToken();
-    }
-
-    function _borrow(BorrowWithdrawParams memory params) internal returns (uint256 amount) {
-        amount = params.amount;
-
-        require(
-            params.market != address(0) && params.token != address(0) && params.to != address(0),
-            "invalid market/token/to address"
-        );
-
-        params.from = params.from == address(0) ? address(this) : params.from;
-
-        require(IComet(params.market).balanceOf(params.from) == 0, "borrow-disabled-when-supplied-base");
-
-        uint256 initialBalance = IComet(params.market).borrowBalanceOf(params.from);
-
-        IComet(params.market).withdrawFrom(params.from, params.to, params.token, amount);
-
-        uint256 finalBalance = IComet(params.market).borrowBalanceOf(params.from);
-        amount = finalBalance - initialBalance;
-    }
-
-    function _withdraw(BorrowWithdrawParams memory params) internal returns (uint256 amount) {
-        amount = params.amount;
-
-        require(
-            params.market != address(0) && params.token != address(0) && params.to != address(0),
-            "invalid market/token/to address"
-        );
-
-        params.from = params.from == address(0) ? address(this) : params.from;
-
-        uint256 initialBalance = _getAccountSupplyBalanceOfAsset(params.from, params.market, params.token);
-
-        if (params.token == getBaseToken(params.market)) {
-            //if there are supplies, ensure withdrawn amount is not greater
-            // than supplied i.e can't borrow using withdraw.
-            if (amount == type(uint).max) {
-                amount = initialBalance;
-            } else {
-                require(amount <= initialBalance, "withdraw-amount-greater-than-supplies");
-            }
-
-            //if borrow balance > 0, there are no supplies so no withdraw, borrow instead.
-            require(IComet(params.market).borrowBalanceOf(params.from) == 0, "withdraw-disabled-for-zero-supplies");
-        } else {
-            amount = amount == type(uint).max ? initialBalance : amount;
-        }
-
-        IComet(params.market).withdrawFrom(params.from, params.to, params.token, amount);
-
-        uint256 finalBalance = _getAccountSupplyBalanceOfAsset(params.from, params.market, params.token);
-        amount = initialBalance - finalBalance;
     }
 
     function _getAccountSupplyBalanceOfAsset(
