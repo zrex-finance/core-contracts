@@ -6,6 +6,12 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { DataTypes } from "../libraries/types/DataTypes.sol";
 
+/**
+ * @title RouterStorage
+ * @author FlashFlow
+ * @notice Contract used as storage of the Router contract.
+ * @dev It defines the storage layout of the Router contract.
+ */
 contract RouterStorage {
     // Fee of the protocol, expressed in bps
     uint256 public fee;
