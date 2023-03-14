@@ -9,6 +9,8 @@ import { Implementations } from "../src/protocol/configuration/Implementations.s
 contract TestImplementations is Test {
     Implementations implementations;
 
+    bytes32 public version = "ProxyV1";
+
     address defaultImpl = 0x0000000000000000000000000000000000000002;
 
     function test_setDefaultImplementation() public {
@@ -23,60 +25,42 @@ contract TestImplementations is Test {
     }
 
     function test_addImplementation() public {
-        bytes4[] memory _sigs = new bytes4[](1);
-        _sigs[0] = implementations.setDefaultImplementation.selector;
+        implementations.addImplementation(defaultImpl, version);
 
-        implementations.addImplementation(defaultImpl, _sigs);
-
-        assertEq(defaultImpl, implementations.getSigImplementation(_sigs[0]));
+        assertEq(defaultImpl, implementations.getImplementation(version));
     }
 
     function test_getImplementationSigs() public {
-        bytes4[] memory _sigs = new bytes4[](1);
-        _sigs[0] = implementations.setDefaultImplementation.selector;
+        implementations.addImplementation(defaultImpl, version);
 
-        implementations.addImplementation(defaultImpl, _sigs);
+        bytes32 _newVersion = implementations.getVersion(defaultImpl);
 
-        bytes4[] memory _newSigs = implementations.getImplementationSigs(defaultImpl);
-
-        assertEq(bytes32(_sigs[0]), bytes32(_newSigs[0]));
+        assertEq(version, _newVersion);
     }
 
     function test_addImplementation_with_0_address() public {
-        bytes4[] memory _sigs = new bytes4[](1);
-        _sigs[0] = implementations.setDefaultImplementation.selector;
-
         vm.expectRevert(abi.encodePacked("13"));
-        implementations.addImplementation(address(0), _sigs);
+        implementations.addImplementation(address(0), version);
     }
 
     function test_addImplementation_same_address() public {
-        bytes4[] memory _sigs = new bytes4[](1);
-        _sigs[0] = implementations.setDefaultImplementation.selector;
-
-        implementations.addImplementation(defaultImpl, _sigs);
+        implementations.addImplementation(defaultImpl, version);
         vm.expectRevert(abi.encodePacked("15"));
-        implementations.addImplementation(defaultImpl, _sigs);
+        implementations.addImplementation(defaultImpl, version);
     }
 
-    function test_addImplementation_same_sig() public {
-        bytes4[] memory _sigs = new bytes4[](1);
-        _sigs[0] = implementations.setDefaultImplementation.selector;
-
-        implementations.addImplementation(defaultImpl, _sigs);
+    function test_addImplementation_same_version() public {
+        implementations.addImplementation(defaultImpl, version);
         vm.expectRevert(abi.encodePacked("16"));
         address addr = address(uint160(uint256(keccak256(abi.encodePacked(block.timestamp)))));
-        implementations.addImplementation(addr, _sigs);
+        implementations.addImplementation(addr, version);
     }
 
     function test_removeImplementation() public {
-        bytes4[] memory _sigs = new bytes4[](1);
-        _sigs[0] = implementations.setDefaultImplementation.selector;
-
-        implementations.addImplementation(defaultImpl, _sigs);
+        implementations.addImplementation(defaultImpl, version);
         implementations.removeImplementation(defaultImpl);
 
-        assertEq(address(0), implementations.getSigImplementation(_sigs[0]));
+        assertEq(address(0), implementations.getImplementation(version));
     }
 
     function test_removeImplementation_with_0_address() public {

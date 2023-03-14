@@ -14,10 +14,12 @@ import { Errors } from "../libraries/helpers/Errors.sol";
  * The success and return data of the delegated call will be returned back to the caller of the proxy.
  */
 contract Proxy {
+    bytes32 public immutable version;
     IImplementations public immutable implementations;
 
-    constructor(address _implementations) {
+    constructor(address _implementations, bytes32 _version) {
         implementations = IImplementations(_implementations);
+        version = _version;
     }
 
     /**
@@ -55,8 +57,8 @@ contract Proxy {
      *
      * This function does not return to its internal call site, it will return directly to the external caller.
      */
-    function _fallback(bytes4 _sig) internal {
-        address _implementation = implementations.getImplementation(_sig);
+    function _fallback() internal {
+        address _implementation = implementations.getImplementationOrDefault(version);
         require(_implementation != address(0), Errors.NOT_FOUND_IMPLEMENTATION);
         _delegate(_implementation);
     }
@@ -66,7 +68,7 @@ contract Proxy {
      * Will run if no other function in the contract matches the call data.
      */
     fallback() external payable {
-        _fallback(msg.sig);
+        _fallback();
     }
 
     /**
@@ -74,8 +76,6 @@ contract Proxy {
      * Will run if call data is empty.
      */
     receive() external payable {
-        if (msg.sig != 0x00000000) {
-            _fallback(msg.sig);
-        }
+        _fallback();
     }
 }

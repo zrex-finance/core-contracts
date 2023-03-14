@@ -50,13 +50,12 @@ contract TestProxy is Test {
         assertEq(1, finalCount - initialCount);
     }
 
-    function test_callImpl_setImplSigs() public {
-        bytes4[] memory _sigs = new bytes4[](2);
-        _sigs[0] = impl.increaseCount.selector;
-        _sigs[1] = impl.getCount.selector;
+    function test_callImpl_setImplVersion() public {
+        bytes32 _version = "ProxyV2";
+        Proxy newProxy = new Proxy(address(implementations), _version);
 
-        implementations.addImplementation(address(impl), _sigs);
-        address clone = Clones.cloneDeterministic(address(proxy), salt);
+        implementations.addImplementation(address(impl), _version);
+        address clone = Clones.cloneDeterministic(address(newProxy), salt);
 
         uint256 initialCount = Impl(clone).getCount();
         Impl(clone).increaseCount();
@@ -98,8 +97,10 @@ contract TestProxy is Test {
     receive() external payable {}
 
     function setUp() public {
+        bytes32 _version = "ProxyV1";
+
         impl = new Impl();
         implementations = new Implementations();
-        proxy = new Proxy(address(implementations));
+        proxy = new Proxy(address(implementations), _version);
     }
 }

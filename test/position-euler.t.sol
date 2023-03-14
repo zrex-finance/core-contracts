@@ -44,7 +44,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 }
 
 contract PositionEuler is LendingHelper {
-    function testLongPositionAccount() public {
+    function LongPositionAccount() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, wethC, 1000000000, 2, 0, 0);
 
         topUpTokenBalance(usdcC, usdcWhale, _position.amountIn);
@@ -87,7 +87,7 @@ contract PositionEuler is LendingHelper {
         router.closePosition(key, _token, _amount, _route, _calldata);
     }
 
-    function testShortPosition() public {
+    function ShortPosition() public {
         uint256 shortAmt = 2000 ether;
 
         bytes memory swapdata = getMulticalSwapData(daiC, usdcC, address(router), shortAmt);

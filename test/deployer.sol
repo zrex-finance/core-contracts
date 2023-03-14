@@ -73,7 +73,7 @@ contract Deployer is Test {
 
         implementations.setDefaultImplementation(address(accountImpl));
 
-        accountProxy = new Proxy(address(implementations));
+        accountProxy = new Proxy(address(implementations), bytes32("ProxyV1"));
 
         uint256 fee = 3;
 
