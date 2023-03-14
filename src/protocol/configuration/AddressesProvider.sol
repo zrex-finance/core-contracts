@@ -13,7 +13,6 @@ contract AddressesProvider is Ownable {
     bytes32 private constant CONNECTORS = "CONNECTORS";
     bytes32 private constant ACCOUNT_PROXY = "ACCOUNT_PROXY";
     bytes32 private constant IMPLEMENTATIONS = "IMPLEMENTATIONS";
-    bytes32 private constant ROUTER_CONFIGURATOR = "ROUTER_CONFIGURATOR";
     bytes32 private constant FLASHLOAN_AGGREGATOR = "FLASHLOAN_AGGREGATOR";
 
     event AddressSet(bytes32 indexed id, address indexed oldAddress, address indexed newAddress);
@@ -42,10 +41,6 @@ contract AddressesProvider is Ownable {
 
     function getFlashloanAggregator() external view returns (address) {
         return getAddress(FLASHLOAN_AGGREGATOR);
-    }
-
-    function getPoolConfigurator() external view returns (address) {
-        return getAddress(ROUTER_CONFIGURATOR);
     }
 
     function getTreasury() external view returns (address) {
