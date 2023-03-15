@@ -23,4 +23,5 @@ library Errors {
     string public constant CONNECTOR_DOES_NOT_EXIST = "15"; // A connector with this name does not exist
     string public constant CALLER_NOT_ROUTER_CONFIGURATOR = "16"; // The caller of the function is not a router configurator
     string public constant INVALID_FEE_AMOUNT = "17"; // The fee amount is invalid
+    string public constant INVALID_IMPLEMENTATION_ADDRESS = "18"; // The address of the implementation is invalid
 }

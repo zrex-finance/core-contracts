@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
 
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
 import { Errors } from "../src/protocol/libraries/helpers/Errors.sol";

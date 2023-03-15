@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
 
 import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
 import { UniversalERC20 } from "../src/libraries/tokens/UniversalERC20.sol";
@@ -40,7 +40,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 }
 
 contract PositionAaveV2 is LendingHelper {
-    using UniversalERC20 for ERC20;
+    using UniversalERC20 for IERC20;
 
     function testLongPositionAccount() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, address(daiC), wethC, 1000 ether, 2, 0, 0);
@@ -59,11 +59,11 @@ contract PositionAaveV2 is LendingHelper {
     }
 
     function openPosition(DataTypes.Position memory _position) public {
-        bool isEth = ERC20(_position.debt).isETH();
+        bool isEth = IERC20(_position.debt).isETH();
 
         if (!isEth) {
             vm.prank(msg.sender);
-            ERC20(_position.debt).approve(address(router), _position.amountIn);
+            IERC20(_position.debt).approve(address(router), _position.amountIn);
         }
 
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
@@ -109,7 +109,7 @@ contract PositionAaveV2 is LendingHelper {
 
         // approve tokens
         vm.prank(msg.sender);
-        ERC20(daiC).approve(address(router), shortAmt);
+        IERC20(daiC).approve(address(router), shortAmt);
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
 
@@ -181,7 +181,7 @@ contract PositionAaveV2 is LendingHelper {
     }
 
     function getFlashloanData(address lT, uint256 lA) public view returns (address, uint256, uint16) {
-        lT = ERC20(lT).isETH() ? wethC : lT;
+        lT = IERC20(lT).isETH() ? wethC : lT;
 
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);

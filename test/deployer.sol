@@ -2,20 +2,21 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
 
 import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
 import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
 
-import { Proxy } from "../src/protocol/router/Proxy.sol";
+import { Proxy } from "../src/protocol/account/Proxy.sol";
+import { Account } from "../src/protocol/account/Account.sol";
+
 import { Router } from "../src/protocol/router/Router.sol";
-import { Account } from "../src/protocol/router/Account.sol";
+import { RouterConfigurator } from "../src/protocol/router/RouterConfigurator.sol";
 
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
-import { Implementations } from "../src/protocol/configuration/Implementations.sol";
 import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
 
 import { InchV5Connector } from "../src/connectors/InchV5.sol";
@@ -66,36 +67,36 @@ contract Deployer is Test {
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
-        accountImpl = new Account();
-        Implementations implementations = new Implementations();
+        RouterConfigurator routerConfigurator = new RouterConfigurator();
 
-        implementations.setDefaultImplementation(address(accountImpl));
+        accountImpl = new Account(address(addressesProvider));
+        accountProxy = new Proxy(address(addressesProvider));
+        router = new Router(address(addressesProvider));
 
-        accountProxy = new Proxy(address(implementations), bytes32("ProxyV1"));
-
-        uint256 fee = 3;
-
-        router = new Router(fee, address(addressesProvider));
-
-        bytes32[] memory _namesA = new bytes32[](6);
-        _namesA[0] = bytes32("ROUTER");
+        bytes32[] memory _namesA = new bytes32[](5);
+        _namesA[0] = bytes32("ACCOUNT");
         _namesA[1] = bytes32("TREASURY");
         _namesA[2] = bytes32("CONNECTORS");
         _namesA[3] = bytes32("ACCOUNT_PROXY");
-        _namesA[4] = bytes32("IMPLEMENTATIONS");
-        _namesA[5] = bytes32("FLASHLOAN_AGGREGATOR");
+        _namesA[4] = bytes32("FLASHLOAN_AGGREGATOR");
 
-        address[] memory _addresses = new address[](6);
-        _addresses[0] = address(router);
+        address[] memory _addresses = new address[](5);
+        _addresses[0] = address(accountImpl);
         _addresses[1] = msg.sender;
         _addresses[2] = address(connectors);
         _addresses[3] = address(accountProxy);
-        _addresses[4] = address(implementations);
-        _addresses[5] = address(flashloanAggregator);
+        _addresses[4] = address(flashloanAggregator);
 
         for (uint i = 0; i < _namesA.length; i++) {
             addressesProvider.setAddress(_namesA[i], _addresses[i]);
         }
+
+        addressesProvider.setRouterImpl(address(router));
+        addressesProvider.setRouterConfiguratorImpl(address(routerConfigurator));
+
+        RouterConfigurator(addressesProvider.getRouterConfigurator()).setFee(3);
+
+        router = Router(addressesProvider.getRouter());
     }
 
     function setUpConnectors() public {

@@ -57,6 +57,14 @@ abstract contract Proxy {
     }
 
     /**
+     * @dev Fallback function that delegates calls to the address returned by `_implementation()`. Will run if call data
+     * is empty.
+     */
+    receive() external payable virtual {
+        _fallback();
+    }
+
+    /**
      * @dev Function that is run as the first thing in the fallback function.
      * Can be redefined in derived contracts to add functionality.
      * Redefinitions must call super._willFallback().

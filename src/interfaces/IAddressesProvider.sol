@@ -6,6 +6,8 @@ interface IAddressesProvider {
 
     function setAddress(bytes32 id, address newAddress) external;
 
+    function getRouterConfigurator() external view returns (address);
+
     function getRouter() external view returns (address);
 
     function getConnectors() external view returns (address);

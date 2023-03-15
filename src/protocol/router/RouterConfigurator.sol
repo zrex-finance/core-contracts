@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import { IRouter } from "../../interfaces/IRouter.sol";
 import { IAddressesProvider } from "../../interfaces/IAddressesProvider.sol";
+
 import { Initializable } from "../../dependencies/openzeppelin/upgradeability/Initializable.sol";
 
 /**
@@ -17,5 +18,13 @@ contract RouterConfigurator is Initializable {
     function initialize(IAddressesProvider provider) public initializer {
         _addressesProvider = provider;
         _router = IRouter(_addressesProvider.getRouter());
+    }
+
+    /**
+     * @notice Set a new fee to the router contract.
+     * @param _fee The new amount
+     */
+    function setFee(uint256 _fee) external {
+        _router.setFee(_fee);
     }
 }

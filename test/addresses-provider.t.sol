@@ -2,8 +2,8 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
 
 import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
 
@@ -30,11 +30,6 @@ contract TestAddressesProvider is Test {
     function test_setAddress_AccountProxy() public {
         addressesProvider.setAddress(bytes32("ACCOUNT_PROXY"), testAddress);
         assertEq(addressesProvider.getAccountProxy(), testAddress);
-    }
-
-    function test_setAddress_Implementations() public {
-        addressesProvider.setAddress(bytes32("IMPLEMENTATIONS"), testAddress);
-        assertEq(addressesProvider.getImplementations(), testAddress);
     }
 
     function test_setAddress_FlashloanAggregator() public {
