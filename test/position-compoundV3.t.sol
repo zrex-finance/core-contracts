@@ -57,7 +57,7 @@ contract PositionCompoundV3 is LendingHelper {
         vm.prank(msg.sender);
         ERC20(_position.debt).approve(address(router), _position.amountIn);
 
-        (address _token, uint256 _amount, uint256 _route, bytes memory _data) = _openPosition(_position);
+        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
         router.openPosition(_position, _token, _amount, _route, _data);
@@ -110,7 +110,7 @@ contract PositionCompoundV3 is LendingHelper {
     }
 
     function openShort(DataTypes.Position memory _position, DataTypes.SwapParams memory _params) public {
-        (address _token, uint256 _amount, uint256 _route, bytes memory _data) = _openPosition(_position);
+        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
         router.swapAndOpen(_position, _token, _amount, _route, _data, _params);
@@ -134,7 +134,7 @@ contract PositionCompoundV3 is LendingHelper {
         address account = router.accounts(_position.account);
 
         if (account == address(0)) {
-            account = router.predictDeterministicAddress();
+            account = router.predictDeterministicAddress(_position.account);
         }
 
         bytes[] memory _datas = new bytes[](3);
@@ -182,7 +182,7 @@ contract PositionCompoundV3 is LendingHelper {
 
     function _openPosition(
         DataTypes.Position memory _position
-    ) public view returns (address, uint256, uint256, bytes memory) {
+    ) public view returns (address, uint256, uint16, bytes memory) {
         uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
 
         (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, loanAmt);

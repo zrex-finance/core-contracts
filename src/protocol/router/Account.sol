@@ -66,25 +66,25 @@ contract Account is Initializable {
 
     /**
      * @dev Takes a loan, calls `openPositionCallback` inside the loan, and transfers the commission.
-     * @param position The structure of the current position.
+     * @param _position The structure of the current position.
      * @param _token Flashloan token.
      * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
     function openPosition(
-        DataTypes.Position memory position,
+        DataTypes.Position memory _position,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data
     ) external payable {
-        require(position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
-        IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
+        require(_position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
+        IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
 
         flashloan(_token, _amount, _route, _data);
 
-        require(chargeFee(position.amountIn + _amount, position.debt), Errors.CHARGE_FEE_NOT_COMPLETED);
+        require(chargeFee(_position.amountIn + _amount, _position.debt), Errors.CHARGE_FEE_NOT_COMPLETED);
     }
 
     /**
@@ -99,7 +99,7 @@ contract Account is Initializable {
         bytes32 _key,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data
     ) external {
         DataTypes.Position memory position = getRouter().positions(_key);
@@ -181,7 +181,7 @@ contract Account is Initializable {
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
-    function flashloan(address _token, uint256 _amount, uint256 _route, bytes calldata _data) private {
+    function flashloan(address _token, uint256 _amount, uint16 _route, bytes calldata _data) private {
         address[] memory _tokens = new address[](1);
         _tokens[0] = _token;
 

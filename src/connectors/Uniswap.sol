@@ -11,35 +11,55 @@ contract UniswapConnector is EthConverter {
 
     string public name = "UniswapAuto";
 
+    /**
+     * @dev UniswapV3 Auto Swap Router Address
+     */
     address internal constant uniAutoRouter = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
 
+    /**
+     * @dev Sell ETH/ERC20_Token using uniswap v3 auto router.
+     * @notice Swap tokens from getting an optimized trade routes
+     * @param _toToken The address of the token to buy.
+     * @param _fromToken The address of the token to sell.
+     * @param _amount The amount of the token to sell.
+     * @param _callData Data from uniswap API.
+     * @return buyAmount Returns the amount of tokens received.
+     */
     function swap(
-        address toToken,
-        address fromToken,
-        uint256 amount,
-        bytes calldata callData
-    ) external payable returns (uint256 _buyAmt) {
-        _buyAmt = _swap(toToken, fromToken, amount, callData);
-        emit LogExchange(msg.sender, toToken, fromToken, amount);
+        address _toToken,
+        address _fromToken,
+        uint256 _amount,
+        bytes calldata _callData
+    ) external payable returns (uint256 buyAmount) {
+        buyAmount = _swap(_toToken, _fromToken, _amount, _callData);
+        emit LogExchange(msg.sender, _toToken, _fromToken, _amount);
     }
 
+    /**
+     * @dev Universal approve tokens to uniswap router and execute calldata.
+     * @param _toToken The address of the token to buy.
+     * @param _fromToken The address of the token to sell.
+     * @param _amount The amount of the token to sell.
+     * @param _callData Data from uniswap API.
+     * @return buyAmount Returns the amount of tokens received.
+     */
     function _swap(
-        address toToken,
-        address fromToken,
-        uint256 amount,
-        bytes calldata callData
+        address _toToken,
+        address _fromToken,
+        uint256 _amount,
+        bytes calldata _callData
     ) internal returns (uint256 buyAmount) {
-        IERC20(fromToken).universalApprove(uniAutoRouter, amount);
+        IERC20(_fromToken).universalApprove(uniAutoRouter, _amount);
 
-        uint256 initalBalalance = IERC20(toToken).universalBalanceOf(address(this));
+        uint256 initalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = uniAutoRouter.call(callData);
+        (bool success, bytes memory results) = uniAutoRouter.call(_callData);
 
         if (!success) {
             revert(string(results));
         }
 
-        uint256 finalBalalance = IERC20(toToken).universalBalanceOf(address(this));
+        uint256 finalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
         buyAmount = finalBalalance - initalBalalance;
     }

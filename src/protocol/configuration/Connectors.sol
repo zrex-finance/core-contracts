@@ -7,13 +7,20 @@ import { IConnector } from "../../interfaces/IConnector.sol";
 
 import { Errors } from "../libraries/helpers/Errors.sol";
 
+/**
+ * @title Connectors
+ * @author FlashFlow
+ * @notice Contract to manage and store auxiliary contracts to work with the necessary protocols
+ */
 contract Connectors is Ownable {
+    // Enabled Connectors(Connector name => address).
     mapping(string => address) private connectors;
 
-    function getConnector(string memory _name) public view returns (address) {
-        return connectors[_name];
-    }
-
+    /**
+     * @dev Add Connectors
+     * @param _names Array of Connector Names.
+     * @param _connectors Array of Connector Address.
+     */
     function addConnectors(string[] calldata _names, address[] calldata _connectors) external onlyOwner {
         require(_names.length == _connectors.length, Errors.INVALID_CONNECTORS_LENGTH);
 
@@ -28,6 +35,11 @@ contract Connectors is Ownable {
         }
     }
 
+    /**
+     * @dev Update Connectors
+     * @param _names Array of Connector Names.
+     * @param _connectors Array of Connector Address.
+     */
     function updateConnectors(string[] calldata _names, address[] calldata _connectors) external onlyOwner {
         require(_names.length == _connectors.length, Errors.INVALID_CONNECTORS_LENGTH);
 
@@ -42,6 +54,10 @@ contract Connectors is Ownable {
         }
     }
 
+    /**
+     * @dev Remove Connectors
+     * @param _names Array of Connector Names.
+     */
     function removeConnectors(string[] calldata _names) external onlyOwner {
         for (uint i = 0; i < _names.length; i++) {
             string memory name = _names[i];
@@ -51,11 +67,15 @@ contract Connectors is Ownable {
         }
     }
 
-    function isConnector(string calldata _name) external view returns (bool isOk, address _connector) {
+    /**
+     * @dev Check if Connector addresses are enabled.
+     * @param _name Connector Name.
+     */
+    function isConnector(string calldata _name) external view returns (bool isOk, address connector) {
         isOk = true;
-        _connector = connectors[_name];
+        connector = connectors[_name];
 
-        if (_connector == address(0)) {
+        if (connector == address(0)) {
             isOk = false;
         }
     }

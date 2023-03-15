@@ -18,11 +18,11 @@ interface IAccount {
         DataTypes.Position memory position,
         address _token,
         uint256 _amount,
-        uint256 route,
+        uint16 route,
         bytes calldata _data
     ) external payable;
 
-    function closePosition(bytes32 _key, address _token, uint256 _amount, uint256 route, bytes calldata _data) external;
+    function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 route, bytes calldata _data) external;
 
     function openPositionCallback(
         string[] memory _targetNames,

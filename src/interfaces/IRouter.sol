@@ -8,7 +8,7 @@ interface IRouter {
         DataTypes.Position memory _position,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data,
         DataTypes.SwapParams memory _params
     ) external payable;
@@ -17,17 +17,11 @@ interface IRouter {
         DataTypes.Position memory _position,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data
     ) external payable;
 
-    function closePosition(
-        bytes32 _key,
-        address _token,
-        uint256 _amount,
-        uint256 _route,
-        bytes calldata _data
-    ) external;
+    function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;
 
     function updatePosition(DataTypes.Position memory _position) external;
 

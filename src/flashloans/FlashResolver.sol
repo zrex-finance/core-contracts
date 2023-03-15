@@ -22,11 +22,11 @@ contract FlashResolver {
         flashloanAggregator = FlashloanAggregatorInterface(_flashloanAggregatorAddr);
     }
 
-    function getRoutesInfo() public view returns (uint16[] memory routes_, uint256[] memory fees_) {
-        routes_ = flashloanAggregator.getRoutes();
-        fees_ = new uint256[](routes_.length);
-        for (uint256 i = 0; i < routes_.length; i++) {
-            fees_[i] = flashloanAggregator.calculateFeeBPS(routes_[i]);
+    function getRoutesInfo() public view returns (uint16[] memory routes, uint256[] memory fees) {
+        routes = flashloanAggregator.getRoutes();
+        fees = new uint256[](routes.length);
+        for (uint256 i = 0; i < routes.length; i++) {
+            fees[i] = flashloanAggregator.calculateFeeBPS(routes[i]);
         }
     }
 
@@ -38,45 +38,41 @@ contract FlashResolver {
 
         validateTokens(_tokens);
 
-        uint16[] memory bRoutes_;
-        uint256 feeBPS_;
-        uint16[] memory routes_ = flashloanAggregator.getRoutes();
-        uint16[] memory routesWithAvailability_ = getRoutesWithAvailability(routes_, _tokens, _amounts);
+        uint16[] memory bRoutes;
+        uint256 feeBPS;
+        uint16[] memory routes = flashloanAggregator.getRoutes();
+        uint16[] memory routesWithAvailability = getRoutesWithAvailability(routes, _tokens, _amounts);
         uint16 j = 0;
-        bRoutes_ = new uint16[](routes_.length);
-        feeBPS_ = type(uint256).max;
-        for (uint256 i = 0; i < routesWithAvailability_.length; i++) {
-            if (routesWithAvailability_[i] != 0) {
-                uint256 routeFeeBPS_ = flashloanAggregator.calculateFeeBPS(routesWithAvailability_[i]);
+        bRoutes = new uint16[](routes.length);
+        feeBPS = type(uint256).max;
+        for (uint256 i = 0; i < routesWithAvailability.length; i++) {
+            if (routesWithAvailability[i] != 0) {
+                uint256 routeFeeBPS = flashloanAggregator.calculateFeeBPS(routesWithAvailability[i]);
 
-                if (feeBPS_ > routeFeeBPS_) {
-                    feeBPS_ = routeFeeBPS_;
-                    bRoutes_[0] = routesWithAvailability_[i];
+                if (feeBPS > routeFeeBPS) {
+                    feeBPS = routeFeeBPS;
+                    bRoutes[0] = routesWithAvailability[i];
                     j = 1;
-                } else if (feeBPS_ == routeFeeBPS_) {
-                    bRoutes_[j] = routesWithAvailability_[i];
+                } else if (feeBPS == routeFeeBPS) {
+                    bRoutes[j] = routesWithAvailability[i];
                     j++;
                 }
             }
         }
         uint16[] memory bestRoutes_ = new uint16[](j);
         for (uint256 i = 0; i < j; i++) {
-            bestRoutes_[i] = bRoutes_[i];
+            bestRoutes_[i] = bRoutes[i];
         }
-        return (bestRoutes_, feeBPS_);
+        return (bestRoutes_, feeBPS);
     }
 
     function getData(
         address[] memory _tokens,
         uint256[] memory _amounts
-    )
-        public
-        view
-        returns (uint16[] memory routes_, uint256[] memory fees_, uint16[] memory bestRoutes_, uint256 bestFee_)
-    {
-        (routes_, fees_) = getRoutesInfo();
-        (bestRoutes_, bestFee_) = getBestRoutes(_tokens, _amounts);
-        return (routes_, fees_, bestRoutes_, bestFee_);
+    ) public view returns (uint16[] memory routes, uint256[] memory fees, uint16[] memory bestRoutes, uint256 bestFee) {
+        (routes, fees) = getRoutesInfo();
+        (bestRoutes, bestFee) = getBestRoutes(_tokens, _amounts);
+        return (routes, fees, bestRoutes, bestFee);
     }
 
     function getAaveAvailability(address[] memory _tokens, uint256[] memory _amounts) internal view returns (bool) {

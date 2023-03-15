@@ -17,7 +17,7 @@ import { RouterStorage } from "./RouterStorage.sol";
 
 /**
  * @title Router contract
- * @author FlasFlow
+ * @author FlashFlow
  * @notice Main point of interaction with an FlashFlow protocol
  * - Users can:
  *   # Open position
@@ -31,9 +31,6 @@ contract Router is RouterStorage {
     // The contract by which all other contact addresses are obtained.
     IAddressesProvider public immutable ADDRESSES_PROVIDER;
 
-    // will come as a parameter from the UI
-    bytes32 public constant SALT = 0x0000000000000000000000000000000000000000000000000000000047941987;
-
     /**
      * @dev Constructor.
      * @param _fee Fee of the protocol.
@@ -45,9 +42,9 @@ contract Router is RouterStorage {
         ADDRESSES_PROVIDER = IAddressesProvider(_provider);
     }
 
-    /**
+    /**3
      * @dev Exchanges the input token for the necessary token to create a position and opens it.
-     * @param position The structure of the current position.
+     * @param _position The structure of the current position.
      * @param _token Flashloan token.
      * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
@@ -55,95 +52,96 @@ contract Router is RouterStorage {
      * @param _params The additional parameters needed to the exchange.
      */
     function swapAndOpen(
-        DataTypes.Position memory position,
+        DataTypes.Position memory _position,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data,
         DataTypes.SwapParams memory _params
     ) external payable {
-        position.amountIn = _swap(_params);
-        _openPosition(position, _token, _amount, _route, _data);
+        _position.amountIn = _swap(_params);
+        _openPosition(_position, _token, _amount, _route, _data);
     }
 
     /**
-     * @dev Create a position on the lendings protocol and save it.
-     * @param position The structure of the current position.
+     * @dev Create a position on the lendings protocol.
+     * @param _position The structure of the current position.
      * @param _token Flashloan token.
      * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
     function openPosition(
-        DataTypes.Position memory position,
+        DataTypes.Position memory _position,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data
     ) public payable {
-        IERC20(position.debt).universalTransferFrom(msg.sender, address(this), position.amountIn);
-        _openPosition(position, _token, _amount, _route, _data);
+        IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
+        _openPosition(_position, _token, _amount, _route, _data);
     }
 
     /**
-     * @dev Create a position on the lendings protocol and save it.
+     * @dev Create user account if user doesn't have it. Update position index and position state.
+     * Call openPosition on the user account proxy contract.
      */
     function _openPosition(
-        DataTypes.Position memory position,
+        DataTypes.Position memory _position,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data
     ) private {
-        require(position.account == msg.sender, Errors.CALLER_NOT_POSITION_OWNER);
+        require(_position.account == msg.sender, Errors.CALLER_NOT_POSITION_OWNER);
 
         address account = getOrCreateAccount(msg.sender);
 
-        uint256 index = positionsIndex[position.account] += 1;
-        positionsIndex[position.account] = index;
+        uint256 index = positionsIndex[_position.account] += 1;
+        positionsIndex[_position.account] = index;
 
-        bytes32 key = getKey(position.account, index);
-        positions[key] = position;
+        bytes32 key = getKey(_position.account, index);
+        positions[key] = _position;
 
-        IERC20(position.debt).universalApprove(account, position.amountIn);
-        IAccount(account).openPosition{ value: msg.value }(position, _token, _amount, _route, _data);
+        IERC20(_position.debt).universalApprove(account, _position.amountIn);
+        IAccount(account).openPosition{ value: msg.value }(_position, _token, _amount, _route, _data);
     }
 
     /**
      * @dev Сloses the user's position and deletes it.
-     * @param key The key to obtain the current position.
+     * @param _key The key to obtain the current position.
      * @param _token Flashloan token.
      * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
     function closePosition(
-        bytes32 key,
+        bytes32 _key,
         address _token,
         uint256 _amount,
-        uint256 _route,
+        uint16 _route,
         bytes calldata _data
     ) external {
-        DataTypes.Position memory position = positions[key];
+        DataTypes.Position memory position = positions[_key];
         require(msg.sender == position.account, Errors.CALLER_NOT_POSITION_OWNER);
 
         address account = accounts[msg.sender];
         require(account != address(0), Errors.ACCOUNT_DOES_NOT_EXIST);
 
-        IAccount(account).closePosition(key, _token, _amount, _route, _data);
+        IAccount(account).closePosition(_key, _token, _amount, _route, _data);
 
-        delete positions[key];
+        delete positions[_key];
     }
 
     /**
      * @dev Updates the current positions required for the callback.
-     * @param position The structure of the current position.
+     * @param _position The structure of the current position.
      */
-    function updatePosition(DataTypes.Position memory position) public {
-        require(msg.sender == accounts[position.account], Errors.CALLER_NOT_ACCOUNT_OWNER);
+    function updatePosition(DataTypes.Position memory _position) public {
+        require(msg.sender == accounts[_position.account], Errors.CALLER_NOT_ACCOUNT_OWNER);
 
-        bytes32 key = getKey(position.account, positionsIndex[position.account]);
-        positions[key] = position;
+        bytes32 key = getKey(_position.account, positionsIndex[_position.account]);
+        positions[key] = _position;
     }
 
     /**
@@ -176,7 +174,10 @@ contract Router is RouterStorage {
         address _account = address(accounts[_owner]);
 
         if (_account == address(0)) {
-            _account = Clones.cloneDeterministic(ADDRESSES_PROVIDER.getAccountProxy(), SALT);
+            _account = Clones.cloneDeterministic(
+                ADDRESSES_PROVIDER.getAccountProxy(),
+                bytes32(abi.encodePacked(_owner))
+            );
             accounts[_owner] = _account;
             IAccount(_account).initialize(_owner, address(ADDRESSES_PROVIDER));
         }
@@ -186,10 +187,16 @@ contract Router is RouterStorage {
 
     /**
      * @dev Returns the future address of the account created through create2, necessary for the user interface.
+     * @param _owner User account address, convert to salt.
      * @return predicted Returns of the user account address.
      */
-    function predictDeterministicAddress() public view returns (address predicted) {
-        return Clones.predictDeterministicAddress(ADDRESSES_PROVIDER.getAccountProxy(), SALT, address(this));
+    function predictDeterministicAddress(address _owner) public view returns (address predicted) {
+        return
+            Clones.predictDeterministicAddress(
+                ADDRESSES_PROVIDER.getAccountProxy(),
+                bytes32(abi.encodePacked(_owner)),
+                address(this)
+            );
     }
 
     /**

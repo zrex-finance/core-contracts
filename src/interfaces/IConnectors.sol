@@ -2,8 +2,6 @@
 pragma solidity ^0.8.17;
 
 interface IConnectors {
-    function getConnector(string memory _name) external view returns (address);
-
     function addConnectors(string[] calldata _names, address[] calldata _connectors) external;
 
     function updateConnectors(string[] calldata _names, address[] calldata _connectors) external;

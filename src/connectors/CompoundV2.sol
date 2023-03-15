@@ -9,61 +9,101 @@ import { ICToken, IComptroller, ICompoundMapping } from "./interfaces/CompoundV2
 contract CompoundV2Connector {
     using UniversalERC20 for IERC20;
 
+    /**
+     * @dev Compound Comptroller
+     */
     IComptroller internal constant troller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     string public constant name = "CompoundV2";
 
-    function deposit(address token, uint256 amount) external payable {
-        ICToken cToken = _getCToken(token);
+    /**
+     * @dev Deposit ETH/ERC20_Token using the Mapping.
+     * @notice Deposit a token to Compound for lending / collaterization.
+     * @param _token The address of the token to deposit. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _amount The amount of the token to deposit. (For max: `type(uint).max`)
+     */
+    function deposit(address _token, uint256 _amount) external payable {
+        ICToken cToken = _getCToken(_token);
 
         enterMarket(address(cToken));
 
-        IERC20 tokenC = IERC20(token);
-        amount = amount == type(uint).max ? tokenC.balanceOf(address(this)) : amount;
-        tokenC.universalApprove(address(cToken), amount);
+        IERC20 tokenC = IERC20(_token);
+        _amount = _amount == type(uint).max ? tokenC.balanceOf(address(this)) : _amount;
+        tokenC.universalApprove(address(cToken), _amount);
 
-        ICToken(cToken).mint(amount);
+        ICToken(cToken).mint(_amount);
     }
 
-    function withdraw(address token, uint256 amount) external payable {
-        ICToken cToken = _getCToken(token);
+    /**
+     * @dev Withdraw ETH/ERC20_Token.
+     * @notice Withdraw deposited token from Compound
+     * @param _token The address of the token to withdraw. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _amount The amount of the token to withdraw. (For max: `type(uint).max`)
+     */
+    function withdraw(address _token, uint256 _amount) external payable {
+        ICToken cToken = _getCToken(_token);
 
-        if (amount == type(uint).max) {
+        if (_amount == type(uint).max) {
             cToken.redeem(cToken.balanceOf(address(this)));
         } else {
-            cToken.redeemUnderlying(amount);
+            cToken.redeemUnderlying(_amount);
         }
     }
 
-    function borrow(address token, uint256 amount) external payable {
-        ICToken cToken = _getCToken(token);
+    /**
+     * @dev Borrow ETH/ERC20_Token.
+     * @notice Borrow a token using Compound
+     * @param _token The address of the token to borrow. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _amount The amount of the token to borrow.
+     */
+    function borrow(address _token, uint256 _amount) external payable {
+        ICToken cToken = _getCToken(_token);
 
         enterMarket(address(cToken));
-        ICToken(cToken).borrow(amount);
+        ICToken(cToken).borrow(_amount);
     }
 
-    function payback(address token, uint256 amount) external payable {
-        ICToken cToken = _getCToken(token);
+    /**
+     * @dev Payback borrowed ETH/ERC20_Token.
+     * @notice Payback debt owed.
+     * @param _token The address of the token to payback. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _amount The amount of the token to payback. (For max: `type(uint).max`)
+     */
+    function payback(address _token, uint256 _amount) external payable {
+        ICToken cToken = _getCToken(_token);
 
-        amount = amount == type(uint).max ? cToken.borrowBalanceCurrent(address(this)) : amount;
+        _amount = _amount == type(uint).max ? cToken.borrowBalanceCurrent(address(this)) : _amount;
 
-        IERC20 tokenC = IERC20(token);
-        require(tokenC.balanceOf(address(this)) >= amount, "not enough token");
+        IERC20 tokenC = IERC20(_token);
+        require(tokenC.balanceOf(address(this)) >= _amount, "not enough token");
 
-        tokenC.universalApprove(address(cToken), amount);
-        cToken.repayBorrow(amount);
+        tokenC.universalApprove(address(cToken), _amount);
+        cToken.repayBorrow(_amount);
     }
 
+    /**
+     * @dev Get total debt balance & fee for an asset
+     * @param _token Token address of the debt.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _recipient Address whose balance we get.
+     */
     function borrowBalanceOf(address _token, address _recipient) public returns (uint256) {
         ICToken cToken = _getCToken(_token);
         return cToken.borrowBalanceCurrent(_recipient);
     }
 
+    /**
+     * @dev Get total collateral balance for an asset
+     * @param _token Token address of the collateral.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _recipient Address whose balance we get.
+     */
     function collateralBalanceOf(address _token, address _recipient) public returns (uint256) {
         ICToken cToken = _getCToken(_token);
         return cToken.balanceOfUnderlying(_recipient);
     }
 
+    /**
+     * @dev Enter compound market
+     */
     function enterMarket(address cToken) internal {
         address[] memory markets = troller.getAssetsIn(address(this));
         bool isEntered = false;
@@ -79,6 +119,10 @@ contract CompoundV2Connector {
         }
     }
 
+    /**
+     * @dev Mapping base token to cToken
+     * @param _token Base token address.
+     */
     function _getCToken(address _token) public pure returns (ICToken) {
         if (IERC20(_token).isETH()) {
             // ETH
