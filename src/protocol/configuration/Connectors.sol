@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable } from "../../dependencies/openzeppelin//contracts/Ownable.sol";
 
 import { IConnector } from "../../interfaces/IConnector.sol";
 

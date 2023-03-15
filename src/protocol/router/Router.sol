@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../../dependencies/openzeppelin/contracts/IERC20.sol";
+import { Clones } from "../../dependencies/openzeppelin/upgradeability/Clones.sol";
+import { Initializable } from "../../dependencies/openzeppelin/upgradeability/Initializable.sol";
 
 import { Errors } from "../libraries/helpers/Errors.sol";
 import { DataTypes } from "../libraries/types/DataTypes.sol";
@@ -25,21 +26,37 @@ import { RouterStorage } from "./RouterStorage.sol";
  *   # Swap their tokens
  *   # Create acconut
  */
-contract Router is RouterStorage {
+contract Router is RouterStorage, Initializable {
     using UniversalERC20 for IERC20;
 
     // The contract by which all other contact addresses are obtained.
     IAddressesProvider public immutable ADDRESSES_PROVIDER;
 
     /**
-     * @dev Constructor.
-     * @param _fee Fee of the protocol.
-     * @param _provider The address of the AddressesProvider contract.
+     * @dev Only pool configurator can call functions marked by this modifier.
      */
-    constructor(uint256 _fee, address _provider) {
-        require(_provider != address(0), Errors.INVALID_ADDRESSES_PROVIDER);
-        fee = _fee;
-        ADDRESSES_PROVIDER = IAddressesProvider(_provider);
+    modifier onlyRouterConfigurator() {
+        require(ADDRESSES_PROVIDER.getRouterConfigurator() == msg.sender, Errors.CALLER_NOT_ROUTER_CONFIGURATOR);
+        _;
+    }
+
+    /**
+     * @dev Constructor.
+     * @param provider The address of the AddressesProvider contract
+     */
+    constructor(address provider) {
+        ADDRESSES_PROVIDER = IAddressesProvider(provider);
+    }
+
+    /**
+     * @notice Initializes the Router.
+     * @dev Function is invoked by the proxy contract when the Router contract is added to the
+     * AddressesProvider.
+     * @dev Caching the address of the AddressesProvider in order to reduce gas consumption on subsequent operations
+     * @param provider The address of the AddressesProvider
+     */
+    function initialize(address provider) external virtual initializer {
+        require(provider == address(ADDRESSES_PROVIDER), Errors.INVALID_ADDRESSES_PROVIDER);
     }
 
     /**
@@ -119,6 +136,15 @@ contract Router is RouterStorage {
     function getFeeAmount(uint256 _amount) public view returns (uint256 feeAmount) {
         require(_amount > 0, Errors.INVALID_CHARGE_AMOUNT);
         feeAmount = (_amount * fee) / PercentageMath.PERCENTAGE_FACTOR;
+    }
+
+    /**
+     * @notice Set a new fee to the router contract.
+     * @param _fee The new amount
+     */
+    function setFee(uint256 _fee) external onlyRouterConfigurator {
+        require(_fee > 0, Errors.INVALID_FEE_AMOUNT);
+        fee = _fee;
     }
 
     /**

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { IERC20 } from "../../dependencies/openzeppelin/contracts/IERC20.sol";
+import { Initializable } from "../../dependencies/openzeppelin/upgradeability/Initializable.sol";
 
 import { Errors } from "../libraries/helpers/Errors.sol";
 import { DataTypes } from "../libraries/types/DataTypes.sol";
@@ -25,7 +25,7 @@ contract Account is Initializable {
     address private _owner;
 
     // The contract by which all other contact addresses are obtained.
-    IAddressesProvider public ADDRESSES_PROVIDER;
+    IAddressesProvider public immutable ADDRESSES_PROVIDER;
 
     receive() external payable {}
 
@@ -56,13 +56,20 @@ contract Account is Initializable {
     event ClaimedTokens(address token, address owner, uint256 amount);
 
     /**
+     * @dev Constructor.
+     * @param provider The address of the AddressesProvider contract
+     */
+    constructor(address provider) {
+        ADDRESSES_PROVIDER = IAddressesProvider(provider);
+    }
+
+    /**
      * @dev initialize.
      * @param _user Owner account address.
      * @param _provider The address of the AddressesProvider contract.
      */
     function initialize(address _user, IAddressesProvider _provider) public initializer {
-        require(address(_provider) != address(0), Errors.INVALID_ADDRESSES_PROVIDER);
-        ADDRESSES_PROVIDER = _provider;
+        require(ADDRESSES_PROVIDER == _provider, Errors.INVALID_ADDRESSES_PROVIDER);
         _owner = _user;
     }
 

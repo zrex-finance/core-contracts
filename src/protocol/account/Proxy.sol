@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { IImplementations } from "../../interfaces/IImplementations.sol";
+import { IAddressesProvider } from "../../interfaces/IAddressesProvider.sol";
 import { Errors } from "../libraries/helpers/Errors.sol";
 
 /**
@@ -17,12 +17,11 @@ import { Errors } from "../libraries/helpers/Errors.sol";
  * The success and return data of the delegated call will be returned back to the caller of the proxy.
  */
 contract Proxy {
-    bytes32 public immutable version;
-    IImplementations public immutable implementations;
+    // The contract by which all other contact addresses are obtained.
+    IAddressesProvider public immutable ADDRESSES_PROVIDER;
 
-    constructor(address _implementations, bytes32 _version) {
-        implementations = IImplementations(_implementations);
-        version = _version;
+    constructor(address _provider) {
+        ADDRESSES_PROVIDER = IAddressesProvider(_provider);
     }
 
     /**
@@ -61,7 +60,7 @@ contract Proxy {
      * This function does not return to its internal call site, it will return directly to the external caller.
      */
     function _fallback() internal {
-        address _implementation = implementations.getImplementationOrDefault(version);
+        address _implementation = ADDRESSES_PROVIDER.getAccountImpl();
         require(_implementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
         _delegate(_implementation);
     }

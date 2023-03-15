@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../dependencies/openzeppelin/contracts/IERC20.sol";
 
 import { IERC3156FlashLender } from "./interfaces/FlashAggregator.sol";
 import { IAaveProtocolDataProvider, FlashloanAggregatorInterface } from "./interfaces/FlashResolver.sol";
