@@ -20,7 +20,7 @@ contract TestImplementations is Test {
     }
 
     function test_setDefaultImplementation_with_0_address() public {
-        vm.expectRevert(abi.encodePacked("13"));
+        vm.expectRevert(abi.encodePacked("16"));
         implementations.setDefaultImplementation(address(0));
     }
 
@@ -39,19 +39,19 @@ contract TestImplementations is Test {
     }
 
     function test_addImplementation_with_0_address() public {
-        vm.expectRevert(abi.encodePacked("13"));
+        vm.expectRevert(abi.encodePacked("16"));
         implementations.addImplementation(address(0), version);
     }
 
     function test_addImplementation_same_address() public {
         implementations.addImplementation(defaultImpl, version);
-        vm.expectRevert(abi.encodePacked("15"));
+        vm.expectRevert(abi.encodePacked("18"));
         implementations.addImplementation(defaultImpl, version);
     }
 
     function test_addImplementation_same_version() public {
         implementations.addImplementation(defaultImpl, version);
-        vm.expectRevert(abi.encodePacked("16"));
+        vm.expectRevert(abi.encodePacked("19"));
         address addr = address(uint160(uint256(keccak256(abi.encodePacked(block.timestamp)))));
         implementations.addImplementation(addr, version);
     }
@@ -64,13 +64,13 @@ contract TestImplementations is Test {
     }
 
     function test_removeImplementation_with_0_address() public {
-        vm.expectRevert(abi.encodePacked("13"));
+        vm.expectRevert(abi.encodePacked("16"));
         implementations.removeImplementation(address(0));
     }
 
     function test_removeImplementation_not_found() public {
         address addr = address(uint160(uint256(keccak256(abi.encodePacked(block.timestamp)))));
-        vm.expectRevert(abi.encodePacked("14"));
+        vm.expectRevert(abi.encodePacked("17"));
         implementations.removeImplementation(addr);
     }
 

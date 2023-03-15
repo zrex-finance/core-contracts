@@ -53,6 +53,8 @@ contract Account is Initializable {
         _;
     }
 
+    event ClaimedTokens(address token, address owner, uint256 amount);
+
     /**
      * @dev initialize.
      * @param _user Owner account address.
@@ -137,17 +139,6 @@ contract Account is Initializable {
     }
 
     /**
-     * @dev Returns the position for the owner.
-     * @param _key The key to obtain the current position.
-     * @return The structure of the current position.
-     */
-    function getPosition(bytes32 _key) private returns (DataTypes.Position memory) {
-        DataTypes.Position memory position = getRouter().positions(_key);
-        require(position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
-        return position;
-    }
-
-    /**
      * @dev Is called via the caldata within a flashloan.
      * - Repay debt token to the lending protocol.
      * - Withdraw collateral token.
@@ -172,37 +163,6 @@ contract Account is Initializable {
 
         IERC20(position.debt).universalTransfer(ADDRESSES_PROVIDER.getFlashloanAggregator(), _repayAmount);
         IERC20(position.debt).universalTransfer(position.account, returnedAmt - _repayAmount);
-    }
-
-    /**
-     * @dev Takes a loan, and call `callbackFunction` inside the loan.
-     * @param _token Flashloan token.
-     * @param _amount Flashloan amount.
-     * @param _route The path chosen to take the loan See `FlashAggregator` contract.
-     * @param _data Calldata for the openPositionCallback.
-     */
-    function flashloan(address _token, uint256 _amount, uint16 _route, bytes calldata _data) private {
-        address[] memory _tokens = new address[](1);
-        _tokens[0] = _token;
-
-        uint256[] memory _amounts = new uint256[](1);
-        _amounts[0] = _amount;
-
-        IFlashAggregator(ADDRESSES_PROVIDER.getFlashloanAggregator()).flashLoan(
-            _tokens,
-            _amounts,
-            _route,
-            _data,
-            bytes("")
-        );
-    }
-
-    /**
-     * @dev Returns an instance of the router class.
-     * @return Returns current router contract.
-     */
-    function getRouter() private view returns (IRouter) {
-        return IRouter(ADDRESSES_PROVIDER.getRouter());
     }
 
     /**
@@ -232,12 +192,71 @@ contract Account is Initializable {
     }
 
     /**
+     * @dev Owner account claim tokens.
+     * @param _token The address of the token to withdraw.
+     * @param _amount The amount of the token to withdraw.
+     */
+    function claimTokens(address _token, uint256 _amount) external onlyOwner {
+        if (IERC20(_token).isETH()) {
+            _amount = _amount == type(uint256).max ? address(this).balance : _amount;
+        } else {
+            _amount = _amount == type(uint256).max ? IERC20(_token).balanceOf(address(this)) : _amount;
+        }
+
+        IERC20(_token).universalTransfer(_owner, _amount);
+
+        emit ClaimedTokens(_token, _owner, _amount);
+    }
+
+    /**
+     * @dev Returns an instance of the router class.
+     * @return Returns current router contract.
+     */
+    function getRouter() private view returns (IRouter) {
+        return IRouter(ADDRESSES_PROVIDER.getRouter());
+    }
+
+    /**
+     * @dev Returns the position for the owner.
+     * @param _key The key to obtain the current position.
+     * @return The structure of the current position.
+     */
+    function getPosition(bytes32 _key) private returns (DataTypes.Position memory) {
+        DataTypes.Position memory position = getRouter().positions(_key);
+        require(position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
+        return position;
+    }
+
+    /**
+     * @dev Takes a loan, and call `callbackFunction` inside the loan.
+     * @param _token Flashloan token.
+     * @param _amount Flashloan amount.
+     * @param _route The path chosen to take the loan See `FlashAggregator` contract.
+     * @param _data Calldata for the openPositionCallback.
+     */
+    function flashloan(address _token, uint256 _amount, uint16 _route, bytes calldata _data) private {
+        address[] memory _tokens = new address[](1);
+        _tokens[0] = _token;
+
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = _amount;
+
+        IFlashAggregator(ADDRESSES_PROVIDER.getFlashloanAggregator()).flashLoan(
+            _tokens,
+            _amounts,
+            _route,
+            _data,
+            bytes("")
+        );
+    }
+
+    /**
      * @dev Takes a loan, and call `callbackFunction` inside the loan.
      * @param _params parameters for the open and close position callback.
      * @param _amount Loan amount plus loan fee.
      * @return encode Merged parameters of the callback and the loan amount.
      */
-    function encodingParams(bytes memory _params, uint256 _amount) internal pure returns (bytes memory encode) {
+    function encodingParams(bytes memory _params, uint256 _amount) private pure returns (bytes memory encode) {
         (bytes4 selector, string[] memory _targetNames, bytes[] memory _datas, bytes[] memory _customDatas) = abi
             .decode(_params, (bytes4, string[], bytes[], bytes[]));
 
@@ -250,7 +269,7 @@ contract Account is Initializable {
      * @param _data Execute calldata.
      * @return value Returns the amount of tokens received.
      */
-    function _swap(string memory _name, bytes memory _data) internal returns (uint256 value) {
+    function _swap(string memory _name, bytes memory _data) private returns (uint256 value) {
         bytes memory response = execute(_name, _data);
         value = abi.decode(response, (uint256));
     }
@@ -261,7 +280,7 @@ contract Account is Initializable {
      * @param _token Position token.
      * @return success Returns result of the operation.
      */
-    function chargeFee(uint256 _amount, address _token) internal returns (bool success) {
+    function chargeFee(uint256 _amount, address _token) private returns (bool success) {
         uint256 feeAmount = getRouter().getFeeAmount(_amount);
         success = IERC20(_token).universalTransfer(ADDRESSES_PROVIDER.getTreasury(), feeAmount);
     }
@@ -272,7 +291,7 @@ contract Account is Initializable {
      * @param _data Execute calldata.
      * @return response Returns the result of calling the calldata.
      */
-    function execute(string memory _targetName, bytes memory _data) internal returns (bytes memory response) {
+    function execute(string memory _targetName, bytes memory _data) private returns (bytes memory response) {
         (bool isOk, address _target) = IConnectors(ADDRESSES_PROVIDER.getConnectors()).isConnector(_targetName);
         require(isOk, Errors.NOT_CONNECTOR);
 
@@ -285,7 +304,7 @@ contract Account is Initializable {
      * @param _data Execute calldata.
      * This function does not return to its internal call site, it will return directly to the external caller.
      */
-    function _delegatecall(address _target, bytes memory _data) internal returns (bytes memory response) {
+    function _delegatecall(address _target, bytes memory _data) private returns (bytes memory response) {
         require(_target != address(0), Errors.INVALID_CONNECTOR_ADDRESS);
         assembly {
             let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)

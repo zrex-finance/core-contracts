@@ -37,7 +37,7 @@ contract Implementations is Ownable {
     function addImplementation(address _implementation, bytes32 _version) external onlyOwner {
         require(_implementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
         require(implementationToVersion[_implementation] == 0, Errors.IMPLEMENTATION_ALREADY_EXIST);
-        require(versionToImplementation[_version] == address(0), Errors.SIGNATURE_ALREADY_ADDED);
+        require(versionToImplementation[_version] == address(0), Errors.VERSION_ALREADY_ADDED);
 
         versionToImplementation[_version] = _implementation;
         implementationToVersion[_implementation] = _version;

@@ -35,7 +35,7 @@ contract TestProxy is Test {
 
     function test_NotAbleFindImpl() public {
         address clone = Clones.cloneDeterministic(address(proxy), salt);
-        vm.expectRevert(abi.encodePacked("23"));
+        vm.expectRevert(abi.encodePacked("16"));
         Impl(clone).increaseCount();
     }
 

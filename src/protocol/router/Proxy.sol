@@ -62,7 +62,7 @@ contract Proxy {
      */
     function _fallback() internal {
         address _implementation = implementations.getImplementationOrDefault(version);
-        require(_implementation != address(0), Errors.NOT_FOUND_IMPLEMENTATION);
+        require(_implementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
         _delegate(_implementation);
     }
 

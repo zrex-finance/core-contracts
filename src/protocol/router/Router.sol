@@ -42,7 +42,86 @@ contract Router is RouterStorage {
         ADDRESSES_PROVIDER = IAddressesProvider(_provider);
     }
 
-    /**3
+    /**
+     * @dev Returns the future address of the account created through create2, necessary for the user interface.
+     * @param _owner User account address, convert to salt.
+     * @return predicted Returns of the user account address.
+     */
+    function predictDeterministicAddress(address _owner) public view returns (address predicted) {
+        return
+            Clones.predictDeterministicAddress(
+                ADDRESSES_PROVIDER.getAccountProxy(),
+                bytes32(abi.encodePacked(_owner)),
+                address(this)
+            );
+    }
+
+    /**
+     * @dev Checks if the user has an account otherwise creates and initializes it.
+     * @param _owner User address.
+     * @return Returns of the user account address.
+     */
+    function getOrCreateAccount(address _owner) public returns (address) {
+        require(_owner == msg.sender, Errors.CALLER_NOT_ACCOUNT_OWNER);
+        address _account = address(accounts[_owner]);
+
+        if (_account == address(0)) {
+            _account = Clones.cloneDeterministic(
+                ADDRESSES_PROVIDER.getAccountProxy(),
+                bytes32(abi.encodePacked(_owner))
+            );
+            accounts[_owner] = _account;
+            IAccount(_account).initialize(_owner, address(ADDRESSES_PROVIDER));
+        }
+
+        return _account;
+    }
+
+    /**
+     * @dev Exchanges tokens and sends them to the sender, an auxiliary function for the user interface.
+     * @param _params parameters required for the exchange.
+     */
+    function swap(DataTypes.SwapParams memory _params) public payable {
+        uint256 initialBalance = IERC20(_params.toToken).balanceOf(address(this));
+        uint256 value = _swap(_params);
+        uint256 finalBalance = IERC20(_params.toToken).balanceOf(address(this));
+        require(finalBalance - initialBalance == value, "value is not valid");
+
+        IERC20(_params.toToken).universalTransferFrom(address(this), msg.sender, value);
+    }
+
+    /**
+     * @dev Updates the current positions required for the callback.
+     * @param _position The structure of the current position.
+     */
+    function updatePosition(DataTypes.Position memory _position) public {
+        require(msg.sender == accounts[_position.account], Errors.CALLER_NOT_ACCOUNT_OWNER);
+
+        bytes32 key = getKey(_position.account, positionsIndex[_position.account]);
+        positions[key] = _position;
+    }
+
+    /**
+     * @dev Create position key.
+     * @param _account Position account owner.
+     * @param _index Position count account owner.
+     * @return Returns the position key
+     */
+    function getKey(address _account, uint256 _index) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_account, _index));
+    }
+
+    /**
+     * @dev Calculates and returns the current commission depending on the amount.
+     * @param _amount Amount.
+     * @return feeAmount Returns the protocol fee amount.
+     */
+    function getFeeAmount(uint256 _amount) public view returns (uint256 feeAmount) {
+        require(_amount > 0, Errors.INVALID_CHARGE_AMOUNT);
+        feeAmount = (_amount * fee) / PercentageMath.PERCENTAGE_FACTOR;
+    }
+
+    /**
      * @dev Exchanges the input token for the necessary token to create a position and opens it.
      * @param _position The structure of the current position.
      * @param _token Flashloan token.
@@ -77,7 +156,7 @@ contract Router is RouterStorage {
         uint256 _amount,
         uint16 _route,
         bytes calldata _data
-    ) public payable {
+    ) external payable {
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
         _openPosition(_position, _token, _amount, _route, _data);
     }
@@ -134,85 +213,6 @@ contract Router is RouterStorage {
     }
 
     /**
-     * @dev Updates the current positions required for the callback.
-     * @param _position The structure of the current position.
-     */
-    function updatePosition(DataTypes.Position memory _position) public {
-        require(msg.sender == accounts[_position.account], Errors.CALLER_NOT_ACCOUNT_OWNER);
-
-        bytes32 key = getKey(_position.account, positionsIndex[_position.account]);
-        positions[key] = _position;
-    }
-
-    /**
-     * @dev Create position key.
-     * @param _account Position account owner.
-     * @param _index Position count account owner.
-     * @return Returns the position key
-     */
-    function getKey(address _account, uint256 _index) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_account, _index));
-    }
-
-    /**
-     * @dev Calculates and returns the current commission depending on the amount.
-     * @param _amount Amount.
-     * @return feeAmount Returns the protocol fee amount.
-     */
-    function getFeeAmount(uint256 _amount) public view returns (uint256 feeAmount) {
-        require(_amount > 0, Errors.INVALID_AMOUNT);
-        feeAmount = (_amount * fee) / PercentageMath.PERCENTAGE_FACTOR;
-    }
-
-    /**
-     * @dev Checks if the user has an account otherwise creates and initializes it.
-     * @param _owner User address.
-     * @return Returns of the user account address.
-     */
-    function getOrCreateAccount(address _owner) public returns (address) {
-        require(_owner == msg.sender, Errors.CALLER_NOT_ACCOUNT_OWNER);
-        address _account = address(accounts[_owner]);
-
-        if (_account == address(0)) {
-            _account = Clones.cloneDeterministic(
-                ADDRESSES_PROVIDER.getAccountProxy(),
-                bytes32(abi.encodePacked(_owner))
-            );
-            accounts[_owner] = _account;
-            IAccount(_account).initialize(_owner, address(ADDRESSES_PROVIDER));
-        }
-
-        return _account;
-    }
-
-    /**
-     * @dev Returns the future address of the account created through create2, necessary for the user interface.
-     * @param _owner User account address, convert to salt.
-     * @return predicted Returns of the user account address.
-     */
-    function predictDeterministicAddress(address _owner) public view returns (address predicted) {
-        return
-            Clones.predictDeterministicAddress(
-                ADDRESSES_PROVIDER.getAccountProxy(),
-                bytes32(abi.encodePacked(_owner)),
-                address(this)
-            );
-    }
-
-    /**
-     * @dev Exchanges tokens and sends them to the sender, an auxiliary function for the user interface.
-     * @param _params parameters required for the exchange.
-     */
-    function swap(DataTypes.SwapParams memory _params) public payable {
-        uint256 initialBalance = IERC20(_params.toToken).balanceOf(address(this));
-        uint256 value = _swap(_params);
-        uint256 finalBalance = IERC20(_params.toToken).balanceOf(address(this));
-        require(finalBalance - initialBalance == value, "value is not valid");
-
-        IERC20(_params.toToken).universalTransferFrom(address(this), msg.sender, value);
-    }
-
-    /**
      * @dev Internal function for the exchange, sends tokens to the current contract.
      * @param _params parameters required for the exchange.
      * @return value  Returns the amount of tokens received.
@@ -229,7 +229,7 @@ contract Router is RouterStorage {
      * @param _data Execute calldata.
      * @return response Returns the result of calling the calldata.
      */
-    function execute(string memory _targetName, bytes memory _data) internal returns (bytes memory response) {
+    function execute(string memory _targetName, bytes memory _data) private returns (bytes memory response) {
         (bool isOk, address _target) = IConnectors(ADDRESSES_PROVIDER.getConnectors()).isConnector(_targetName);
         require(isOk, Errors.NOT_CONNECTOR);
         response = _delegatecall(_target, _data);
@@ -241,7 +241,7 @@ contract Router is RouterStorage {
      * @param _data Execute calldata.
      * This function does not return to its internal call site, it will return directly to the external caller.
      */
-    function _delegatecall(address _target, bytes memory _data) internal returns (bytes memory response) {
+    function _delegatecall(address _target, bytes memory _data) private returns (bytes memory response) {
         require(_target != address(0), Errors.INVALID_CONNECTOR_ADDRESS);
         assembly {
             let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
