@@ -30,7 +30,7 @@ contract InitializableAdminUpgradeabilityProxy is BaseAdminUpgradeabilityProxy, 
     /**
      * @dev Only fall back when the sender is not the admin.
      */
-    function _willFallback() internal override(BaseAdminUpgradeabilityProxy, Proxy) {
-        BaseAdminUpgradeabilityProxy._willFallback();
+    function _beforeFallback() internal override(BaseAdminUpgradeabilityProxy, Proxy) {
+        BaseAdminUpgradeabilityProxy._beforeFallback();
     }
 }
