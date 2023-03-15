@@ -135,6 +135,14 @@ contract AddressesProvider is Ownable {
     }
 
     /**
+     * @notice Returns the address of the Account implementation.
+     * @return The Account implementation address
+     */
+    function getAccountImpl() external view returns (address) {
+        return getAddress(ACCOUNT);
+    }
+
+    /**
      * @notice Returns the address of the Account proxy.
      * @return The Account proxy address
      */

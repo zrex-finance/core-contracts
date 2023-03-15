@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
 
 import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
 import { HelperContract } from "./deployer.sol";

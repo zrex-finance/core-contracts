@@ -2,8 +2,8 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
+import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
 
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
