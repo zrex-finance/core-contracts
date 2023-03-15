@@ -21,8 +21,6 @@ library Errors {
     string public constant INVALID_CONNECTORS_LENGTH = "13"; // The length of the connector array and their names are different
     string public constant CONNECTOR_ALREADY_EXIST = "14"; // A connector with this name already exists
     string public constant CONNECTOR_DOES_NOT_EXIST = "15"; // A connector with this name does not exist
-    string public constant INVALID_IMPLEMENTATION_ADDRESS = "16"; // The address of the implementation is invalid
-    string public constant IMPLEMENTATION_DOES_NOT_EXIST = "17"; // A implementation does not exist
-    string public constant IMPLEMENTATION_ALREADY_EXIST = "18"; // A implementation already exists
-    string public constant VERSION_ALREADY_ADDED = "19"; // A version already exists
+    string public constant CALLER_NOT_ROUTER_CONFIGURATOR = "16"; // The caller of the function is not a router configurator
+    string public constant INVALID_FEE_AMOUNT = "17"; // The fee amount is invalid
 }
