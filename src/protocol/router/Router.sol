@@ -46,7 +46,6 @@ contract Router is RouterStorage, Initializable {
      */
     constructor(address provider) {
         ADDRESSES_PROVIDER = IAddressesProvider(provider);
-        fee = 3; // 0.3%
     }
 
     /**
