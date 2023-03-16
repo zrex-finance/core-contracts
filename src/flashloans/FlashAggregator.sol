@@ -9,12 +9,26 @@ import { IAaveLending, IFlashReceiver, IBalancerLending, IERC3156FlashLender } f
 contract FlashAggregator {
     using UniversalERC20 for IERC20;
 
+    /**
+     * @dev Aave Lending Pool
+     */
     IAaveLending internal constant aaveLending = IAaveLending(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
+
+    /**
+     * @dev Maker Lending
+     */
     IERC3156FlashLender internal constant makerLending =
         IERC3156FlashLender(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
+
+    /**
+     * @dev Balancer Lending
+     */
     IBalancerLending internal constant balancerLending = IBalancerLending(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
 
+    // Has state 1 on the enter flashlaon and state 2 on the callback
     uint256 internal _status;
+
+    // The hash of the date that is sent to the flashloan as an additional calldata
     bytes32 internal _dataHash;
 
     uint16 internal constant ROUTE_AAVE = 1;
@@ -23,11 +37,20 @@ contract FlashAggregator {
 
     receive() external payable {}
 
+    /**
+     * @dev Constructor.
+     * @notice Sets the status to the default value
+     */
     constructor() {
         require(_status == 0, "cannot call again");
         _status = 1;
     }
 
+    /**
+     * @dev  better checking by double encoding the data.
+     * @notice better checking by double encoding the data.
+     * @param data_ data passed.
+     */
     modifier verifyDataHash(bytes memory data_) {
         bytes32 dataHash_ = keccak256(data_);
         require(dataHash_ == _dataHash && dataHash_ != bytes32(0), "invalid-data-hash");
@@ -37,6 +60,10 @@ contract FlashAggregator {
         _status = 1;
     }
 
+    /**
+     * @dev reentrancy gaurd.
+     * @notice reentrancy gaurd.
+     */
     modifier reentrancy() {
         require(_status == 1, "already-entered");
         _status = 2;
@@ -184,6 +211,14 @@ contract FlashAggregator {
         balancerLending.flashLoan(IFlashReceiver(address(this)), _tokens, _amounts, data_);
     }
 
+    /**
+     * @dev Main function for flashloan for all routes. Calls the middle functions according to routes.
+     * @notice Main function for flashloan for all routes. Calls the middle functions according to routes.
+     * @param _tokens token addresses for flashloan.
+     * @param _amounts list of amounts for the corresponding assets.
+     * @param _route route for flashloan.
+     * @param _data extra data passed.
+     */
     function flashLoan(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -208,6 +243,10 @@ contract FlashAggregator {
         emit LogFlashloan(msg.sender, _route, _tokens, _amounts);
     }
 
+    /**
+     * @dev Function to get the list of available routes.
+     * @notice Function to get the list of available routes.
+     */
     function getRoutes() public pure returns (uint16[] memory routes) {
         routes = new uint16[](3);
         routes[0] = 1;
@@ -215,6 +254,14 @@ contract FlashAggregator {
         routes[2] = 3;
     }
 
+    /**
+     * @dev Approves the tokens to the receiver address with allowance (amount + fee).
+     * @notice Approves the tokens to the receiver address with allowance (amount + fee).
+     * @param _tokens list of token addresses for the respective tokens.
+     * @param _amounts List of balances for the respective tokens.
+     * @param _fees list of premiums/fees for the corresponding addresses for flashloan.
+     * @param _receiver address to which tokens have to be approved.
+     */
     function safeApprove(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -230,6 +277,13 @@ contract FlashAggregator {
         }
     }
 
+    /**
+     * @dev Transfers the tokens to the receiver address.
+     * @notice Transfers the tokens to the receiver address.
+     * @param _tokens list of token addresses to calculate balance for.
+     * @param _amounts List of balances for the respective tokens.
+     * @param _receiver address to which tokens have to be transferred.
+     */
     function safeTransfer(address[] memory _tokens, uint256[] memory _amounts, address _receiver) internal {
         uint256 length_ = _tokens.length;
         require(length_ == _amounts.length, "Lengths of parameters not same");
@@ -239,6 +293,14 @@ contract FlashAggregator {
         }
     }
 
+    /**
+     * @dev Transfers the tokens to the receiver address (amount + fee).
+     * @notice Transfers the tokens to the receiver address (amount + fee).
+     * @param _tokens list of token addresses to calculate balance for.
+     * @param _amounts List of balances for the respective tokens.
+     * @param _fees list of fees for the respective tokens.
+     * @param _receiver address to which tokens have to be transferred.
+     */
     function safeTransferWithFee(
         address[] memory _tokens,
         uint256[] memory _amounts,
@@ -254,6 +316,12 @@ contract FlashAggregator {
         }
     }
 
+    /**
+     * @dev Calculates the balances.
+     * @notice Calculates the balances of the account passed for the tokens.
+     * @param _tokens list of token addresses to calculate balance for.
+     * @param _account account to calculate balance for.
+     */
     function calculateBalances(address[] memory _tokens, address _account) internal view returns (uint256[] memory) {
         uint256 _length = _tokens.length;
         uint256[] memory balances_ = new uint256[](_length);
@@ -264,6 +332,13 @@ contract FlashAggregator {
         return balances_;
     }
 
+    /**
+     * @dev Validates if the receiver sent the correct amounts of funds.
+     * @notice Validates if the receiver sent the correct amounts of funds.
+     * @param _initialBalances List of initial balances for the respective tokens.
+     * @param _finalBalances List of  final balances for the respective tokens.
+     * @param _fees List of fees for the respective tokens.
+     */
     function validateFlashloan(
         uint256[] memory _initialBalances,
         uint256[] memory _finalBalances,
@@ -274,12 +349,22 @@ contract FlashAggregator {
         }
     }
 
+    /**
+     * @dev Validates if token addresses are unique. Just need to check adjacent tokens as the array was sorted first
+     * @notice Validates if token addresses are unique.
+     * @param _tokens list of token addresses.
+     */
     function validateTokens(address[] memory _tokens) internal pure {
         for (uint256 i = 0; i < _tokens.length - 1; i++) {
             require(_tokens[i] != _tokens[i + 1], "non unique tokens");
         }
     }
 
+    /**
+     * @dev Returns fee for the passed route in BPS.
+     * @notice Returns fee for the passed route in BPS. 1 BPS == 0.01%.
+     * @param _route route number for flashloan.
+     */
     function calculateFeeBPS(uint256 _route) public view returns (uint256 BPS) {
         if (_route == ROUTE_AAVE) {
             BPS = aaveLending.FLASHLOAN_PREMIUM_TOTAL();
@@ -292,6 +377,12 @@ contract FlashAggregator {
         }
     }
 
+    /**
+     * @dev Calculate fees for the respective amounts and fee in BPS passed.
+     * @notice Calculate fees for the respective amounts and fee in BPS passed. 1 BPS == 0.01%.
+     * @param _amounts list of amounts.
+     * @param _BPS fee in BPS.
+     */
     function calculateFees(uint256[] memory _amounts, uint256 _BPS) internal pure returns (uint256[] memory) {
         uint256 length_ = _amounts.length;
 
