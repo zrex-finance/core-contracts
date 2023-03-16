@@ -167,7 +167,7 @@ contract AddressesProvider is Ownable {
         if (proxyAddress == address(0)) {
             proxy = new InitializableAdminUpgradeabilityProxy();
             _addresses[id] = proxyAddress = address(proxy);
-            proxy.initialize(newAddress, params);
+            proxy.initialize(newAddress, address(this), params);
             emit ProxyCreated(id, proxyAddress, newAddress);
         } else {
             proxy = InitializableAdminUpgradeabilityProxy(payable(proxyAddress));

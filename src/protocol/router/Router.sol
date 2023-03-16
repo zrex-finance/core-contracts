@@ -205,6 +205,7 @@ contract Router is RouterStorage, Initializable {
 
         uint256 index = positionsIndex[_position.account] += 1;
         positionsIndex[_position.account] = index;
+        _position.timestamp = uint40(block.timestamp);
 
         bytes32 key = getKey(_position.account, index);
         positions[key] = _position;

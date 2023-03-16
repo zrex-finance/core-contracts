@@ -10,6 +10,7 @@ library DataTypes {
         uint256 sizeDelta;
         uint256 collateralAmount;
         uint256 borrowAmount;
+        uint40 timestamp;
     }
 
     struct SwapParams {

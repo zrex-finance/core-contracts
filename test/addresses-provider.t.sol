@@ -7,14 +7,49 @@ import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.s
 
 import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
 
+interface IProxy {
+    function admin() external returns (address);
+}
+
+contract DummyContract {
+    uint256 public count = 1;
+
+    function initialize(address provider) external {}
+}
+
 contract TestAddressesProvider is Test {
     AddressesProvider addressesProvider;
 
-    address public testAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address testAddress;
+
+    // Main identifiers
+    function test_setAddress_RouterConfigurator() public {
+        addressesProvider.setRouterConfiguratorImpl(testAddress);
+        assertTrue(addressesProvider.getRouterConfigurator() != address(0));
+    }
+
+    // Main identifiers
+    function test_updateAddress_RouterConfigurator() public {
+        addressesProvider.setRouterConfiguratorImpl(testAddress);
+        assertTrue(addressesProvider.getRouterConfigurator() != address(0));
+
+        address newTestContract = address(new DummyContract());
+
+        addressesProvider.setRouterConfiguratorImpl(newTestContract);
+        assertTrue(
+            addressesProvider.getRouterConfigurator() != address(0) &&
+                addressesProvider.getRouterConfigurator() != testAddress
+        );
+    }
 
     function test_setAddress_Router() public {
-        addressesProvider.setAddress(bytes32("ROUTER"), testAddress);
-        assertEq(addressesProvider.getRouter(), testAddress);
+        addressesProvider.setRouterImpl(testAddress);
+        assertTrue(addressesProvider.getRouter() != address(0));
+    }
+
+    function test_setAddress_Account() public {
+        addressesProvider.setAddress(bytes32("ACCOUNT"), testAddress);
+        assertEq(addressesProvider.getAccountImpl(), testAddress);
     }
 
     function test_setAddress_Treasury() public {
@@ -41,5 +76,6 @@ contract TestAddressesProvider is Test {
 
     function setUp() public {
         addressesProvider = new AddressesProvider();
+        testAddress = address(new DummyContract());
     }
 }
