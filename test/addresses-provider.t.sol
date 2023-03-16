@@ -28,7 +28,6 @@ contract TestAddressesProvider is Test {
         assertTrue(addressesProvider.getRouterConfigurator() != address(0));
     }
 
-    // Main identifiers
     function test_updateAddress_RouterConfigurator() public {
         addressesProvider.setRouterConfiguratorImpl(testAddress);
         assertTrue(addressesProvider.getRouterConfigurator() != address(0));
