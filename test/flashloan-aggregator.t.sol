@@ -17,8 +17,21 @@ contract FakeAggregator {
         routes[3] = 4;
     }
 
-    function calculateFeeBPS(uint256 _route) public pure returns (uint256 BPS) {
-        return _route;
+    function calculateFeeBPS(uint256) public pure returns (uint256 BPS) {
+        BPS = 1;
+    }
+}
+
+contract FakeAggregator2 {
+    function getRoutes() public pure returns (uint16[] memory routes) {
+        routes = new uint16[](3);
+        routes[0] = 1;
+        routes[1] = 2;
+        routes[2] = 3;
+    }
+
+    function calculateFeeBPS(uint256) public pure returns (uint256 BPS) {
+        BPS = 9;
     }
 }
 
@@ -39,6 +52,27 @@ contract TestFlashAggregator is Test {
         _amounts[0] = amount;
 
         (uint16[] memory routes, uint256[] memory fees, uint16[] memory bestRoutes, uint256 bestFee) = flashResolver
+            .getData(_tokens, _amounts);
+
+        flashAggregator.flashLoan(
+            _tokens,
+            _amounts,
+            bestRoutes[0],
+            bytes(""),
+            abi.encodePacked(bestFee, bestRoutes, fees, routes)
+        );
+    }
+
+    function test_flashloan_getDataFake() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+
+        FakeAggregator2 fakeAggregator2 = new FakeAggregator2();
+        FlashResolver flashResolver2 = new FlashResolver(address(fakeAggregator2));
+
+        (uint16[] memory routes, uint256[] memory fees, uint16[] memory bestRoutes, uint256 bestFee) = flashResolver2
             .getData(_tokens, _amounts);
 
         flashAggregator.flashLoan(

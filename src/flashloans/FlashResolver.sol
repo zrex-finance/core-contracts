@@ -6,7 +6,9 @@ import { IERC20 } from "../dependencies/openzeppelin/contracts/IERC20.sol";
 import { IERC3156FlashLender } from "./interfaces/FlashAggregator.sol";
 import { IAaveProtocolDataProvider, FlashloanAggregatorInterface } from "./interfaces/FlashResolver.sol";
 
-contract FlashResolver {
+import "forge-std/Test.sol";
+
+contract FlashResolver is Test {
     IERC3156FlashLender internal constant makerLending =
         IERC3156FlashLender(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
 
