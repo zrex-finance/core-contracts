@@ -60,10 +60,11 @@ export async function inchCalldata({
     toToken = toToken === ETH_CONTRACT ? ETH_CONTRACT_E : toToken;
 
     const call = `https://api.1inch.exchange/v5.0/1/swap?fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}&disableEstimate=true`;
+    console.log("call", call)
 
-    const { data: resp } = await axios.get<{ tx: { data: string; value: string } }>(call);
+    const { data: resp } = await axios.get<{ tx: { data: string; value: string }, toTokenAmount: number }>(call);
 
-    return resp.tx.data;
+    return [resp.tx.data, resp.toTokenAmount];
 }
 
 const provider = new ethers.providers.JsonRpcProvider(

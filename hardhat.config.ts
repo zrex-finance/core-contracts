@@ -6,6 +6,7 @@ import "hardhat-deploy";
 import "hardhat-tracer";
 import "hardhat-gas-reporter";
 import "hardhat-preprocessor";
+import "solidity-coverage";
 import { HardhatUserConfig, task } from "hardhat/config";
 import { config as dotEnvConfig } from "dotenv";
 
@@ -57,7 +58,7 @@ const config: HardhatUserConfig = {
             chainId: 1,
             forking: {
                 url: `https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q`,
-                blockNumber: 16241092,
+                blockNumber: 16848919,
             },
             initialBaseFeePerGas: 5,
         },

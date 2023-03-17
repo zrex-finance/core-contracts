@@ -3,10 +3,9 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from "../dependencies/openzeppelin/contracts/IERC20.sol";
 
-import { EthConverter } from "../utils/EthConverter.sol";
 import { UniversalERC20 } from "../libraries/tokens/UniversalERC20.sol";
 
-contract InchV5Connector is EthConverter {
+contract InchV5Connector {
     using UniversalERC20 for IERC20;
 
     string public constant name = "1Inch-v5";
@@ -32,7 +31,6 @@ contract InchV5Connector is EthConverter {
         bytes calldata _callData
     ) external payable returns (uint256 buyAmount) {
         buyAmount = _swap(_toToken, _fromToken, _amount, _callData);
-        convertEthToWeth(_toToken, buyAmount);
         emit LogExchange(msg.sender, _toToken, _fromToken, _amount);
     }
 
