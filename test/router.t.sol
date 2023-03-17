@@ -39,6 +39,27 @@ contract TestRouterSwap is Test, UniswapHelper {
         assertTrue(ERC20(wethC).balanceOf(address(this)) > 0);
     }
 
+    function test_swapDaiToWeth_Revert() public {
+        uint256 amount = 1000 ether;
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), amount);
+
+        ERC20(daiC).approve(address(router), amount);
+
+        bytes memory _data = getMulticalSwapData(daiC, wethC, address(this), amount);
+        bytes memory swapData = abi.encodeWithSelector(
+            UniswapConnector.swap.selector,
+            wethC,
+            daiC,
+            amount,
+            abi.encode(uint(123), _data)
+        );
+
+        vm.expectRevert(bytes(""));
+        router.swap(DataTypes.SwapParams(daiC, wethC, amount, "UniswapAuto", swapData));
+    }
+
     receive() external payable {}
 
     function setUp() public {

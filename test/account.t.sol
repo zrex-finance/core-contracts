@@ -71,6 +71,27 @@ contract TestAccount is Test {
         assertEq(amount, balanceAfter - balanceBefore);
     }
 
+    function test_executeOperation_Revert() public {
+        address[] memory _tokens = new address[](1);
+        _tokens[0] = address(0);
+
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = uint256(0);
+
+        uint256[] memory _premiums = new uint256[](1);
+        _premiums[0] = uint256(0);
+
+        vm.expectRevert(bytes(""));
+        vm.prank(daiC);
+        account.executeOperation(
+            _tokens,
+            _amounts,
+            _premiums,
+            address(account),
+            abi.encodeWithSelector(account.claimTokens.selector, uint256(1), address(this))
+        );
+    }
+
     receive() external payable {}
 
     function setUp() public {
@@ -79,6 +100,9 @@ contract TestAccount is Test {
         vm.selectFork(forkId);
 
         address addressesProvider = address(new AddressesProvider());
+
+        AddressesProvider(addressesProvider).setAddress(bytes32("FLASHLOAN_AGGREGATOR"), daiC);
+
         account = new Account(addressesProvider);
         account.initialize(msg.sender, IAddressesProvider(addressesProvider));
     }
