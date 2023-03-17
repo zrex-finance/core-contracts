@@ -56,12 +56,25 @@ contract UniswapConnector is EthConverter {
         (bool success, bytes memory results) = uniAutoRouter.call(_callData);
 
         if (!success) {
-            revert(string(results));
+            revert(_getRevertMsg(results));
         }
 
         uint256 finalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
         buyAmount = finalBalalance - initalBalalance;
+    }
+
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) {
+            return "Transaction reverted silently";
+        }
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
     event LogExchange(address indexed account, address buyAddr, address sellAddr, uint256 sellAmt);
