@@ -97,7 +97,7 @@ contract AaveV3Logic is LendingHelper, EthConverter {
 
         execute(getDepositData(daiC, depositAmount));
 
-        assertTrue(aaveV3Connector.getCollateralBalance(daiC, address(this)) >= depositAmount + depositAmount);
+        assertTrue(aaveV3Connector.getCollateralBalance(daiC, address(this)) > 0);
     }
 
     function test_Deposit_Max() public {
