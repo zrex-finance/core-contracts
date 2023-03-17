@@ -9,7 +9,7 @@ import { UniversalERC20 } from "../libraries/tokens/UniversalERC20.sol";
 contract UniswapConnector is EthConverter {
     using UniversalERC20 for IERC20;
 
-    string public name = "UniswapAuto";
+    string public constant name = "UniswapAuto";
 
     /**
      * @dev UniswapV3 Auto Swap Router Address
