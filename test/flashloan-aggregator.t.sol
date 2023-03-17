@@ -72,6 +72,16 @@ contract TestFlashAggregator is Test {
         flashAggregator.flashLoan(_tokens, _amounts, 1, bytes(""), bytes(""));
     }
 
+    function test_flashloan_MakerTryCatch() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+
+        // maker disable flashloan
+        try flashAggregator.flashLoan(_tokens, _amounts, 2, bytes(""), bytes("")) {} catch {}
+    }
+
     function test_flashloan_balancer() public {
         address[] memory _tokens = new address[](1);
         uint256[] memory _amounts = new uint256[](1);
@@ -79,6 +89,33 @@ contract TestFlashAggregator is Test {
         _amounts[0] = 1 ether;
 
         flashAggregator.flashLoan(_tokens, _amounts, 3, bytes(""), bytes(""));
+    }
+
+    function test_flashloan_aaveIsActiveFalse() public view {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = 0x77777FeDdddFfC19Ff86DB637967013e6C6A116C;
+        _amounts[0] = type(uint256).max;
+
+        flashResolver.getData(_tokens, _amounts);
+    }
+
+    function test_flashloan_balancerMax() public view {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _amounts[0] = type(uint256).max;
+
+        flashResolver.getData(_tokens, _amounts);
+    }
+
+    function test_flashloan_AaveMax() public view {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = type(uint256).max;
+
+        flashResolver.getData(_tokens, _amounts);
     }
 
     function test_flashloan_balancerInvalidToken() public {
