@@ -205,9 +205,9 @@ contract Account is Initializable {
      */
     function claimTokens(address _token, uint256 _amount) external onlyOwner {
         if (IERC20(_token).isETH()) {
-            _amount = _amount == type(uint256).max ? address(this).balance : _amount;
+            _amount = _amount == 0 ? address(this).balance : _amount;
         } else {
-            _amount = _amount == type(uint256).max ? IERC20(_token).balanceOf(address(this)) : _amount;
+            _amount = _amount == 0 ? IERC20(_token).balanceOf(address(this)) : _amount;
         }
 
         IERC20(_token).universalTransfer(_owner, _amount);
