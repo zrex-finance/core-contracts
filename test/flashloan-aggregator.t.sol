@@ -18,17 +18,49 @@ contract TestFlashAggregator is Test {
     uint256 public amount = 1000 ether;
     address public token = daiC;
 
-    function test_flashloan() public {
+    function test_flashloan_aave() public {
         address[] memory _tokens = new address[](1);
         uint256[] memory _amounts = new uint256[](1);
         _tokens[0] = token;
         _amounts[0] = amount;
 
-        (, , uint16[] memory bestRoutes_, ) = flashResolver.getData(_tokens, _amounts);
+        flashAggregator.flashLoan(_tokens, _amounts, 1, bytes(""), bytes(""));
+    }
 
-        for (uint i = 0; i < bestRoutes_.length; i++) {
-            flashAggregator.flashLoan(_tokens, _amounts, bestRoutes_[i], bytes(""), bytes(""));
-        }
+    function test_flashloan_balancer() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _amounts[0] = 1 ether;
+
+        flashAggregator.flashLoan(_tokens, _amounts, 3, bytes(""), bytes(""));
+    }
+
+    function test_flashloan_NonUniqueTokens() public {
+        address[] memory _tokens = new address[](2);
+        uint256[] memory _amounts = new uint256[](2);
+        _tokens[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _tokens[1] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _amounts[0] = 1 ether;
+        _amounts[1] = 1 ether;
+
+        vm.expectRevert(abi.encodePacked("non unique tokens"));
+        flashAggregator.flashLoan(_tokens, _amounts, 3, bytes(""), bytes(""));
+    }
+
+    function test_flashloan_RouteDoesNotExist() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _amounts[0] = 1 ether;
+
+        vm.expectRevert(abi.encodePacked("route-does-not-exist"));
+        flashAggregator.flashLoan(_tokens, _amounts, 4, bytes(""), bytes(""));
+    }
+
+    function test_CalculateFeeBPS_InvalidRoute() public {
+        vm.expectRevert(abi.encodePacked("invalid route"));
+        flashAggregator.calculateFeeBPS(4);
     }
 
     function test_executeOperation() public {
@@ -201,10 +233,8 @@ contract TestFlashAggregator is Test {
         bytes calldata /* params */
     ) external returns (bool) {
         assertEq(initiator, address(this));
-        assertEq(tokens[0], token);
-        assertEq(amounts[0], amount);
 
-        assertEq(amount, IERC20(tokens[0]).balanceOf(address(this)));
+        assertEq(amounts[0], IERC20(tokens[0]).balanceOf(address(this)));
 
         if (premiums[0] > 0) {
             vm.prank(daiWhale);
