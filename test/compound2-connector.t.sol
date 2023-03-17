@@ -11,7 +11,7 @@ import { HelperContract } from "./deployer.sol";
 import { EthConverter } from "../src/utils/EthConverter.sol";
 
 import { CompoundV2Connector } from "../src/connectors/CompoundV2.sol";
-import { ICToken } from "../src/connectors/interfaces/CompoundV2.sol";
+import { ICToken, IComptroller } from "../src/connectors/interfaces/CompoundV2.sol";
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
 
 contract Tokens {
@@ -28,6 +28,8 @@ interface AaveOracle {
 
 contract LendingHelper is HelperContract, Tokens {
     CompoundV2Connector compoundV2Connector;
+
+    IComptroller internal constant troller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     function setUp() public {
         string memory url = vm.rpcUrl("mainnet");
@@ -73,6 +75,21 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
 
         vm.prank(daiWhale);
         ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        assertGt(getCollateralAmt(daiC, address(this)), 0);
+    }
+
+    function test_Deposit_Entered() public {
+        uint256 depositAmount = 1000 ether;
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        address[] memory toEnter = new address[](1);
+        toEnter[0] = address(compoundV2Connector._getCToken(daiC));
+        troller.enterMarkets(toEnter);
 
         execute(getDepositData(daiC, depositAmount));
 
@@ -174,6 +191,23 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
 
         execute(getPaybackData(borrowAmount, usdcC));
         execute(getWithdrawData(depositAmount, daiC));
+
+        assertEq(0, getCollateralAmt(daiC, address(this)));
+    }
+
+    function test_Withdraw_Max() public {
+        uint256 depositAmount = 1000 ether;
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        uint256 borrowAmount = 100000000;
+        execute(getBorrowData(usdcC, borrowAmount));
+
+        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getWithdrawData(type(uint256).max, daiC));
 
         assertEq(0, getCollateralAmt(daiC, address(this)));
     }

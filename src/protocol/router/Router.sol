@@ -104,7 +104,7 @@ contract Router is RouterStorage, Initializable {
         uint256 finalBalance = IERC20(_params.toToken).balanceOf(address(this));
         require(finalBalance - initialBalance == value, "value is not valid");
 
-        IERC20(_params.toToken).universalTransferFrom(address(this), msg.sender, value);
+        IERC20(_params.toToken).universalTransfer(msg.sender, value);
     }
 
     /**

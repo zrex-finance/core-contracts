@@ -82,6 +82,24 @@ contract AaveV3Logic is LendingHelper, EthConverter {
         assertEq(depositAmount, aaveV3Connector.getCollateralBalance(daiC, address(this)));
     }
 
+    function test_Deposit_ReserveAsCollateral() public {
+        uint256 depositAmount = 1000 ether;
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        IAave aave = IAave(aaveProvider.getPool());
+        aave.setUserUseReserveAsCollateral(daiC, false);
+
+        vm.prank(daiWhale);
+        ERC20(daiC).transfer(address(this), depositAmount);
+
+        execute(getDepositData(daiC, depositAmount));
+
+        assertEq(aaveV3Connector.getCollateralBalance(daiC, address(this)), depositAmount + depositAmount);
+    }
+
     function test_Deposit_Max() public {
         uint256 depositAmount = 1000 ether;
 

@@ -84,6 +84,18 @@ contract AaveV2 is LendingHelper, EthConverter {
         assertEq(depositAmount, getCollateralAmt(daiC, address(this)));
     }
 
+    function test_Deposit_ReserveAsCollateral() public {
+        uint256 depositAmount = 1000 ether;
+        depositDai(depositAmount);
+
+        IAave aave = IAave(aaveProvider.getLendingPool());
+        aave.setUserUseReserveAsCollateral(daiC, false);
+
+        depositDai(depositAmount);
+
+        assertGt(getCollateralAmt(daiC, address(this)), depositAmount + depositAmount);
+    }
+
     function test_DepositMax() public {
         uint256 depositAmount = 1000 ether;
         vm.prank(daiWhale);
