@@ -76,10 +76,16 @@ contract TestAccount is Test {
         _tokens[0] = address(0);
 
         uint256[] memory _amounts = new uint256[](1);
-        _amounts[0] = uint256(0);
+        _amounts[0] = uint256(1 ether);
 
         uint256[] memory _premiums = new uint256[](1);
-        _premiums[0] = uint256(0);
+        _premiums[0] = uint256(1 ether);
+
+        bytes[] memory _bytes = new bytes[](1);
+        _bytes[0] = bytes("");
+
+        string[] memory _strings = new string[](1);
+        _strings[0] = string("");
 
         vm.expectRevert(bytes(""));
         vm.prank(daiC);
@@ -88,7 +94,7 @@ contract TestAccount is Test {
             _amounts,
             _premiums,
             address(account),
-            abi.encodeWithSelector(account.claimTokens.selector, uint256(1), address(this))
+            abi.encode(bytes4(""), _strings, _bytes, _bytes)
         );
     }
 
