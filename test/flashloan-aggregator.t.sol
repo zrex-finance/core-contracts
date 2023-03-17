@@ -8,6 +8,20 @@ import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.s
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
 
+contract FakeAggregator {
+    function getRoutes() public pure returns (uint16[] memory routes) {
+        routes = new uint16[](4);
+        routes[0] = 1;
+        routes[1] = 2;
+        routes[2] = 3;
+        routes[3] = 4;
+    }
+
+    function calculateFeeBPS(uint256 _route) public pure returns (uint256 BPS) {
+        return _route;
+    }
+}
+
 contract TestFlashAggregator is Test {
     FlashAggregator flashAggregator;
     FlashResolver flashResolver;
@@ -17,6 +31,37 @@ contract TestFlashAggregator is Test {
 
     uint256 public amount = 1000 ether;
     address public token = daiC;
+
+    function test_flashloan_getData() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+
+        (uint16[] memory routes, uint256[] memory fees, uint16[] memory bestRoutes, uint256 bestFee) = flashResolver
+            .getData(_tokens, _amounts);
+
+        flashAggregator.flashLoan(
+            _tokens,
+            _amounts,
+            bestRoutes[0],
+            bytes(""),
+            abi.encodePacked(bestFee, bestRoutes, fees, routes)
+        );
+    }
+
+    function test_flashloan_getDataInvalid() public {
+        address[] memory _tokens = new address[](1);
+        uint256[] memory _amounts = new uint256[](1);
+        _tokens[0] = token;
+        _amounts[0] = amount;
+
+        FakeAggregator fakeAggregator = new FakeAggregator();
+        FlashResolver flashResolver2 = new FlashResolver(address(fakeAggregator));
+
+        vm.expectRevert(abi.encodePacked("invalid-route"));
+        flashResolver2.getData(_tokens, _amounts);
+    }
 
     function test_flashloan_aave() public {
         address[] memory _tokens = new address[](1);
@@ -34,6 +79,18 @@ contract TestFlashAggregator is Test {
         _amounts[0] = 1 ether;
 
         flashAggregator.flashLoan(_tokens, _amounts, 3, bytes(""), bytes(""));
+    }
+
+    function test_flashloan_balancerInvalidToken() public {
+        address[] memory _tokens = new address[](2);
+        uint256[] memory _amounts = new uint256[](2);
+        _tokens[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _tokens[1] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        _amounts[0] = type(uint256).max;
+        _amounts[1] = type(uint256).max;
+
+        vm.expectRevert(abi.encodePacked("non-unique-tokens"));
+        flashResolver.getData(_tokens, _amounts);
     }
 
     function test_flashloan_NonUniqueTokens() public {
