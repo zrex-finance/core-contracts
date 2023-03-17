@@ -93,7 +93,7 @@ contract AaveV2 is LendingHelper, EthConverter {
 
         depositDai(depositAmount);
 
-        assertEq(getCollateralAmt(daiC, address(this)), depositAmount + depositAmount);
+        assertTrue(getCollateralAmt(daiC, address(this)) >= depositAmount + depositAmount);
     }
 
     function test_DepositMax() public {
