@@ -27,7 +27,5 @@ library Errors {
     string public constant ACL_ADMIN_CANNOT_BE_ZERO = "19"; // 'ACL admin cannot be set to the zero address'
     string public constant CALLER_NOT_ROUTER_ADMIN = "20"; // 'The caller of the function is not a router admin'
     string public constant CALLER_NOT_EMERGENCY_ADMIN = "21"; // 'The caller of the function is not an emergency admin'
-    string public constant CALLER_NOT_ROUTER_OR_EMERGENCY_ADMIN = "22"; // 'The caller of the function is not a router or emergency admin'
-    string public constant CALLER_NOT_CONNECTOR_ADMIN = "23"; // 'The caller of the function is not an connector admin'
-    string public constant CALLER_NOT_CONNECTOR_OR_EMERGENCY_ADMIN = "24"; // 'The caller of the function is not a connector or emergency admin'
+    string public constant CALLER_NOT_CONNECTOR_ADMIN = "22"; // 'The caller of the function is not an connector admin'
 }

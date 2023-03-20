@@ -10,6 +10,8 @@ import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
 import { Router } from "../src/protocol/router/Router.sol";
 import { Configurator } from "../src/protocol/configuration/Configurator.sol";
 
+import { Errors } from "../src/protocol/libraries/helpers/Errors.sol";
+
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
 import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
 import { Configurator } from "../src/protocol/configuration/Configurator.sol";
@@ -34,18 +36,26 @@ contract TestConfigurator is Test {
         _setFee();
     }
 
-    function test_setFee_EmergencyAdmin() public {
-        aclManager.addEmergencyAdmin(address(this));
-        _setFee();
+    function test_setFee_NotRouterAdmin() public {
+        vm.expectRevert(abi.encodePacked(Errors.CALLER_NOT_ROUTER_ADMIN));
+        configurator.setFee(5);
+    }
+
+    function test_setFee_NotConnectorAdmin() public {
+        ConnectorImpl connector = new ConnectorImpl();
+
+        string[] memory _names = new string[](1);
+        _names[0] = connector.name();
+
+        address[] memory _connectors = new address[](1);
+        _connectors[0] = address(connector);
+
+        vm.expectRevert(abi.encodePacked(Errors.CALLER_NOT_CONNECTOR_ADMIN));
+        configurator.addConnectors(_names, _connectors);
     }
 
     function test_addConnectors() public {
         aclManager.addConnectorAdmin(address(this));
-        _addConnectors();
-    }
-
-    function test_addConnectors_EmergencyAdmin() public {
-        aclManager.addEmergencyAdmin(address(this));
         _addConnectors();
     }
 

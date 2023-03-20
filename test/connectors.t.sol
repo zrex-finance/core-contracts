@@ -192,7 +192,6 @@ contract TestConnectors is Test {
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
         connectors = new Connectors(address(addressesProvider));
 
-        aclManager.addEmergencyAdmin(address(this));
         aclManager.addConnectorAdmin(address(this));
 
         addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));

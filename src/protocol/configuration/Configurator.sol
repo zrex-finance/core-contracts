@@ -43,30 +43,6 @@ contract Configurator is Initializable {
         _;
     }
 
-    /**
-     * @dev Only emergency admin can call functions marked by this modifier.
-     */
-    modifier onlyEmergencyAdmin() {
-        _onlyEmergencyAdmin();
-        _;
-    }
-
-    /**
-     * @dev Only emergency or router admin can call functions marked by this modifier.
-     */
-    modifier onlyRouterOrEmergencyAdmin() {
-        _onlyRouterOrEmergencyAdmin();
-        _;
-    }
-
-    /**
-     * @dev Only emergency or connector admin can call functions marked by this modifier.
-     */
-    modifier onlyConnectorOrEmergencyAdmin() {
-        _onlyConnectorOrEmergencyAdmin();
-        _;
-    }
-
     function initialize(IAddressesProvider provider) public initializer {
         _addressesProvider = provider;
         _router = IRouter(_addressesProvider.getRouter());
@@ -77,7 +53,7 @@ contract Configurator is Initializable {
      * @notice Set a new fee to the router contract.
      * @param _fee The new amount
      */
-    function setFee(uint256 _fee) external onlyRouterOrEmergencyAdmin {
+    function setFee(uint256 _fee) external onlyRouterAdmin {
         uint256 currentFee = _router.fee();
         _router.setFee(_fee);
         emit ChangeRouterFee(currentFee, _fee);
@@ -88,10 +64,7 @@ contract Configurator is Initializable {
      * @param _names Array of Connector Names.
      * @param _addresses Array of Connector Address.
      */
-    function addConnectors(
-        string[] calldata _names,
-        address[] calldata _addresses
-    ) external onlyConnectorOrEmergencyAdmin {
+    function addConnectors(string[] calldata _names, address[] calldata _addresses) external onlyConnectorAdmin {
         _connectors.addConnectors(_names, _addresses);
     }
 
@@ -100,10 +73,7 @@ contract Configurator is Initializable {
      * @param _names Array of Connector Names.
      * @param _addresses Array of Connector Address.
      */
-    function updateConnectors(
-        string[] calldata _names,
-        address[] calldata _addresses
-    ) external onlyConnectorOrEmergencyAdmin {
+    function updateConnectors(string[] calldata _names, address[] calldata _addresses) external onlyConnectorAdmin {
         _connectors.updateConnectors(_names, _addresses);
     }
 
@@ -111,13 +81,8 @@ contract Configurator is Initializable {
      * @dev Remove Connectors on the connectors contract
      * @param _names Array of Connector Names.
      */
-    function removeConnectors(string[] calldata _names) external onlyConnectorOrEmergencyAdmin {
+    function removeConnectors(string[] calldata _names) external onlyConnectorAdmin {
         _connectors.removeConnectors(_names);
-    }
-
-    function _onlyEmergencyAdmin() internal view {
-        IACLManager aclManager = IACLManager(_addressesProvider.getACLManager());
-        require(aclManager.isEmergencyAdmin(msg.sender), Errors.CALLER_NOT_EMERGENCY_ADMIN);
     }
 
     function _onlyRouterAdmin() internal view {
@@ -128,21 +93,5 @@ contract Configurator is Initializable {
     function _onlyConnectorAdmin() internal view {
         IACLManager aclManager = IACLManager(_addressesProvider.getACLManager());
         require(aclManager.isConnectorAdmin(msg.sender), Errors.CALLER_NOT_CONNECTOR_ADMIN);
-    }
-
-    function _onlyRouterOrEmergencyAdmin() internal view {
-        IACLManager aclManager = IACLManager(_addressesProvider.getACLManager());
-        require(
-            aclManager.isRouterAdmin(msg.sender) || aclManager.isEmergencyAdmin(msg.sender),
-            Errors.CALLER_NOT_ROUTER_OR_EMERGENCY_ADMIN
-        );
-    }
-
-    function _onlyConnectorOrEmergencyAdmin() internal view {
-        IACLManager aclManager = IACLManager(_addressesProvider.getACLManager());
-        require(
-            aclManager.isConnectorAdmin(msg.sender) || aclManager.isEmergencyAdmin(msg.sender),
-            Errors.CALLER_NOT_CONNECTOR_OR_EMERGENCY_ADMIN
-        );
     }
 }

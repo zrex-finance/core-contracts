@@ -69,10 +69,10 @@ contract Deployer is Test {
         connectors = new Connectors(address(addressesProvider));
 
         vm.prank(msg.sender);
-        aclManager.addEmergencyAdmin(msg.sender);
+        aclManager.addConnectorAdmin(msg.sender);
 
         vm.prank(msg.sender);
-        aclManager.addConnectorAdmin(msg.sender);
+        aclManager.addRouterAdmin(msg.sender);
 
         addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
         addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));

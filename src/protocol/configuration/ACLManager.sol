@@ -13,7 +13,6 @@ import { Errors } from "../libraries/helpers/Errors.sol";
 contract ACLManager is AccessControl {
     bytes32 public constant ROUTER_ADMIN_ROLE = keccak256("ROUTER_ADMIN_ROLE");
     bytes32 public constant CONNECTOR_ADMIN_ROLE = keccak256("CONNECTOR_ADMIN_ROLE");
-    bytes32 public constant EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN");
 
     IAddressesProvider public immutable ADDRESSES_PROVIDER;
 
@@ -31,18 +30,6 @@ contract ACLManager is AccessControl {
 
     function setRoleAdmin(bytes32 role, bytes32 adminRole) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setRoleAdmin(role, adminRole);
-    }
-
-    function addEmergencyAdmin(address admin) external {
-        grantRole(EMERGENCY_ADMIN_ROLE, admin);
-    }
-
-    function removeEmergencyAdmin(address admin) external {
-        revokeRole(EMERGENCY_ADMIN_ROLE, admin);
-    }
-
-    function isEmergencyAdmin(address admin) external view returns (bool) {
-        return hasRole(EMERGENCY_ADMIN_ROLE, admin);
     }
 
     function addConnectorAdmin(address admin) external {

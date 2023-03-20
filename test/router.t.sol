@@ -78,8 +78,8 @@ contract TestRouterSwap is Test, UniswapHelper {
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
         connectors = new Connectors(address(addressesProvider));
 
-        aclManager.addEmergencyAdmin(address(this));
         aclManager.addConnectorAdmin(address(this));
+        aclManager.addRouterAdmin(address(this));
 
         addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
         addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
