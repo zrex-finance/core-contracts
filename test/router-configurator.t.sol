@@ -59,6 +59,11 @@ contract TestConfigurator is Test {
         _addConnectors();
     }
 
+    function test_init() public {
+        Configurator configurator2 = new Configurator();
+        configurator2.initialize(IAddressesProvider(address(addressesProvider)));
+    }
+
     function _setFee() public {
         assertEq(router.fee(), 0);
 
