@@ -11,11 +11,12 @@ import { Proxy } from "../src/protocol/account/Proxy.sol";
 import { Account } from "../src/protocol/account/Account.sol";
 
 import { Router } from "../src/protocol/router/Router.sol";
-import { RouterConfigurator } from "../src/protocol/router/RouterConfigurator.sol";
+import { Configurator } from "../src/protocol/configuration/Configurator.sol";
 
 import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
 import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
 
+import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
 import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
 
@@ -46,6 +47,7 @@ contract Deployer is Test {
     CompoundV3Connector compoundV3Connector;
     CompoundV2Connector compoundV2Connector;
 
+    Configurator configurator;
     Account accountImpl;
 
     struct SwapParams {
@@ -60,48 +62,59 @@ contract Deployer is Test {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        setUpConnectors();
-
         AddressesProvider addressesProvider = new AddressesProvider();
+        addressesProvider.setAddress(bytes32("ACL_ADMIN"), msg.sender);
+
+        ACLManager aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
+        connectors = new Connectors(address(addressesProvider));
+
+        vm.prank(msg.sender);
+        aclManager.addEmergencyAdmin(msg.sender);
+
+        vm.prank(msg.sender);
+        aclManager.addConnectorAdmin(msg.sender);
+
+        addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
+        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
+
+        configurator = new Configurator();
+
+        router = new Router(address(addressesProvider));
+        addressesProvider.setRouterImpl(address(router));
+        addressesProvider.setConfiguratorImpl(address(configurator));
+
+        configurator = Configurator(addressesProvider.getConfigurator());
+        router = Router(addressesProvider.getRouter());
+
+        setUpConnectors();
 
         FlashAggregator flashloanAggregator = new FlashAggregator();
         flashResolver = new FlashResolver(address(flashloanAggregator));
 
-        RouterConfigurator routerConfigurator = new RouterConfigurator();
-
         accountImpl = new Account(address(addressesProvider));
         accountProxy = new Proxy(address(addressesProvider));
-        router = new Router(address(addressesProvider));
 
-        bytes32[] memory _namesA = new bytes32[](5);
+        bytes32[] memory _namesA = new bytes32[](4);
         _namesA[0] = bytes32("ACCOUNT");
         _namesA[1] = bytes32("TREASURY");
-        _namesA[2] = bytes32("CONNECTORS");
-        _namesA[3] = bytes32("ACCOUNT_PROXY");
-        _namesA[4] = bytes32("FLASHLOAN_AGGREGATOR");
+        _namesA[2] = bytes32("ACCOUNT_PROXY");
+        _namesA[3] = bytes32("FLASHLOAN_AGGREGATOR");
 
-        address[] memory _addresses = new address[](5);
+        address[] memory _addresses = new address[](4);
         _addresses[0] = address(accountImpl);
         _addresses[1] = msg.sender;
-        _addresses[2] = address(connectors);
-        _addresses[3] = address(accountProxy);
-        _addresses[4] = address(flashloanAggregator);
+        _addresses[2] = address(accountProxy);
+        _addresses[3] = address(flashloanAggregator);
 
         for (uint i = 0; i < _namesA.length; i++) {
             addressesProvider.setAddress(_namesA[i], _addresses[i]);
         }
 
-        addressesProvider.setRouterImpl(address(router));
-        addressesProvider.setRouterConfiguratorImpl(address(routerConfigurator));
-
-        RouterConfigurator(addressesProvider.getRouterConfigurator()).setFee(3);
-
-        router = Router(addressesProvider.getRouter());
+        vm.prank(msg.sender);
+        configurator.setFee(3);
     }
 
     function setUpConnectors() public {
-        connectors = new Connectors();
-
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();
         aaveV2Connector = new AaveV2Connector();
@@ -125,7 +138,8 @@ contract Deployer is Test {
         _connectors[4] = address(uniswapConnector);
         _connectors[5] = address(compoundV2Connector);
 
-        connectors.addConnectors(_names, _connectors);
+        vm.prank(msg.sender);
+        configurator.addConnectors(_names, _connectors);
     }
 }
 

@@ -6,12 +6,15 @@ import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
 import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
 
 import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
+import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
 
 import { Router } from "../src/protocol/router/Router.sol";
 
 import { UniswapConnector } from "../src/connectors/Uniswap.sol";
 
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
+import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
+import { Configurator } from "../src/protocol/configuration/Configurator.sol";
 import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
 
 import { UniswapHelper } from "./uniswap.sol";
@@ -19,6 +22,8 @@ import { UniswapHelper } from "./uniswap.sol";
 contract TestRouterSwap is Test, UniswapHelper {
     Router router;
     Connectors connectors;
+    Configurator configurator;
+    ACLManager aclManager;
     AddressesProvider addressesProvider;
 
     address testAddress;
@@ -67,7 +72,26 @@ contract TestRouterSwap is Test, UniswapHelper {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        connectors = new Connectors();
+        addressesProvider = new AddressesProvider();
+        addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
+
+        aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
+        connectors = new Connectors(address(addressesProvider));
+
+        aclManager.addEmergencyAdmin(address(this));
+        aclManager.addConnectorAdmin(address(this));
+
+        addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
+        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
+
+        configurator = new Configurator();
+
+        router = new Router(address(addressesProvider));
+        addressesProvider.setRouterImpl(address(router));
+        addressesProvider.setConfiguratorImpl(address(configurator));
+
+        configurator = Configurator(addressesProvider.getConfigurator());
+        router = Router(addressesProvider.getRouter());
 
         UniswapConnector swapConnector = new UniswapConnector();
 
@@ -77,14 +101,6 @@ contract TestRouterSwap is Test, UniswapHelper {
         address[] memory _addresses = new address[](1);
         _addresses[0] = address(swapConnector);
 
-        connectors.addConnectors(_names, _addresses);
-
-        addressesProvider = new AddressesProvider();
-        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
-
-        router = new Router(address(addressesProvider));
-        addressesProvider.setRouterImpl(address(router));
-
-        router = Router(addressesProvider.getRouter());
+        configurator.addConnectors(_names, _addresses);
     }
 }

@@ -35,10 +35,52 @@ contract Router is RouterStorage, Initializable {
     /**
      * @dev Only pool configurator can call functions marked by this modifier.
      */
-    modifier onlyRouterConfigurator() {
-        require(ADDRESSES_PROVIDER.getRouterConfigurator() == msg.sender, Errors.CALLER_NOT_ROUTER_CONFIGURATOR);
+    modifier onlyConfigurator() {
+        require(ADDRESSES_PROVIDER.getConfigurator() == msg.sender, Errors.CALLER_NOT_CONFIGURATOR);
         _;
     }
+
+    /**
+     * @dev Emitted when the account will be created.
+     * @param account The address of the Account contract.
+     * @param owner The address of the owner account.
+     */
+    event AccountCreated(address indexed account, address indexed owner);
+
+    /**
+     * @dev Emitted when the sender swap tokens.
+     * @param sender Address who create operation.
+     * @param fromToken The address of the token to sell.
+     * @param toToken The address of the token to buy.
+     * @param amountIn The amount of the token to sell.
+     * @param amountOut The amount of the token transfer to sender.
+     * @param connectorName Conenctor name.
+     */
+    event SwapTokens(
+        address indexed sender,
+        address fromToken,
+        address toToken,
+        uint256 amountIn,
+        uint256 amountOut,
+        string connectorName
+    );
+
+    /**
+     * @dev Emitted when the user open position.
+     * @param key The key to obtain the current position.
+     * @param account The address of the owner position.
+     * @param index Count current position.
+     * @param position The structure of the current position.
+     */
+    event OpenPosition(bytes32 indexed key, address indexed account, uint256 index, DataTypes.Position position);
+
+    /**
+     * @dev Emitted when the user close position.
+     * @param key The key to obtain the current position.
+     * @param account The address of the owner position.
+     * @param position The structure of the current position.
+     */
+    event ClosePosition(bytes32 indexed key, address indexed account, DataTypes.Position position);
 
     /**
      * @dev Constructor.
@@ -89,6 +131,7 @@ contract Router is RouterStorage, Initializable {
             );
             accounts[_owner] = _account;
             IAccount(_account).initialize(_owner, address(ADDRESSES_PROVIDER));
+            emit AccountCreated(_account, _owner);
         }
 
         return _account;
@@ -105,6 +148,8 @@ contract Router is RouterStorage, Initializable {
         require(finalBalance - initialBalance == value, "value is not valid");
 
         IERC20(_params.toToken).universalTransfer(msg.sender, value);
+
+        emit SwapTokens(msg.sender, _params.fromToken, _params.toToken, _params.amount, value, _params.targetName);
     }
 
     /**
@@ -142,7 +187,7 @@ contract Router is RouterStorage, Initializable {
      * @notice Set a new fee to the router contract.
      * @param _fee The new amount
      */
-    function setFee(uint256 _fee) external onlyRouterConfigurator {
+    function setFee(uint256 _fee) external onlyConfigurator {
         require(_fee > 0, Errors.INVALID_FEE_AMOUNT);
         fee = _fee;
     }
@@ -211,6 +256,9 @@ contract Router is RouterStorage, Initializable {
 
         IERC20(_position.debt).universalApprove(account, _position.amountIn);
         IAccount(account).openPosition{ value: msg.value }(_position, _token, _amount, _route, _data);
+
+        // Get the position on the key because, update it in the process of creating
+        emit OpenPosition(key, account, index, positions[key]);
     }
 
     /**
@@ -236,6 +284,7 @@ contract Router is RouterStorage, Initializable {
 
         IAccount(account).closePosition(_key, _token, _amount, _route, _data);
 
+        emit ClosePosition(_key, account, position);
         delete positions[_key];
     }
 

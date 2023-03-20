@@ -18,9 +18,11 @@ contract AddressesProvider is Ownable {
     bytes32 private constant ROUTER = "ROUTER";
     bytes32 private constant ACCOUNT = "ACCOUNT";
     bytes32 private constant TREASURY = "TREASURY";
+    bytes32 private constant ACL_ADMIN = "ACL_ADMIN";
     bytes32 private constant CONNECTORS = "CONNECTORS";
+    bytes32 private constant ACL_MANAGER = "ACL_MANAGER";
+    bytes32 private constant CONFIGURATOR = "CONFIGURATOR";
     bytes32 private constant ACCOUNT_PROXY = "ACCOUNT_PROXY";
-    bytes32 private constant ROUTER_CONFIGURATOR = "ROUTER_CONFIGURATOR";
     bytes32 private constant FLASHLOAN_AGGREGATOR = "FLASHLOAN_AGGREGATOR";
 
     /**
@@ -40,18 +42,18 @@ contract AddressesProvider is Ownable {
     event ProxyCreated(bytes32 indexed id, address indexed proxyAddress, address indexed implementationAddress);
 
     /**
-     * @dev Emitted when the pool is updated.
+     * @dev Emitted when the router is updated.
      * @param oldAddress The old address of the Router
      * @param newAddress The new address of the Router
      */
     event RouterUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
-     * @dev Emitted when the pool is updated.
+     * @dev Emitted when the router configurator is updated.
      * @param oldAddress The old address of the Router
      * @param newAddress The new address of the Router
      */
-    event RouterConfiguratorUpdated(address indexed oldAddress, address indexed newAddress);
+    event ConfiguratorUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
      * @param _id The key to obtain the address.
@@ -84,14 +86,14 @@ contract AddressesProvider is Ownable {
     }
 
     /**
-     * @notice Updates the implementation of the RouterConfigurator, or creates a proxy
-     * setting the new `RouterConfigurator` implementation when the function is called for the first time.
-     * @param _newRouterConfiguratorImpl The new RouterConfigurator implementation
+     * @notice Updates the implementation of the Configurator, or creates a proxy
+     * setting the new `Configurator` implementation when the function is called for the first time.
+     * @param _newConfiguratorImpl The new Configurator implementation
      */
-    function setRouterConfiguratorImpl(address _newRouterConfiguratorImpl) external onlyOwner {
-        address oldRouterConfiguratorImpl = _getProxyImplementation(ROUTER_CONFIGURATOR);
-        _updateImpl(ROUTER_CONFIGURATOR, _newRouterConfiguratorImpl);
-        emit RouterConfiguratorUpdated(oldRouterConfiguratorImpl, _newRouterConfiguratorImpl);
+    function setConfiguratorImpl(address _newConfiguratorImpl) external onlyOwner {
+        address oldConfiguratorImpl = _getProxyImplementation(CONFIGURATOR);
+        _updateImpl(CONFIGURATOR, _newConfiguratorImpl);
+        emit ConfiguratorUpdated(oldConfiguratorImpl, _newConfiguratorImpl);
     }
 
     /**
@@ -106,8 +108,24 @@ contract AddressesProvider is Ownable {
      * @notice Returns the address of the Router configurator proxy.
      * @return The Router configurator proxy address
      */
-    function getRouterConfigurator() external view returns (address) {
-        return getAddress(ROUTER_CONFIGURATOR);
+    function getConfigurator() external view returns (address) {
+        return getAddress(CONFIGURATOR);
+    }
+
+    /**
+     * @notice Returns the address of the ACL admin.
+     * @return The address of the ACL admin
+     */
+    function getACLAdmin() external view returns (address) {
+        return getAddress(ACL_ADMIN);
+    }
+
+    /**
+     * @notice Returns the address of the ACL manager.
+     * @return The address of the ACLManager
+     */
+    function getACLManager() external view returns (address) {
+        return getAddress(ACL_MANAGER);
     }
 
     /**

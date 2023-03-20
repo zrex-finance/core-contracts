@@ -4,7 +4,13 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
 
+import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
+
 import { Connectors } from "../src/protocol/configuration/Connectors.sol";
+import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
+import { Configurator } from "../src/protocol/configuration/Configurator.sol";
+import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+
 import { Errors } from "../src/protocol/libraries/helpers/Errors.sol";
 
 contract ConnectorImpl {
@@ -13,6 +19,9 @@ contract ConnectorImpl {
 
 contract TestConnectors is Test {
     Connectors connectors;
+    Configurator configurator;
+    ACLManager aclManager;
+    AddressesProvider addressesProvider;
 
     function test_addConnectors_InvalidLength() public {
         ConnectorImpl connector = new ConnectorImpl();
@@ -24,7 +33,7 @@ contract TestConnectors is Test {
         _connectors[0] = address(connector);
 
         vm.expectRevert(abi.encodePacked(Errors.INVALID_CONNECTORS_LENGTH));
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
     }
 
     function test_addConnectors_InvalidAddress() public {
@@ -37,7 +46,7 @@ contract TestConnectors is Test {
         _connectors[0] = address(0);
 
         vm.expectRevert(abi.encodePacked(Errors.INVALID_CONNECTOR_ADDRESS));
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
     }
 
     function test_addConnectors_AlreadyExist() public {
@@ -52,7 +61,7 @@ contract TestConnectors is Test {
         _connectors[1] = address(new ConnectorImpl());
 
         vm.expectRevert(abi.encodePacked(Errors.CONNECTOR_ALREADY_EXIST));
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
     }
 
     function test_addConnectors() public {
@@ -64,7 +73,7 @@ contract TestConnectors is Test {
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
 
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
 
         (bool isOk, address _connector) = connectors.isConnector(_names[0]);
         assertTrue(isOk);
@@ -81,7 +90,7 @@ contract TestConnectors is Test {
         _connectors[0] = address(connector);
 
         vm.expectRevert(abi.encodePacked(Errors.INVALID_CONNECTORS_LENGTH));
-        connectors.updateConnectors(_names, _connectors);
+        configurator.updateConnectors(_names, _connectors);
     }
 
     function test_updateConnectors_InvalidAddress() public {
@@ -93,12 +102,12 @@ contract TestConnectors is Test {
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
 
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
 
         _connectors[0] = address(0);
 
         vm.expectRevert(abi.encodePacked(Errors.INVALID_CONNECTOR_ADDRESS));
-        connectors.updateConnectors(_names, _connectors);
+        configurator.updateConnectors(_names, _connectors);
     }
 
     function test_updateConnectors_DoesntExist() public {
@@ -111,7 +120,7 @@ contract TestConnectors is Test {
         _connectors[0] = address(connector);
 
         vm.expectRevert(abi.encodePacked(Errors.CONNECTOR_DOES_NOT_EXIST));
-        connectors.updateConnectors(_names, _connectors);
+        configurator.updateConnectors(_names, _connectors);
     }
 
     function test_updateConnectors() public {
@@ -123,7 +132,7 @@ contract TestConnectors is Test {
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
 
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
 
         (bool isOk0, address _connector0) = connectors.isConnector(_names[0]);
         assertTrue(isOk0);
@@ -132,7 +141,7 @@ contract TestConnectors is Test {
         address newConnector = address(new ConnectorImpl());
         _connectors[0] = newConnector;
 
-        connectors.updateConnectors(_names, _connectors);
+        configurator.updateConnectors(_names, _connectors);
 
         (bool isOk1, address _connector1) = connectors.isConnector(_names[0]);
         assertTrue(isOk1);
@@ -149,7 +158,7 @@ contract TestConnectors is Test {
         _connectors[0] = address(connector);
 
         vm.expectRevert(abi.encodePacked(Errors.CONNECTOR_DOES_NOT_EXIST));
-        connectors.removeConnectors(_names);
+        configurator.removeConnectors(_names);
     }
 
     function test_removeConnectors() public {
@@ -161,13 +170,13 @@ contract TestConnectors is Test {
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
 
-        connectors.addConnectors(_names, _connectors);
+        configurator.addConnectors(_names, _connectors);
 
         (bool isTrue, address _connector) = connectors.isConnector(_names[0]);
         assertTrue(isTrue);
         assertEq(_connectors[0], _connector);
 
-        connectors.removeConnectors(_names);
+        configurator.removeConnectors(_names);
 
         (bool isFalse, address _removeConnector) = connectors.isConnector(_names[0]);
         assertFalse(isFalse);
@@ -177,6 +186,21 @@ contract TestConnectors is Test {
     receive() external payable {}
 
     function setUp() public {
-        connectors = new Connectors();
+        addressesProvider = new AddressesProvider();
+        addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
+
+        aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
+        connectors = new Connectors(address(addressesProvider));
+
+        aclManager.addEmergencyAdmin(address(this));
+        aclManager.addConnectorAdmin(address(this));
+
+        addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
+        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
+
+        configurator = new Configurator();
+        addressesProvider.setConfiguratorImpl(address(configurator));
+
+        configurator = Configurator(addressesProvider.getConfigurator());
     }
 }

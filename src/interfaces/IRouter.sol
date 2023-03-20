@@ -21,6 +21,8 @@ interface IRouter {
         bytes calldata _data
     ) external payable;
 
+    function fee() external returns (uint256);
+
     function setFee(uint256 _fee) external;
 
     function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;

@@ -23,21 +23,20 @@ contract TestAddressesProvider is Test {
     address testAddress;
 
     // Main identifiers
-    function test_setAddress_RouterConfigurator() public {
-        addressesProvider.setRouterConfiguratorImpl(testAddress);
-        assertTrue(addressesProvider.getRouterConfigurator() != address(0));
+    function test_setAddress_Configurator() public {
+        addressesProvider.setConfiguratorImpl(testAddress);
+        assertTrue(addressesProvider.getConfigurator() != address(0));
     }
 
-    function test_updateAddress_RouterConfigurator() public {
-        addressesProvider.setRouterConfiguratorImpl(testAddress);
-        assertTrue(addressesProvider.getRouterConfigurator() != address(0));
+    function test_updateAddress_Configurator() public {
+        addressesProvider.setConfiguratorImpl(testAddress);
+        assertTrue(addressesProvider.getConfigurator() != address(0));
 
         address newTestContract = address(new DummyContract());
 
-        addressesProvider.setRouterConfiguratorImpl(newTestContract);
+        addressesProvider.setConfiguratorImpl(newTestContract);
         assertTrue(
-            addressesProvider.getRouterConfigurator() != address(0) &&
-                addressesProvider.getRouterConfigurator() != testAddress
+            addressesProvider.getConfigurator() != address(0) && addressesProvider.getConfigurator() != testAddress
         );
     }
 

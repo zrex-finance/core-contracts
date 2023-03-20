@@ -10,7 +10,6 @@ import { HelperContract } from "./deployer.sol";
 
 import { EthConverter } from "../src/utils/EthConverter.sol";
 
-import { Connectors } from "../src/protocol/configuration/Connectors.sol";
 import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
 import { IAave, IAavePoolProvider, IAaveDataProvider } from "../src/connectors/interfaces/AaveV3.sol";
 

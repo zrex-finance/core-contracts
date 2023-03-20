@@ -53,7 +53,27 @@ contract Account is Initializable {
         _;
     }
 
+    /**
+     * @dev Emitted when the tokens is claimed.
+     * @param token The address of the token to withdraw.
+     * @param amount The amount of the token to withdraw.
+     */
     event ClaimedTokens(address token, address owner, uint256 amount);
+
+    /**
+     * @dev Emitted when the account take falshlaon.
+     * @param token Flashloan token.
+     * @param amount Flashloan amount.
+     * @param route The path chosen to take the loan See `FlashAggregator` contract.
+     */
+    event Flashloan(address indexed token, uint256 amount, uint16 route);
+
+    /**
+     * @dev Emitted when the account contract execute connector calldata.
+     * @param target Connector contract address.
+     * @param targetName Conenctor name.
+     */
+    event Execute(address indexed target, string targetName);
 
     /**
      * @dev Constructor.
@@ -146,7 +166,7 @@ contract Account is Initializable {
     }
 
     /**
-     * @dev Is called via the caldata within a flashloan.
+     * @dev Is called via the calldata within a flashloan.
      * - Repay debt token to the lending protocol.
      * - Withdraw collateral token.
      * - Swap poisition collateral token to debt token.
@@ -255,6 +275,8 @@ contract Account is Initializable {
             _data,
             bytes("")
         );
+
+        emit Flashloan(_token, _amount, _route);
     }
 
     /**
@@ -303,6 +325,8 @@ contract Account is Initializable {
         require(isOk, Errors.NOT_CONNECTOR);
 
         response = _delegatecall(_target, _data);
+
+        emit Execute(_target, _targetName);
     }
 
     /**

@@ -6,7 +6,7 @@ interface IAddressesProvider {
 
     function setAddress(bytes32 id, address newAddress) external;
 
-    function getRouterConfigurator() external view returns (address);
+    function getConfigurator() external view returns (address);
 
     function getRouter() external view returns (address);
 
@@ -19,4 +19,8 @@ interface IAddressesProvider {
     function getTreasury() external view returns (address);
 
     function getAccountProxy() external view returns (address);
+
+    function getACLAdmin() external view returns (address);
+
+    function getACLManager() external view returns (address);
 }
