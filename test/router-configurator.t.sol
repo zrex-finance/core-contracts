@@ -15,6 +15,10 @@ import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
 import { Configurator } from "../src/protocol/configuration/Configurator.sol";
 import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
 
+contract ConnectorImpl {
+    string public constant name = "ConnectorImpl";
+}
+
 contract TestConfigurator is Test {
     Router router;
     Configurator configurator;
@@ -35,11 +39,33 @@ contract TestConfigurator is Test {
         _setFee();
     }
 
+    function test_addConnectors() public {
+        aclManager.addConnectorAdmin(address(this));
+        _addConnectors();
+    }
+
+    function test_addConnectors_EmergencyAdmin() public {
+        aclManager.addEmergencyAdmin(address(this));
+        _addConnectors();
+    }
+
     function _setFee() public {
         assertEq(router.fee(), 0);
 
         configurator.setFee(5);
         assertEq(router.fee(), 5);
+    }
+
+    function _addConnectors() public {
+        ConnectorImpl connector = new ConnectorImpl();
+
+        string[] memory _names = new string[](1);
+        _names[0] = connector.name();
+
+        address[] memory _connectors = new address[](1);
+        _connectors[0] = address(connector);
+
+        configurator.addConnectors(_names, _connectors);
     }
 
     receive() external payable {}
