@@ -46,11 +46,11 @@ contract ACLManager is AccessControl {
     }
 
     function addConnectorAdmin(address admin) external {
-        grantRole(ROUTER_ADMIN_ROLE, admin);
+        grantRole(CONNECTOR_ADMIN_ROLE, admin);
     }
 
     function removeConnectorAdmin(address admin) external {
-        revokeRole(ROUTER_ADMIN_ROLE, admin);
+        revokeRole(CONNECTOR_ADMIN_ROLE, admin);
     }
 
     function isConnectorAdmin(address admin) external view returns (bool) {
@@ -58,11 +58,11 @@ contract ACLManager is AccessControl {
     }
 
     function addRouterAdmin(address admin) external {
-        grantRole(CONNECTOR_ADMIN_ROLE, admin);
+        grantRole(ROUTER_ADMIN_ROLE, admin);
     }
 
     function removeRouterAdmin(address admin) external {
-        revokeRole(CONNECTOR_ADMIN_ROLE, admin);
+        revokeRole(ROUTER_ADMIN_ROLE, admin);
     }
 
     function isRouterAdmin(address admin) external view returns (bool) {

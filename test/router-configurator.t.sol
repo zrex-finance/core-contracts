@@ -19,12 +19,23 @@ contract TestConfigurator is Test {
     Router router;
     Configurator configurator;
     Connectors connectors;
+    ACLManager aclManager;
     AddressesProvider addressesProvider;
 
     address testAddress;
 
     // Main identifiers
     function test_setFee() public {
+        aclManager.addRouterAdmin(address(this));
+        _setFee();
+    }
+
+    function test_setFee_EmergencyAdmin() public {
+        aclManager.addEmergencyAdmin(address(this));
+        _setFee();
+    }
+
+    function _setFee() public {
         assertEq(router.fee(), 0);
 
         configurator.setFee(5);
@@ -37,11 +48,8 @@ contract TestConfigurator is Test {
         addressesProvider = new AddressesProvider();
         addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
 
-        ACLManager aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
+        aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
         connectors = new Connectors(address(addressesProvider));
-
-        aclManager.addEmergencyAdmin(address(this));
-        aclManager.addRouterAdmin(address(this));
 
         addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
         addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
