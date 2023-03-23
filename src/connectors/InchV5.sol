@@ -8,7 +8,7 @@ import { UniversalERC20 } from "../libraries/tokens/UniversalERC20.sol";
 contract InchV5Connector {
     using UniversalERC20 for IERC20;
 
-    string public constant name = "1Inch-v5";
+    string public constant name = "OneInchV5";
 
     /**
      * @dev 1Inch Router v5 Address
