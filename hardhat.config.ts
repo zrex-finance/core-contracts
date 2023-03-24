@@ -37,8 +37,24 @@ const config: HardhatUserConfig = {
         cache: "./cache_hardhat", // Use a different cache for Hardhat than Foundry
     },
     networks: {
+        gnosis: {
+            url: `https://rpc.gnosis.gateway.fm`,
+            accounts: PRIVATE_KEY
+                ? [PRIVATE_KEY]
+                : {
+                      mnemonic: "test test test test test test test test test test test junk",
+                  },
+        },
         goerli: {
             url: `https://goerli.infura.io/v3/${INFURA_TOKEN}`,
+            accounts: PRIVATE_KEY
+                ? [PRIVATE_KEY]
+                : {
+                      mnemonic: "test test test test test test test test test test test junk",
+                  },
+        },
+        polygon: {
+            url: `https://polygon-mainnet.infura.io/v3/${INFURA_TOKEN}`,
             accounts: PRIVATE_KEY
                 ? [PRIVATE_KEY]
                 : {

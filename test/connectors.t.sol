@@ -186,7 +186,7 @@ contract TestConnectors is Test {
     receive() external payable {}
 
     function setUp() public {
-        addressesProvider = new AddressesProvider();
+        addressesProvider = new AddressesProvider(address(this));
         addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
 
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));

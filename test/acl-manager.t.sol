@@ -53,7 +53,7 @@ contract TestACLManager is Test {
     receive() external payable {}
 
     function setUp() public {
-        AddressesProvider addressesProvider = new AddressesProvider();
+        AddressesProvider addressesProvider = new AddressesProvider(address(this));
         addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
 
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
