@@ -105,7 +105,7 @@ contract TestAccount is Test {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        address addressesProvider = address(new AddressesProvider());
+        address addressesProvider = address(new AddressesProvider(address(this)));
 
         AddressesProvider(addressesProvider).setAddress(bytes32("FLASHLOAN_AGGREGATOR"), daiC);
 

@@ -73,7 +73,7 @@ contract TestAddressesProvider is Test {
     receive() external payable {}
 
     function setUp() public {
-        addressesProvider = new AddressesProvider();
+        addressesProvider = new AddressesProvider(address(this));
         testAddress = address(new DummyContract());
     }
 }

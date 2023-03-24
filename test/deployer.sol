@@ -62,7 +62,7 @@ contract Deployer is Test {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        AddressesProvider addressesProvider = new AddressesProvider();
+        AddressesProvider addressesProvider = new AddressesProvider(address(this));
         addressesProvider.setAddress(bytes32("ACL_ADMIN"), msg.sender);
 
         ACLManager aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));

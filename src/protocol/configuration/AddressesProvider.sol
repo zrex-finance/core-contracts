@@ -56,6 +56,14 @@ contract AddressesProvider is Ownable {
     event ConfiguratorUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @dev Constructor.
+     * @param _newOwner The owner address of this contract.
+     */
+    constructor(address _newOwner) {
+        transferOwnership(_newOwner);
+    }
+
+    /**
      * @param _id The key to obtain the address.
      * @return Returns the contract address.
      */
