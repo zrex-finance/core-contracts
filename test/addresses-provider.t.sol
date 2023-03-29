@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
-import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+import { AddressesProvider } from '../contracts/AddressesProvider.sol';
 
 interface IProxy {
     function admin() external returns (address);
@@ -46,27 +46,27 @@ contract TestAddressesProvider is Test {
     }
 
     function test_setAddress_Account() public {
-        addressesProvider.setAddress(bytes32("ACCOUNT"), testAddress);
+        addressesProvider.setAddress(bytes32('ACCOUNT'), testAddress);
         assertEq(addressesProvider.getAccountImpl(), testAddress);
     }
 
     function test_setAddress_Treasury() public {
-        addressesProvider.setAddress(bytes32("TREASURY"), testAddress);
+        addressesProvider.setAddress(bytes32('TREASURY'), testAddress);
         assertEq(addressesProvider.getTreasury(), testAddress);
     }
 
     function test_setAddress_Connectors() public {
-        addressesProvider.setAddress(bytes32("CONNECTORS"), testAddress);
+        addressesProvider.setAddress(bytes32('CONNECTORS'), testAddress);
         assertEq(addressesProvider.getConnectors(), testAddress);
     }
 
     function test_setAddress_AccountProxy() public {
-        addressesProvider.setAddress(bytes32("ACCOUNT_PROXY"), testAddress);
+        addressesProvider.setAddress(bytes32('ACCOUNT_PROXY'), testAddress);
         assertEq(addressesProvider.getAccountProxy(), testAddress);
     }
 
     function test_setAddress_FlashloanAggregator() public {
-        addressesProvider.setAddress(bytes32("FLASHLOAN_AGGREGATOR"), testAddress);
+        addressesProvider.setAddress(bytes32('FLASHLOAN_AGGREGATOR'), testAddress);
         assertEq(addressesProvider.getFlashloanAggregator(), testAddress);
     }
 

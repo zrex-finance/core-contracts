@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
 
-import { HelperContract } from "./deployer.sol";
+import { EthConverter } from '../contracts/mocks/EthConverter.sol';
 
-import { EthConverter } from "../src/utils/EthConverter.sol";
+import { CompoundV2Connector } from '../contracts/connectors/CompoundV2.sol';
+import { CTokenInterface } from '../contracts/interfaces/external/compound-v2/CTokenInterfaces.sol';
+import { ComptrollerInterface } from '../contracts/interfaces/external/compound-v2/ComptrollerInterface.sol';
 
-import { CompoundV2Connector } from "../src/connectors/CompoundV2.sol";
-import { ICToken, IComptroller } from "../src/connectors/interfaces/CompoundV2.sol";
+import { HelperContract } from './deployer.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -28,10 +29,10 @@ interface AaveOracle {
 contract LendingHelper is HelperContract, Tokens {
     CompoundV2Connector compoundV2Connector;
 
-    IComptroller internal constant troller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    ComptrollerInterface internal constant troller = ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
@@ -112,7 +113,7 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
         vm.prank(daiWhale);
         ERC20(daiC).transfer(address(this), depositAmount);
 
-        vm.expectRevert(abi.encodePacked("Unsupported token"));
+        vm.expectRevert(abi.encodePacked('Unsupported token'));
         execute(getDepositData(address(msg.sender), depositAmount));
     }
 
@@ -157,7 +158,7 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
         uint256 borrowAmount = 100000000;
         execute(getBorrowData(usdcC, borrowAmount));
 
-        vm.expectRevert(abi.encodePacked("not enough token"));
+        vm.expectRevert(abi.encodePacked('not enough token'));
         execute(getPaybackData(borrowAmount + 1000, usdcC));
     }
 
@@ -234,7 +235,7 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
         _tokens[18] = 0xE41d2489571d322189246DaFA5ebDe1F4699F498;
 
         for (uint i = 0; i < _tokens.length; i++) {
-            ICToken token = compoundV2Connector._getCToken(_tokens[i]);
+            CTokenInterface token = compoundV2Connector._getCToken(_tokens[i]);
 
             // for eth
             if (_tokens[i] != address(0)) {

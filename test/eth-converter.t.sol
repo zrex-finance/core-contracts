@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { IERC20 } from '../contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { EthConverter } from "../src/utils/EthConverter.sol";
+import { EthConverter } from '../contracts/mocks/EthConverter.sol';
 
 contract TestEthConverter is Test, EthConverter {
     address ethC = 0x0000000000000000000000000000000000000000;
@@ -16,7 +16,7 @@ contract TestEthConverter is Test, EthConverter {
     receive() external payable {}
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
     }

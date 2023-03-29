@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
-import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
-import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
 
-import { Router } from "../src/protocol/router/Router.sol";
+import { IRouter } from '../contracts/interfaces/IRouter.sol';
 
-import { UniswapConnector } from "../src/connectors/Uniswap.sol";
+import { UniswapConnector } from '../contracts/connectors/Uniswap.sol';
 
-import { Connectors } from "../src/protocol/configuration/Connectors.sol";
-import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
-import { Configurator } from "../src/protocol/configuration/Configurator.sol";
-import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+import { Router } from '../contracts/Router.sol';
+import { Connectors } from '../contracts/Connectors.sol';
+import { ACLManager } from '../contracts/ACLManager.sol';
+import { Configurator } from '../contracts/Configurator.sol';
+import { AddressesProvider } from '../contracts/AddressesProvider.sol';
 
-import { UniswapHelper } from "./uniswap.sol";
+import { UniswapHelper } from './uniswap.sol';
 
 contract TestRouterSwap is Test, UniswapHelper {
     Router router;
@@ -39,7 +40,7 @@ contract TestRouterSwap is Test, UniswapHelper {
         ERC20(daiC).approve(address(router), amount);
 
         bytes memory swapdata = getSwapData(daiC, wethC, address(this), amount);
-        router.swap(DataTypes.SwapParams(daiC, wethC, amount, "UniswapAuto", swapdata));
+        router.swap(IRouter.SwapParams(daiC, wethC, amount, 'UniswapAuto', swapdata));
 
         assertTrue(ERC20(wethC).balanceOf(address(this)) > 0);
     }
@@ -61,19 +62,19 @@ contract TestRouterSwap is Test, UniswapHelper {
             abi.encode(uint(123), _data)
         );
 
-        vm.expectRevert(bytes(""));
-        router.swap(DataTypes.SwapParams(daiC, wethC, amount, "UniswapAuto", swapData));
+        vm.expectRevert(bytes(''));
+        router.swap(IRouter.SwapParams(daiC, wethC, amount, 'UniswapAuto', swapData));
     }
 
     receive() external payable {}
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
         addressesProvider = new AddressesProvider(address(this));
-        addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
+        addressesProvider.setAddress(bytes32('ACL_ADMIN'), address(this));
 
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
         connectors = new Connectors(address(addressesProvider));
@@ -81,12 +82,12 @@ contract TestRouterSwap is Test, UniswapHelper {
         aclManager.addConnectorAdmin(address(this));
         aclManager.addRouterAdmin(address(this));
 
-        addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
-        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
+        addressesProvider.setAddress(bytes32('ACL_MANAGER'), address(aclManager));
+        addressesProvider.setAddress(bytes32('CONNECTORS'), address(connectors));
 
         configurator = new Configurator();
 
-        router = new Router(address(addressesProvider));
+        router = new Router(IAddressesProvider(address(addressesProvider)));
         addressesProvider.setRouterImpl(address(router));
         addressesProvider.setConfiguratorImpl(address(configurator));
 

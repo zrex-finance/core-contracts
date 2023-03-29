@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
-import { HelperContract } from "./deployer.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { EthConverter } from '../contracts/mocks/EthConverter.sol';
 
-import { EthConverter } from "../src/utils/EthConverter.sol";
+import { CompoundV3Connector } from '../contracts/connectors/CompoundV3.sol';
 
-import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
+import { HelperContract } from './deployer.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -25,7 +25,7 @@ contract LendingHelper is HelperContract, Tokens {
     CompoundV3Connector compoundV3Connector;
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
@@ -83,7 +83,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        vm.expectRevert(abi.encodePacked("invalid market/token address"));
+        vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(getDepositData(address(0), type(uint256).max));
     }
 
@@ -91,7 +91,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        vm.expectRevert(abi.encodePacked("invalid market/token address"));
+        vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(abi.encodeWithSelector(compoundV3Connector.deposit.selector, address(0), wethC, depositAmount));
     }
 
@@ -108,7 +108,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         vm.prank(usdcWhale);
         ERC20(usdcC).transfer(address(this), depositAmount2);
 
-        vm.expectRevert(abi.encodePacked("debt not repaid"));
+        vm.expectRevert(abi.encodePacked('debt not repaid'));
         execute(getDepositData(usdcC, depositAmount2));
     }
 
@@ -130,7 +130,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         execute(getDepositData(wethC, depositAmount));
 
         uint256 borrowAmount = 100000000;
-        vm.expectRevert(abi.encodePacked("invalid market address"));
+        vm.expectRevert(abi.encodePacked('invalid market address'));
         execute(abi.encodeWithSelector(compoundV3Connector.borrow.selector, address(0), usdcC, borrowAmount));
     }
 
@@ -141,7 +141,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         execute(getDepositData(wethC, depositAmount));
 
         uint256 borrowAmount = 100000000;
-        vm.expectRevert(abi.encodePacked("invalid token"));
+        vm.expectRevert(abi.encodePacked('invalid token'));
         execute(getBorrowData(wethC, borrowAmount));
     }
 
@@ -154,7 +154,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         execute(getDepositData(usdcC, depositAmount));
 
         uint256 borrowAmount = 100000000;
-        vm.expectRevert(abi.encodePacked("borrow-disabled-when-supplied-base"));
+        vm.expectRevert(abi.encodePacked('borrow-disabled-when-supplied-base'));
         execute(getBorrowData(usdcC, borrowAmount));
     }
 
@@ -179,7 +179,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
 
         uint256 borrowAmount = 100000000;
         execute(getBorrowData(usdcC, borrowAmount));
-        vm.expectRevert(abi.encodePacked("invalid market/token address"));
+        vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(getPaybackData(borrowAmount, address(0)));
     }
 
@@ -191,7 +191,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
 
         uint256 borrowAmount = 100000000;
         execute(getBorrowData(usdcC, borrowAmount));
-        vm.expectRevert(abi.encodePacked("invalid market/token address"));
+        vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(abi.encodeWithSelector(compoundV3Connector.payback.selector, address(0), usdcC, borrowAmount));
     }
 
@@ -203,7 +203,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
 
         uint256 borrowAmount = 100000000;
         execute(getBorrowData(usdcC, borrowAmount));
-        vm.expectRevert(abi.encodePacked("invalid token"));
+        vm.expectRevert(abi.encodePacked('invalid token'));
         execute(getPaybackData(borrowAmount, wethC));
     }
 
@@ -215,7 +215,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
 
         uint256 borrowAmount = 100000000;
         execute(getBorrowData(usdcC, borrowAmount));
-        vm.expectRevert(abi.encodePacked("payback-amount-greater-than-borrows"));
+        vm.expectRevert(abi.encodePacked('payback-amount-greater-than-borrows'));
         execute(getPaybackData(borrowAmount + 100, usdcC));
     }
 
@@ -257,7 +257,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         execute(getBorrowData(usdcC, borrowAmount));
         execute(getPaybackData(borrowAmount, usdcC));
 
-        vm.expectRevert(abi.encodePacked("invalid market/token address"));
+        vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(abi.encodeWithSelector(compoundV3Connector.withdraw.selector, address(0), wethC, depositAmount));
     }
 
@@ -271,7 +271,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         execute(getBorrowData(usdcC, borrowAmount));
         execute(getPaybackData(borrowAmount, usdcC));
 
-        vm.expectRevert(abi.encodePacked("invalid market/token address"));
+        vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(getWithdrawData(depositAmount, address(0)));
     }
 
@@ -285,7 +285,7 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         execute(getBorrowData(usdcC, borrowAmount));
         execute(getPaybackData(borrowAmount, usdcC));
 
-        vm.expectRevert(abi.encodePacked("withdraw-amount-greater-than-supplies"));
+        vm.expectRevert(abi.encodePacked('withdraw-amount-greater-than-supplies'));
         execute(getWithdrawData(10000000000, usdcC));
     }
 

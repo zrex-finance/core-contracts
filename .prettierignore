@@ -28,3 +28,5 @@ package-lock.json
 .solhintignore
 foundry.toml
 remappings.txt
+truffle.js
+logo.svg

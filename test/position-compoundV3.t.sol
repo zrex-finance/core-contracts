@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { IRouter } from '../contracts/interfaces/IRouter.sol';
 
-import { UniswapHelper } from "./uniswap.sol";
-import { HelperContract, Deployer } from "./deployer.sol";
+import { UniswapHelper } from './uniswap.sol';
+import { HelperContract, Deployer } from './deployer.sol';
 
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     address USDC_MARKET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-    string NAME = "CompoundV3";
+    string NAME = 'CompoundV3';
 
     function getCollateralAmt(address _token, address _recipient) public view returns (uint256 collateralAmount) {
         collateralAmount = compoundV3Connector.collateralBalanceOf(
@@ -92,7 +93,7 @@ contract PositionCompoundV3 is LendingHelper {
         bytes memory swapdata = getMulticalSwapData(daiC, usdcC, address(router), shortAmt);
         bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, usdcC, daiC, shortAmt, swapdata);
 
-        DataTypes.SwapParams memory _params = DataTypes.SwapParams(daiC, usdcC, shortAmt, "UniswapAuto", _unidata);
+        IRouter.SwapParams memory _params = IRouter.SwapParams(daiC, usdcC, shortAmt, 'UniswapAuto', _unidata);
 
         topUpTokenBalance(daiC, daiWhale, shortAmt);
 
@@ -109,7 +110,7 @@ contract PositionCompoundV3 is LendingHelper {
         closePosition(_position);
     }
 
-    function openShort(DataTypes.Position memory _position, DataTypes.SwapParams memory _params) public {
+    function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);

@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
-import { HelperContract } from "./deployer.sol";
+import { Connectors } from '../contracts/Connectors.sol';
+import { EthConverter } from '../contracts/mocks/EthConverter.sol';
+import { AaveV2Connector } from '../contracts/connectors/AaveV2.sol';
 
-import { EthConverter } from "../src/utils/EthConverter.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { ILendingPool } from '../contracts/interfaces/external/aave-v2/ILendingPool.sol';
+import { IProtocolDataProvider } from '../contracts/interfaces/external/aave-v2/IProtocolDataProvider.sol';
+import { ILendingPoolAddressesProvider } from '../contracts/interfaces/external/aave-v2/ILendingPoolAddressesProvider.sol';
 
-import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
-import { Connectors } from "../src/protocol/configuration/Connectors.sol";
-import { IAave, IAaveLendingPoolProvider, IAaveDataProvider } from "../src/connectors/interfaces/AaveV2.sol";
+import { HelperContract } from './deployer.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -27,17 +29,17 @@ interface AaveOracle {
 
 contract LendingHelper is HelperContract, Tokens {
     uint256 RATE_TYPE = 2;
-    string NAME = "AaveV3";
+    string NAME = 'AaveV3';
 
     AaveV2Connector aaveV2Connector;
 
-    IAaveLendingPoolProvider internal constant aaveProvider =
-        IAaveLendingPoolProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
-    IAaveDataProvider internal constant aaveDataProvider =
-        IAaveDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
+    ILendingPoolAddressesProvider internal constant aaveProvider =
+        ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
+    IProtocolDataProvider internal constant aaveDataProvider =
+        IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
@@ -88,7 +90,7 @@ contract AaveV2 is LendingHelper, EthConverter {
         uint256 depositAmount = 1000 ether;
         depositDai(depositAmount);
 
-        IAave aave = IAave(aaveProvider.getLendingPool());
+        ILendingPool aave = ILendingPool(aaveProvider.getLendingPool());
         aave.setUserUseReserveAsCollateral(daiC, false);
 
         depositDai(depositAmount);

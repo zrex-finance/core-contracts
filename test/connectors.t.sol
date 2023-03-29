@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { IERC20 } from '../contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
+import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
 
-import { Connectors } from "../src/protocol/configuration/Connectors.sol";
-import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
-import { Configurator } from "../src/protocol/configuration/Configurator.sol";
-import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+import { Connectors } from '../contracts/Connectors.sol';
+import { ACLManager } from '../contracts/ACLManager.sol';
+import { Configurator } from '../contracts/Configurator.sol';
+import { AddressesProvider } from '../contracts/AddressesProvider.sol';
 
-import { Errors } from "../src/protocol/libraries/helpers/Errors.sol";
+import { Errors } from '../contracts/lib/Errors.sol';
 
 contract ConnectorImpl {
-    string public constant name = "ConnectorImpl";
+    string public constant name = 'ConnectorImpl';
 }
 
 contract TestConnectors is Test {
@@ -187,15 +187,15 @@ contract TestConnectors is Test {
 
     function setUp() public {
         addressesProvider = new AddressesProvider(address(this));
-        addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
+        addressesProvider.setAddress(bytes32('ACL_ADMIN'), address(this));
 
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
         connectors = new Connectors(address(addressesProvider));
 
         aclManager.addConnectorAdmin(address(this));
 
-        addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
-        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
+        addressesProvider.setAddress(bytes32('ACL_MANAGER'), address(aclManager));
+        addressesProvider.setAddress(bytes32('CONNECTORS'), address(connectors));
 
         configurator = new Configurator();
         addressesProvider.setConfiguratorImpl(address(configurator));

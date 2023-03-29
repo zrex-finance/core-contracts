@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
-import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
+import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
 
-import { Errors } from "../src/protocol/libraries/helpers/Errors.sol";
+import { Errors } from '../contracts/lib/Errors.sol';
 
-import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
-import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+import { ACLManager } from '../contracts/ACLManager.sol';
+import { AddressesProvider } from '../contracts/AddressesProvider.sol';
 
 contract ConnectorImpl {
-    string public constant name = "ConnectorImpl";
+    string public constant name = 'ConnectorImpl';
 }
 
 contract TestACLManager is Test {
@@ -39,7 +39,7 @@ contract TestACLManager is Test {
 
     function test_addConnectorAdmin_WithSetRole() public {
         aclManager.addRouterAdmin(address(this));
-        aclManager.setRoleAdmin(bytes32("ROUTER_ADMIN_ROLE"), bytes32("DEFAULT_ADMIN_ROLE"));
+        aclManager.setRoleAdmin(bytes32('ROUTER_ADMIN_ROLE'), bytes32('DEFAULT_ADMIN_ROLE'));
 
         aclManager.addConnectorAdmin(address(this));
         assertTrue(aclManager.isConnectorAdmin(address(this)));
@@ -54,7 +54,7 @@ contract TestACLManager is Test {
 
     function setUp() public {
         AddressesProvider addressesProvider = new AddressesProvider(address(this));
-        addressesProvider.setAddress(bytes32("ACL_ADMIN"), address(this));
+        addressesProvider.setAddress(bytes32('ACL_ADMIN'), address(this));
 
         aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
     }

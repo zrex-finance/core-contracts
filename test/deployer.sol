@@ -1,31 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
-import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
 
-import { Proxy } from "../src/protocol/account/Proxy.sol";
-import { Account } from "../src/protocol/account/Account.sol";
+import { IFlashAggregator } from '../contracts/interfaces/IFlashAggregator.sol';
+import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
 
-import { Router } from "../src/protocol/router/Router.sol";
-import { Configurator } from "../src/protocol/configuration/Configurator.sol";
+import { Proxy } from '../contracts/Proxy.sol';
+import { Account } from '../contracts/Account.sol';
 
-import { FlashResolver } from "../src/flashloans/FlashResolver.sol";
-import { FlashAggregator } from "../src/flashloans/FlashAggregator.sol";
+import { IRouter } from '../contracts/interfaces/IRouter.sol';
 
-import { ACLManager } from "../src/protocol/configuration/ACLManager.sol";
-import { Connectors } from "../src/protocol/configuration/Connectors.sol";
-import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+import { Router } from '../contracts/Router.sol';
+import { Configurator } from '../contracts/Configurator.sol';
 
-import { InchV5Connector } from "../src/connectors/InchV5.sol";
-import { UniswapConnector } from "../src/connectors/Uniswap.sol";
-import { AaveV2Connector } from "../src/connectors/AaveV2.sol";
-import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
-import { CompoundV3Connector } from "../src/connectors/CompoundV3.sol";
-import { CompoundV2Connector } from "../src/connectors/CompoundV2.sol";
+import { FlashResolver } from '../contracts/FlashResolver.sol';
+import { FlashAggregator } from '../contracts/FlashAggregator.sol';
+
+import { ACLManager } from '../contracts/ACLManager.sol';
+import { Connectors } from '../contracts/Connectors.sol';
+import { AddressesProvider } from '../contracts/AddressesProvider.sol';
+
+import { InchV5Connector } from '../contracts/connectors/InchV5.sol';
+import { UniswapConnector } from '../contracts/connectors/Uniswap.sol';
+import { AaveV2Connector } from '../contracts/connectors/AaveV2.sol';
+import { AaveV3Connector } from '../contracts/connectors/AaveV3.sol';
+import { CompoundV3Connector } from '../contracts/connectors/CompoundV3.sol';
+import { CompoundV2Connector } from '../contracts/connectors/CompoundV2.sol';
 
 interface ICToken {
     function isCToken() external view returns (bool);
@@ -50,20 +54,13 @@ contract Deployer is Test {
     Configurator configurator;
     Account accountImpl;
 
-    struct SwapParams {
-        address fromToken;
-        uint256 amount;
-        string targetName;
-        bytes data;
-    }
-
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
         AddressesProvider addressesProvider = new AddressesProvider(address(this));
-        addressesProvider.setAddress(bytes32("ACL_ADMIN"), msg.sender);
+        addressesProvider.setAddress(bytes32('ACL_ADMIN'), msg.sender);
 
         ACLManager aclManager = new ACLManager(IAddressesProvider(address(addressesProvider)));
         connectors = new Connectors(address(addressesProvider));
@@ -74,12 +71,12 @@ contract Deployer is Test {
         vm.prank(msg.sender);
         aclManager.addRouterAdmin(msg.sender);
 
-        addressesProvider.setAddress(bytes32("ACL_MANAGER"), address(aclManager));
-        addressesProvider.setAddress(bytes32("CONNECTORS"), address(connectors));
+        addressesProvider.setAddress(bytes32('ACL_MANAGER'), address(aclManager));
+        addressesProvider.setAddress(bytes32('CONNECTORS'), address(connectors));
 
         configurator = new Configurator();
 
-        router = new Router(address(addressesProvider));
+        router = new Router(IAddressesProvider(address(addressesProvider)));
         addressesProvider.setRouterImpl(address(router));
         addressesProvider.setConfiguratorImpl(address(configurator));
 
@@ -89,16 +86,16 @@ contract Deployer is Test {
         setUpConnectors();
 
         FlashAggregator flashloanAggregator = new FlashAggregator();
-        flashResolver = new FlashResolver(address(flashloanAggregator));
+        flashResolver = new FlashResolver(IFlashAggregator(address(flashloanAggregator)));
 
         accountImpl = new Account(address(addressesProvider));
         accountProxy = new Proxy(address(addressesProvider));
 
         bytes32[] memory _namesA = new bytes32[](4);
-        _namesA[0] = bytes32("ACCOUNT");
-        _namesA[1] = bytes32("TREASURY");
-        _namesA[2] = bytes32("ACCOUNT_PROXY");
-        _namesA[3] = bytes32("FLASHLOAN_AGGREGATOR");
+        _namesA[0] = bytes32('ACCOUNT');
+        _namesA[1] = bytes32('TREASURY');
+        _namesA[2] = bytes32('ACCOUNT_PROXY');
+        _namesA[3] = bytes32('FLASHLOAN_AGGREGATOR');
 
         address[] memory _addresses = new address[](4);
         _addresses[0] = address(accountImpl);

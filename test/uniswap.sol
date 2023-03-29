@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -48,7 +48,7 @@ interface IQouter {
 }
 
 contract UniswapHelper is Tokens, Test {
-    string UNI_NAME = "UniswapAuto";
+    string UNI_NAME = 'UniswapAuto';
     IQouter quoter = IQouter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
     function getMulticalSwapData(

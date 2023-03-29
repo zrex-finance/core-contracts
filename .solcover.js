@@ -1,3 +1,3 @@
 module.exports = {
-    istanbulReporter: ["lcovonly"]
-  };
+  istanbulReporter: ['lcovonly'],
+};

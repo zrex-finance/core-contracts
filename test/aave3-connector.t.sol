@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
+import { EthConverter } from '../contracts/mocks/EthConverter.sol';
+import { AaveV3Connector } from '../contracts/connectors/AaveV3.sol';
 
-import { HelperContract } from "./deployer.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
 
-import { EthConverter } from "../src/utils/EthConverter.sol";
+import { IPool } from '../contracts/interfaces/external/aave-v3/IPool.sol';
+import { IPoolDataProvider } from '../contracts/interfaces/external/aave-v3/IPoolDataProvider.sol';
+import { IPoolAddressesProvider } from '../contracts/interfaces/external/aave-v3/IPoolAddressesProvider.sol';
 
-import { AaveV3Connector } from "../src/connectors/AaveV3.sol";
-import { IAave, IAavePoolProvider, IAaveDataProvider } from "../src/connectors/interfaces/AaveV3.sol";
+import { HelperContract } from './deployer.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -27,17 +29,17 @@ interface AaveOracle {
 
 contract LendingHelper is HelperContract, Tokens {
     uint256 RATE_TYPE = 2;
-    string NAME = "AaveV3";
+    string NAME = 'AaveV3';
 
     AaveV3Connector aaveV3Connector;
 
-    AaveOracle public aaveOracle = AaveOracle(0x54586bE62E3c3580375aE3723C145253060Ca0C2);
-    IAavePoolProvider internal constant aaveProvider = IAavePoolProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
-    IAaveDataProvider internal constant aaveDataProvider =
-        IAaveDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
+    IPoolAddressesProvider internal constant aaveProvider =
+        IPoolAddressesProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
+    IPoolDataProvider internal constant aaveDataProvider =
+        IPoolDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
@@ -88,7 +90,7 @@ contract AaveV3Logic is LendingHelper, EthConverter {
 
         execute(getDepositData(daiC, depositAmount));
 
-        IAave aave = IAave(aaveProvider.getPool());
+        IPool aave = IPool(aaveProvider.getPool());
         aave.setUserUseReserveAsCollateral(daiC, false);
 
         vm.prank(daiWhale);

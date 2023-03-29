@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { ERC20 } from "../src/dependencies/openzeppelin/contracts/ERC20.sol";
-import { Clones } from "../src/dependencies/openzeppelin/upgradeability/Clones.sol";
+import { Test } from 'forge-std/Test.sol';
+import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { IAddressesProvider } from "../src/interfaces/IAddressesProvider.sol";
-import { AddressesProvider } from "../src/protocol/configuration/AddressesProvider.sol";
+import { AddressesProvider } from '../contracts/AddressesProvider.sol';
+import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
 
-import { Account } from "../src/protocol/account/Account.sol";
+import { Account } from '../contracts/Account.sol';
 
 contract TestAccount is Test {
     Account account;
 
     address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
     address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+
+    mapping(uint => address) public test2;
 
     // Main identifiers
     function test_claimERC20Token() public {
@@ -82,32 +84,32 @@ contract TestAccount is Test {
         _premiums[0] = uint256(1 ether);
 
         bytes[] memory _bytes = new bytes[](1);
-        _bytes[0] = bytes("");
+        _bytes[0] = bytes('');
 
         string[] memory _strings = new string[](1);
-        _strings[0] = string("");
+        _strings[0] = string('');
 
-        vm.expectRevert(bytes(""));
+        vm.expectRevert(bytes(''));
         vm.prank(daiC);
         account.executeOperation(
             _tokens,
             _amounts,
             _premiums,
             address(account),
-            abi.encode(bytes4(""), _strings, _bytes, _bytes)
+            abi.encode(bytes4(''), _strings, _bytes, _bytes)
         );
     }
 
     receive() external payable {}
 
     function setUp() public {
-        string memory url = vm.rpcUrl("mainnet");
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
         address addressesProvider = address(new AddressesProvider(address(this)));
 
-        AddressesProvider(addressesProvider).setAddress(bytes32("FLASHLOAN_AGGREGATOR"), daiC);
+        AddressesProvider(addressesProvider).setAddress(bytes32('FLASHLOAN_AGGREGATOR'), daiC);
 
         account = new Account(addressesProvider);
         account.initialize(msg.sender, IAddressesProvider(addressesProvider));

@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
-import { IERC20 } from "../src/dependencies/openzeppelin/contracts/IERC20.sol";
+import { Test } from 'forge-std/Test.sol';
+import { IERC20 } from '../contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { DataTypes } from "../src/protocol/libraries/types/DataTypes.sol";
-import { UniversalERC20 } from "../src/libraries/tokens/UniversalERC20.sol";
+import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { IRouter } from '../contracts/interfaces/IRouter.sol';
+import { UniversalERC20 } from '../contracts/lib/UniversalERC20.sol';
 
-import { UniswapHelper } from "./uniswap.sol";
-import { HelperContract, Deployer } from "./deployer.sol";
+import { UniswapHelper } from './uniswap.sol';
+import { HelperContract, Deployer } from './deployer.sol';
 
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     uint256 RATE_TYPE = 1;
-    string NAME = "AaveV2";
+    string NAME = 'AaveV2';
 
     function getCollateralAmt(address _token, address _recipient) public view returns (uint256 collateralAmount) {
         collateralAmount = aaveV2Connector.getCollateralBalance(_token == ethC ? wethC : _token, _recipient);
@@ -112,7 +113,7 @@ contract PositionAaveV2 is LendingHelper {
         bytes memory swapdata = getMulticalSwapData(daiC, wethC, address(router), shortAmt);
         bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, wethC, daiC, shortAmt, swapdata);
 
-        DataTypes.SwapParams memory _params = DataTypes.SwapParams(daiC, wethC, shortAmt, "UniswapAuto", _unidata);
+        IRouter.SwapParams memory _params = IRouter.SwapParams(daiC, wethC, shortAmt, 'UniswapAuto', _unidata);
 
         topUpTokenBalance(daiC, daiWhale, shortAmt);
 
@@ -129,7 +130,7 @@ contract PositionAaveV2 is LendingHelper {
         closePosition(_position);
     }
 
-    function openShort(DataTypes.Position memory _position, DataTypes.SwapParams memory _params) public {
+    function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
