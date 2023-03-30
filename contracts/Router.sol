@@ -309,7 +309,6 @@ contract Router is Initializable, IRouter {
         address owner = _position.account;
         uint256 index = positionsIndex[owner] += 1;
         positionsIndex[owner] = index;
-        _position.timestamp = uint40(block.timestamp);
 
         bytes32 key = getKey(owner, index);
         positions[key] = _position;

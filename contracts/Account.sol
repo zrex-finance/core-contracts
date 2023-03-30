@@ -142,7 +142,7 @@ contract Account is Initializable, IAccount {
         uint16 _route,
         bytes calldata _data
     ) external override {
-        (address account, , , , , , , ) = getRouter().positions(_key);
+        (address account, , , , , , ) = getRouter().positions(_key);
         require(account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
 
         flashloan(_token, _amount, _route, _data);
@@ -264,21 +264,10 @@ contract Account is Initializable, IAccount {
             uint256 amountIn,
             uint256 sizeDelta,
             uint256 collateralAmount,
-            uint256 borrowAmount,
-            uint40 timestamp
+            uint256 borrowAmount
         ) = getRouter().positions(_key);
         require(account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
-        return
-            DataTypes.Position(
-                account,
-                debt,
-                collateral,
-                amountIn,
-                sizeDelta,
-                collateralAmount,
-                borrowAmount,
-                timestamp
-            );
+        return DataTypes.Position(account, debt, collateral, amountIn, sizeDelta, collateralAmount, borrowAmount);
     }
 
     /**

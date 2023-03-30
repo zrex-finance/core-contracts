@@ -43,7 +43,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
 contract PositionAaveV3 is LendingHelper {
     function test_OpenPosition_ClosePosition() public {
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0);
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
 
@@ -54,7 +54,7 @@ contract PositionAaveV3 is LendingHelper {
     }
 
     function test_OpenAndClose_TwoPosition() public {
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0);
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn * 2);
 
@@ -84,7 +84,7 @@ contract PositionAaveV3 is LendingHelper {
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
 
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, wethC, usdcC, exchangeAmt, 2, 0, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, wethC, usdcC, exchangeAmt, 2, 0, 0);
 
         openShort(_position, _params);
         uint256 index = router.positionsIndex(_position.account);
@@ -106,7 +106,7 @@ contract PositionAaveV3 is LendingHelper {
     function closePosition(DataTypes.Position memory _position, uint256 _index) public {
         bytes32 key = router.getKey(_position.account, _index);
 
-        (, , , , , uint256 _collateralAmount, uint256 _borrowAmount, ) = router.positions(key);
+        (, , , , , uint256 _collateralAmount, uint256 _borrowAmount) = router.positions(key);
 
         (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, _borrowAmount);
 

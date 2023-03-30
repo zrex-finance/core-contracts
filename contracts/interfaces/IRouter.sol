@@ -18,7 +18,7 @@ interface IRouter {
 
     function positions(
         bytes32 _key
-    ) external view returns (address, address, address, uint256, uint256, uint256, uint256, uint40);
+    ) external view returns (address, address, address, uint256, uint256, uint256, uint256);
 
     function accounts(address _owner) external view returns (address);
 
