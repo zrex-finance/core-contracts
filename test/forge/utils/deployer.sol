@@ -2,40 +2,34 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { DataTypes } from 'contracts/lib/DataTypes.sol';
 
-import { IFlashAggregator } from '../contracts/interfaces/IFlashAggregator.sol';
-import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
+import { IFlashAggregator } from 'contracts/interfaces/IFlashAggregator.sol';
+import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
-import { Proxy } from '../contracts/Proxy.sol';
-import { Account } from '../contracts/Account.sol';
+import { Proxy } from 'contracts/Proxy.sol';
+import { Account } from 'contracts/Account.sol';
 
-import { IRouter } from '../contracts/interfaces/IRouter.sol';
+import { IRouter } from 'contracts/interfaces/IRouter.sol';
 
-import { Router } from '../contracts/Router.sol';
-import { Configurator } from '../contracts/Configurator.sol';
+import { Router } from 'contracts/Router.sol';
+import { Configurator } from 'contracts/Configurator.sol';
 
-import { FlashResolver } from '../contracts/FlashResolver.sol';
-import { FlashAggregator } from '../contracts/FlashAggregator.sol';
+import { FlashResolver } from 'contracts/FlashResolver.sol';
+import { FlashAggregator } from 'contracts/FlashAggregator.sol';
 
-import { ACLManager } from '../contracts/ACLManager.sol';
-import { Connectors } from '../contracts/Connectors.sol';
-import { AddressesProvider } from '../contracts/AddressesProvider.sol';
+import { ACLManager } from 'contracts/ACLManager.sol';
+import { Connectors } from 'contracts/Connectors.sol';
+import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
-import { InchV5Connector } from '../contracts/connectors/InchV5.sol';
-import { UniswapConnector } from '../contracts/connectors/Uniswap.sol';
-import { AaveV2Connector } from '../contracts/connectors/AaveV2.sol';
-import { AaveV3Connector } from '../contracts/connectors/AaveV3.sol';
-import { CompoundV3Connector } from '../contracts/connectors/CompoundV3.sol';
-import { CompoundV2Connector } from '../contracts/connectors/CompoundV2.sol';
-
-interface ICToken {
-    function isCToken() external view returns (bool);
-
-    function underlying() external view returns (address);
-}
+import { InchV5Connector } from 'contracts/connectors/InchV5.sol';
+import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
+import { AaveV2Connector } from 'contracts/connectors/AaveV2.sol';
+import { AaveV3Connector } from 'contracts/connectors/AaveV3.sol';
+import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
+import { CompoundV2Connector } from 'contracts/connectors/CompoundV2.sol';
 
 contract Deployer is Test {
     FlashResolver flashResolver;
@@ -137,16 +131,5 @@ contract Deployer is Test {
 
         vm.prank(msg.sender);
         configurator.addConnectors(_names, _connectors);
-    }
-}
-
-contract HelperContract is Test {
-    address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
-    address usdcWhale = 0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078;
-
-    function topUpTokenBalance(address token, address whale, uint256 amt) public {
-        // top up msg sender balance
-        vm.prank(whale);
-        ERC20(token).transfer(msg.sender, amt);
     }
 }

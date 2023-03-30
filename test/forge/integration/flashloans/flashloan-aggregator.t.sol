@@ -2,13 +2,13 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { IERC20 } from '../contracts/dependencies/openzeppelin/contracts/IERC20.sol';
-import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
+import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
+import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { IFlashAggregator } from '../contracts/interfaces/IFlashAggregator.sol';
+import { IFlashAggregator } from 'contracts/interfaces/IFlashAggregator.sol';
 
-import { FlashAggregator } from '../contracts/FlashAggregator.sol';
-import { FlashResolver } from '../contracts/FlashResolver.sol';
+import { FlashAggregator } from 'contracts/FlashAggregator.sol';
+import { FlashResolver } from 'contracts/FlashResolver.sol';
 
 contract FakeAggregator {
     function getRoutes() public pure returns (uint16[] memory routes) {

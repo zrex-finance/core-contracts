@@ -2,9 +2,9 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { IERC20 } from '../contracts/dependencies/openzeppelin/contracts/IERC20.sol';
+import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { EthConverter } from '../contracts/mocks/EthConverter.sol';
+import { EthConverter } from 'contracts/mocks/EthConverter.sol';
 
 contract TestEthConverter is Test, EthConverter {
     address ethC = 0x0000000000000000000000000000000000000000;

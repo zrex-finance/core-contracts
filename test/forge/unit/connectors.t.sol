@@ -2,16 +2,16 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { IERC20 } from '../contracts/dependencies/openzeppelin/contracts/IERC20.sol';
+import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
+import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
-import { Connectors } from '../contracts/Connectors.sol';
-import { ACLManager } from '../contracts/ACLManager.sol';
-import { Configurator } from '../contracts/Configurator.sol';
-import { AddressesProvider } from '../contracts/AddressesProvider.sol';
+import { Connectors } from 'contracts/Connectors.sol';
+import { ACLManager } from 'contracts/ACLManager.sol';
+import { Configurator } from 'contracts/Configurator.sol';
+import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
-import { Errors } from '../contracts/lib/Errors.sol';
+import { Errors } from 'contracts/lib/Errors.sol';
 
 contract ConnectorImpl {
     string public constant name = 'ConnectorImpl';

@@ -2,23 +2,23 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
-import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { DataTypes } from '../contracts/lib/DataTypes.sol';
-import { IAddressesProvider } from '../contracts/interfaces/IAddressesProvider.sol';
+import { DataTypes } from 'contracts/lib/DataTypes.sol';
+import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
-import { IRouter } from '../contracts/interfaces/IRouter.sol';
+import { IRouter } from 'contracts/interfaces/IRouter.sol';
 
-import { UniswapConnector } from '../contracts/connectors/Uniswap.sol';
+import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
 
-import { Router } from '../contracts/Router.sol';
-import { Connectors } from '../contracts/Connectors.sol';
-import { ACLManager } from '../contracts/ACLManager.sol';
-import { Configurator } from '../contracts/Configurator.sol';
-import { AddressesProvider } from '../contracts/AddressesProvider.sol';
+import { Router } from 'contracts/Router.sol';
+import { Connectors } from 'contracts/Connectors.sol';
+import { ACLManager } from 'contracts/ACLManager.sol';
+import { Configurator } from 'contracts/Configurator.sol';
+import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
-import { UniswapHelper } from './uniswap.sol';
+import { UniswapHelper } from '../../utils/uniswap.sol';
 
 contract TestRouterSwap is Test, UniswapHelper {
     Router router;

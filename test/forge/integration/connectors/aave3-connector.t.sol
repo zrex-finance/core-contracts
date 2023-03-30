@@ -2,18 +2,18 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { EthConverter } from '../contracts/mocks/EthConverter.sol';
-import { AaveV3Connector } from '../contracts/connectors/AaveV3.sol';
+import { EthConverter } from 'contracts/mocks/EthConverter.sol';
+import { AaveV3Connector } from 'contracts/connectors/AaveV3.sol';
 
-import { DataTypes } from '../contracts/lib/DataTypes.sol';
+import { DataTypes } from 'contracts/lib/DataTypes.sol';
 
-import { IPool } from '../contracts/interfaces/external/aave-v3/IPool.sol';
-import { IPoolDataProvider } from '../contracts/interfaces/external/aave-v3/IPoolDataProvider.sol';
-import { IPoolAddressesProvider } from '../contracts/interfaces/external/aave-v3/IPoolAddressesProvider.sol';
+import { IPool } from 'contracts/interfaces/external/aave-v3/IPool.sol';
+import { IPoolDataProvider } from 'contracts/interfaces/external/aave-v3/IPoolDataProvider.sol';
+import { IPoolAddressesProvider } from 'contracts/interfaces/external/aave-v3/IPoolAddressesProvider.sol';
 
-import { HelperContract } from './deployer.sol';
+import { HelperContract } from '../../utils/helper.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;

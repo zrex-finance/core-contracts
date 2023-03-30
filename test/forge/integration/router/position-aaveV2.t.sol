@@ -2,77 +2,116 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { DataTypes } from '../contracts/lib/DataTypes.sol';
-import { IRouter } from '../contracts/interfaces/IRouter.sol';
+import { DataTypes } from 'contracts/lib/DataTypes.sol';
+import { IRouter } from 'contracts/interfaces/IRouter.sol';
+import { UniversalERC20 } from 'contracts/lib/UniversalERC20.sol';
 
-import { UniswapHelper } from './uniswap.sol';
-import { HelperContract, Deployer } from './deployer.sol';
+import { Deployer } from '../../utils/deployer.sol';
+import { UniswapHelper } from '../../utils/uniswap.sol';
+import { HelperContract } from '../../utils/helper.sol';
 
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
-    uint256 RATE_TYPE = 2;
-    uint256 ROUTE = 4;
-    string NAME = 'AaveV3';
+    uint256 RATE_TYPE = 1;
+    string NAME = 'AaveV2';
 
     function getCollateralAmt(address _token, address _recipient) public view returns (uint256 collateralAmount) {
-        collateralAmount = aaveV3Connector.getCollateralBalance(_token == ethC ? wethC : _token, _recipient);
+        collateralAmount = aaveV2Connector.getCollateralBalance(_token == ethC ? wethC : _token, _recipient);
     }
 
     function getBorrowAmt(address _token, address _recipient) public view returns (uint256 borrowAmount) {
-        borrowAmount = aaveV3Connector.getPaybackBalance(_token, _recipient, RATE_TYPE);
+        borrowAmount = aaveV2Connector.getPaybackBalance(_token, RATE_TYPE, _recipient);
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE);
+        _data = abi.encodeWithSelector(aaveV2Connector.payback.selector, _token, _amount, RATE_TYPE);
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount);
+        _data = abi.encodeWithSelector(aaveV2Connector.withdraw.selector, _token, _amount);
     }
 
     function getDepositData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token);
+        _data = abi.encodeWithSelector(aaveV2Connector.deposit.selector, _token);
     }
 
     function getBorrowData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE);
+        _data = abi.encodeWithSelector(aaveV2Connector.borrow.selector, _token, RATE_TYPE);
     }
 }
 
-contract PositionAaveV3 is LendingHelper {
-    function testLongPositionAccount() public {
-        DataTypes.Position memory _position = DataTypes.Position(
-            msg.sender,
-            address(daiC),
-            wethC,
-            1000 ether,
-            2,
-            0,
-            0,
-            0
-        );
+contract PositionAaveV2 is LendingHelper {
+    using UniversalERC20 for IERC20;
+
+    function test_OpenPosition_ClosePosition() public {
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0, 0);
 
         topUpTokenBalance(daiC, daiWhale, _position.amountIn);
 
         openPosition(_position);
-        closePosition(_position);
+        uint256 index = router.positionsIndex(_position.account);
+
+        closePosition(_position, index);
+    }
+
+    function test_OpenAndClose_TwoPosition() public {
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0, 0);
+
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn * 2);
+
+        openPosition(_position);
+        uint256 index1 = router.positionsIndex(_position.account);
+
+        openPosition(_position);
+        uint256 index2 = router.positionsIndex(_position.account);
+
+        closePosition(_position, index1);
+        closePosition(_position, index2);
+    }
+
+    function test_SwapAndOpen_ClosePosition() public {
+        uint256 shortAmt = 2000 ether;
+
+        bytes memory swapdata = getMulticalSwapData(daiC, wethC, address(router), shortAmt);
+        bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, wethC, daiC, shortAmt, swapdata);
+
+        IRouter.SwapParams memory _params = IRouter.SwapParams(daiC, wethC, shortAmt, 'UniswapAuto', _unidata);
+
+        topUpTokenBalance(daiC, daiWhale, shortAmt);
+
+        // approve tokens
+        vm.prank(msg.sender);
+        IERC20(daiC).approve(address(router), shortAmt);
+
+        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
+
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, wethC, usdcC, exchangeAmt, 2, 0, 0, 0);
+
+        openShort(_position, _params);
+        uint256 index = router.positionsIndex(_position.account);
+
+        closePosition(_position, index);
     }
 
     function openPosition(DataTypes.Position memory _position) public {
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(router), _position.amountIn);
+        bool isEth = IERC20(_position.debt).isETH();
+
+        if (!isEth) {
+            vm.prank(msg.sender);
+            IERC20(_position.debt).approve(address(router), _position.amountIn);
+        }
 
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
+        uint256 value = isEth ? _position.amountIn : 0;
+
         vm.prank(msg.sender);
-        router.openPosition(_position, _token, _amount, _route, _data);
+        router.openPosition{ value: value }(_position, _token, _amount, _route, _data);
     }
 
-    function closePosition(DataTypes.Position memory _position) public {
-        uint256 index = router.positionsIndex(_position.account);
-        bytes32 key = router.getKey(_position.account, index);
+    function closePosition(DataTypes.Position memory _position, uint256 _index) public {
+        bytes32 key = router.getKey(_position.account, _index);
 
         (, , , , , uint256 _collateralAmount, uint256 _borrowAmount, ) = router.positions(key);
 
@@ -93,29 +132,6 @@ contract PositionAaveV3 is LendingHelper {
         router.closePosition(key, _token, _amount, _route, _calldata);
     }
 
-    function testShortPosition() public {
-        uint256 shortAmt = 2000 ether;
-
-        bytes memory swapdata = getMulticalSwapData(daiC, wethC, address(router), shortAmt);
-        bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, wethC, daiC, shortAmt, swapdata);
-
-        IRouter.SwapParams memory _params = IRouter.SwapParams(daiC, wethC, shortAmt, 'UniswapAuto', _unidata);
-
-        topUpTokenBalance(daiC, daiWhale, shortAmt);
-
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(daiC).approve(address(router), shortAmt);
-
-        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
-
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, wethC, usdcC, exchangeAmt, 2, 0, 0, 0);
-
-        openShort(_position, _params);
-
-        closePosition(_position);
-    }
-
     function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
@@ -132,8 +148,8 @@ contract PositionAaveV3 is LendingHelper {
 
         string[] memory _targetNames = new string[](3);
         _targetNames[0] = uniswapConnector.name();
-        _targetNames[1] = aaveV3Connector.name();
-        _targetNames[2] = aaveV3Connector.name();
+        _targetNames[1] = aaveV2Connector.name();
+        _targetNames[2] = aaveV2Connector.name();
 
         bytes[] memory _customDatas = new bytes[](1);
         _customDatas[0] = abi.encode(key);
@@ -164,8 +180,8 @@ contract PositionAaveV3 is LendingHelper {
         _customDatas[0] = abi.encodePacked(key);
 
         string[] memory _targetNames = new string[](3);
-        _targetNames[0] = aaveV3Connector.name();
-        _targetNames[1] = aaveV3Connector.name();
+        _targetNames[0] = aaveV2Connector.name();
+        _targetNames[1] = aaveV2Connector.name();
         _targetNames[2] = uniswapConnector.name();
 
         bytes[] memory _datas = new bytes[](3);
@@ -177,6 +193,8 @@ contract PositionAaveV3 is LendingHelper {
     }
 
     function getFlashloanData(address lT, uint256 lA) public view returns (address, uint256, uint16) {
+        lT = IERC20(lT).isETH() ? wethC : lT;
+
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);
         _tokens[0] = lT;

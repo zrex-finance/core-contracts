@@ -2,13 +2,14 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from '../contracts/lib/DataTypes.sol';
-import { IRouter } from '../contracts/interfaces/IRouter.sol';
+import { DataTypes } from 'contracts/lib/DataTypes.sol';
+import { IRouter } from 'contracts/interfaces/IRouter.sol';
 
-import { UniswapHelper } from './uniswap.sol';
-import { HelperContract, Deployer } from './deployer.sol';
+import { Deployer } from '../../utils/deployer.sol';
+import { UniswapHelper } from '../../utils/uniswap.sol';
+import { HelperContract } from '../../utils/helper.sol';
 
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
     string NAME = 'CompoundV2';
@@ -39,50 +40,33 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 }
 
 contract PositionCompoundV2 is LendingHelper {
-    function testLongPositionAccount() public {
+    function test_OpenPosition_ClosePosition() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, 1000000000, 2, 0, 0, 0);
 
         topUpTokenBalance(usdcC, usdcWhale, _position.amountIn);
 
         openPosition(_position);
-        closePosition(_position);
-    }
-
-    function openPosition(DataTypes.Position memory _position) public {
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(_position.debt).approve(address(router), _position.amountIn);
-
-        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
-
-        vm.prank(msg.sender);
-        router.openPosition(_position, _token, _amount, _route, _data);
-    }
-
-    function closePosition(DataTypes.Position memory _position) public {
         uint256 index = router.positionsIndex(_position.account);
-        bytes32 key = router.getKey(_position.account, index);
 
-        (, , , , , uint256 _collateralAmount, uint256 _borrowAmount, ) = router.positions(key);
-
-        (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, _borrowAmount);
-
-        address account = router.accounts(_position.account);
-
-        bytes memory _calldata = getCloseCallbackData(
-            _position.debt,
-            _position.collateral,
-            _collateralAmount,
-            _borrowAmount,
-            account,
-            key
-        );
-
-        vm.prank(msg.sender);
-        router.closePosition(key, _token, _amount, _route, _calldata);
+        closePosition(_position, index);
     }
 
-    function testShortPosition() public {
+    function test_OpenAndClose_TwoPosition() public {
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, 1000000000, 2, 0, 0, 0);
+
+        topUpTokenBalance(usdcC, usdcWhale, _position.amountIn * 2);
+
+        openPosition(_position);
+        uint256 index1 = router.positionsIndex(_position.account);
+
+        openPosition(_position);
+        uint256 index2 = router.positionsIndex(_position.account);
+
+        closePosition(_position, index1);
+        closePosition(_position, index2);
+    }
+
+    function test_SwapAndOpen_ClosePosition() public {
         uint256 shortAmt = 2000 ether;
 
         bytes memory swapdata = getMulticalSwapData(daiC, usdcC, address(router), shortAmt);
@@ -101,8 +85,42 @@ contract PositionCompoundV2 is LendingHelper {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, exchangeAmt, 2, 0, 0, 0);
 
         openShort(_position, _params);
+        uint256 index = router.positionsIndex(_position.account);
 
-        closePosition(_position);
+        closePosition(_position, index);
+    }
+
+    function openPosition(DataTypes.Position memory _position) public {
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(address(router), _position.amountIn);
+
+        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
+
+        vm.prank(msg.sender);
+        router.openPosition(_position, _token, _amount, _route, _data);
+    }
+
+    function closePosition(DataTypes.Position memory _position, uint256 _index) public {
+        bytes32 key = router.getKey(_position.account, _index);
+
+        (, , , , , uint256 _collateralAmount, uint256 _borrowAmount, ) = router.positions(key);
+
+        (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, _borrowAmount);
+
+        address account = router.accounts(_position.account);
+
+        bytes memory _calldata = getCloseCallbackData(
+            _position.debt,
+            _position.collateral,
+            _collateralAmount,
+            _borrowAmount,
+            account,
+            key
+        );
+
+        vm.prank(msg.sender);
+        router.closePosition(key, _token, _amount, _route, _calldata);
     }
 
     function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {

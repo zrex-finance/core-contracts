@@ -2,10 +2,10 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
-import { Clones } from '../contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { AddressesProvider } from '../contracts/AddressesProvider.sol';
+import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
 interface IProxy {
     function admin() external returns (address);

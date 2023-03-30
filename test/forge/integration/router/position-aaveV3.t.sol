@@ -2,55 +2,94 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from '../contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from '../contracts/lib/DataTypes.sol';
-import { IRouter } from '../contracts/interfaces/IRouter.sol';
+import { DataTypes } from 'contracts/lib/DataTypes.sol';
+import { IRouter } from 'contracts/interfaces/IRouter.sol';
 
-import { UniswapHelper } from './uniswap.sol';
-import { HelperContract, Deployer } from './deployer.sol';
+import { Deployer } from '../../utils/deployer.sol';
+import { UniswapHelper } from '../../utils/uniswap.sol';
+import { HelperContract } from '../../utils/helper.sol';
 
 contract LendingHelper is HelperContract, UniswapHelper, Deployer {
-    address USDC_MARKET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-    string NAME = 'CompoundV3';
+    uint256 RATE_TYPE = 2;
+    uint256 ROUTE = 4;
+    string NAME = 'AaveV3';
 
     function getCollateralAmt(address _token, address _recipient) public view returns (uint256 collateralAmount) {
-        collateralAmount = compoundV3Connector.collateralBalanceOf(
-            USDC_MARKET,
-            _recipient,
-            _token == ethC || _token == ethC2 ? wethC : _token
-        );
+        collateralAmount = aaveV3Connector.getCollateralBalance(_token == ethC ? wethC : _token, _recipient);
     }
 
-    function getBorrowAmt(address /* _token */, address _recipient) public view returns (uint256 borrowAmount) {
-        borrowAmount = compoundV3Connector.borrowBalanceOf(USDC_MARKET, _recipient);
+    function getBorrowAmt(address _token, address _recipient) public view returns (uint256 borrowAmount) {
+        borrowAmount = aaveV3Connector.getPaybackBalance(_token, _recipient, RATE_TYPE);
     }
 
     function getPaybackData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.payback.selector, USDC_MARKET, _token, _amount);
+        _data = abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE);
     }
 
     function getWithdrawData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.withdraw.selector, USDC_MARKET, _token, _amount);
+        _data = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount);
     }
 
     function getDepositData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.deposit.selector, USDC_MARKET, _token);
+        _data = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token);
     }
 
     function getBorrowData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.borrow.selector, USDC_MARKET, _token);
+        _data = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE);
     }
 }
 
-contract PositionCompoundV3 is LendingHelper {
-    function testLongPositionAccount() public {
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, wethC, 1000000000, 2, 0, 0, 0);
+contract PositionAaveV3 is LendingHelper {
+    function test_OpenPosition_ClosePosition() public {
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0, 0);
 
-        topUpTokenBalance(usdcC, usdcWhale, _position.amountIn);
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn);
 
         openPosition(_position);
-        closePosition(_position);
+        uint256 index = router.positionsIndex(_position.account);
+
+        closePosition(_position, index);
+    }
+
+    function test_OpenAndClose_TwoPosition() public {
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0, 0);
+
+        topUpTokenBalance(daiC, daiWhale, _position.amountIn * 2);
+
+        openPosition(_position);
+        uint256 index1 = router.positionsIndex(_position.account);
+
+        openPosition(_position);
+        uint256 index2 = router.positionsIndex(_position.account);
+
+        closePosition(_position, index1);
+        closePosition(_position, index2);
+    }
+
+    function test_SwapAndOpen_ClosePosition() public {
+        uint256 shortAmt = 2000 ether;
+
+        bytes memory swapdata = getMulticalSwapData(daiC, wethC, address(router), shortAmt);
+        bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, wethC, daiC, shortAmt, swapdata);
+
+        IRouter.SwapParams memory _params = IRouter.SwapParams(daiC, wethC, shortAmt, 'UniswapAuto', _unidata);
+
+        topUpTokenBalance(daiC, daiWhale, shortAmt);
+
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(daiC).approve(address(router), shortAmt);
+
+        uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
+
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, wethC, usdcC, exchangeAmt, 2, 0, 0, 0);
+
+        openShort(_position, _params);
+        uint256 index = router.positionsIndex(_position.account);
+
+        closePosition(_position, index);
     }
 
     function openPosition(DataTypes.Position memory _position) public {
@@ -64,9 +103,8 @@ contract PositionCompoundV3 is LendingHelper {
         router.openPosition(_position, _token, _amount, _route, _data);
     }
 
-    function closePosition(DataTypes.Position memory _position) public {
-        uint256 index = router.positionsIndex(_position.account);
-        bytes32 key = router.getKey(_position.account, index);
+    function closePosition(DataTypes.Position memory _position, uint256 _index) public {
+        bytes32 key = router.getKey(_position.account, _index);
 
         (, , , , , uint256 _collateralAmount, uint256 _borrowAmount, ) = router.positions(key);
 
@@ -87,29 +125,6 @@ contract PositionCompoundV3 is LendingHelper {
         router.closePosition(key, _token, _amount, _route, _calldata);
     }
 
-    function testShortPosition() public {
-        uint256 shortAmt = 2000 ether;
-
-        bytes memory swapdata = getMulticalSwapData(daiC, usdcC, address(router), shortAmt);
-        bytes memory _unidata = abi.encodeWithSelector(uniswapConnector.swap.selector, usdcC, daiC, shortAmt, swapdata);
-
-        IRouter.SwapParams memory _params = IRouter.SwapParams(daiC, usdcC, shortAmt, 'UniswapAuto', _unidata);
-
-        topUpTokenBalance(daiC, daiWhale, shortAmt);
-
-        // approve tokens
-        vm.prank(msg.sender);
-        ERC20(daiC).approve(address(router), shortAmt);
-
-        uint256 exchangeAmt = quoteExactInputSingle(daiC, usdcC, shortAmt);
-
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, wethC, exchangeAmt, 2, 0, 0, 0);
-
-        openShort(_position, _params);
-
-        closePosition(_position);
-    }
-
     function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
@@ -126,8 +141,8 @@ contract PositionCompoundV3 is LendingHelper {
 
         string[] memory _targetNames = new string[](3);
         _targetNames[0] = uniswapConnector.name();
-        _targetNames[1] = compoundV3Connector.name();
-        _targetNames[2] = compoundV3Connector.name();
+        _targetNames[1] = aaveV3Connector.name();
+        _targetNames[2] = aaveV3Connector.name();
 
         bytes[] memory _customDatas = new bytes[](1);
         _customDatas[0] = abi.encode(key);
@@ -158,8 +173,8 @@ contract PositionCompoundV3 is LendingHelper {
         _customDatas[0] = abi.encodePacked(key);
 
         string[] memory _targetNames = new string[](3);
-        _targetNames[0] = compoundV3Connector.name();
-        _targetNames[1] = compoundV3Connector.name();
+        _targetNames[0] = aaveV3Connector.name();
+        _targetNames[1] = aaveV3Connector.name();
         _targetNames[2] = uniswapConnector.name();
 
         bytes[] memory _datas = new bytes[](3);
