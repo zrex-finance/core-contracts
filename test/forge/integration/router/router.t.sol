@@ -30,7 +30,6 @@ contract TestRouterSwap is Test, UniswapHelper {
     address testAddress;
     address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
-    // Main identifiers
     function test_swapDaiToWeth() public {
         uint256 amount = 1000 ether;
 

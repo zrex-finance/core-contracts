@@ -172,7 +172,7 @@ contract Router is Initializable, IRouter {
         uint256 _amount,
         uint16 _route,
         bytes calldata _data
-    ) external payable override {
+    ) external override {
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
         _openPosition(_position, _token, _amount, _route, _data);
     }
@@ -314,7 +314,7 @@ contract Router is Initializable, IRouter {
         positions[key] = _position;
 
         IERC20(_position.debt).universalApprove(account, _position.amountIn);
-        IAccount(account).openPosition{ value: msg.value }(_position, _token, _amount, _route, _data);
+        IAccount(account).openPosition(_position, _token, _amount, _route, _data);
 
         // Get the position on the key because, update it in the process of creating
         emit OpenPosition(key, account, index, positions[key]);

@@ -3,7 +3,7 @@ import { solidity } from 'ethereum-waffle';
 import chai from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 import { BigNumber } from 'ethers';
-import { ERC20, Router, InchV5Connector } from '../typechain-types';
+import { ERC20, Router, InchV5Connector } from '../../typechain-types';
 
 import { inchCalldata, getSignerFromAddress } from './utils';
 
@@ -30,11 +30,7 @@ describe('OneInch v5 connector', async () => {
   beforeEach(async () => {
     [owner, other] = await ethers.getSigners();
 
-    daiContract = (await ethers.getContractAt('IERC20', DAI_CONTRACT)) as ERC20;
-
-    // usdcContract = await usdcContract.connect(
-    //   await getSignerFromAddress("0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078")
-    // );
+    daiContract = (await ethers.getContractAt('contracts/dependencies/openzeppelin/contracts/IERC20.sol:IERC20', DAI_CONTRACT)) as ERC20;
 
     const inchV5ConnectorFactory = await ethers.getContractFactory('InchV5Connector');
     inchV5Connector = await inchV5ConnectorFactory.deploy();

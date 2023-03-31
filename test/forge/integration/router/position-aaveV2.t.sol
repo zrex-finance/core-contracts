@@ -95,19 +95,13 @@ contract PositionAaveV2 is LendingHelper {
     }
 
     function openPosition(DataTypes.Position memory _position) public {
-        bool isEth = IERC20(_position.debt).isETH();
-
-        if (!isEth) {
-            vm.prank(msg.sender);
-            IERC20(_position.debt).approve(address(router), _position.amountIn);
-        }
+        vm.prank(msg.sender);
+        IERC20(_position.debt).approve(address(router), _position.amountIn);
 
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
-        uint256 value = isEth ? _position.amountIn : 0;
-
         vm.prank(msg.sender);
-        router.openPosition{ value: value }(_position, _token, _amount, _route, _data);
+        router.openPosition(_position, _token, _amount, _route, _data);
     }
 
     function closePosition(DataTypes.Position memory _position, uint256 _index) public {

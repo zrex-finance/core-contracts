@@ -118,7 +118,7 @@ contract Account is Initializable, IAccount {
         uint256 _amount,
         uint16 _route,
         bytes calldata _data
-    ) external payable override {
+    ) external override {
         require(_position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
 
@@ -163,7 +163,7 @@ contract Account is Initializable, IAccount {
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
         uint256 _repayAmount
-    ) external payable override onlyCallback {
+    ) external override onlyCallback {
         uint256 value = _swap(_targetNames[0], _datas[0]);
         execute(_targetNames[1], abi.encodePacked(_datas[1], value));
         execute(_targetNames[1], abi.encodePacked(_datas[2], _repayAmount));
@@ -191,7 +191,7 @@ contract Account is Initializable, IAccount {
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
         uint256 _repayAmount
-    ) external payable override onlyCallback {
+    ) external override onlyCallback {
         execute(_targetNames[0], _datas[0]);
         execute(_targetNames[1], _datas[1]);
 
@@ -205,7 +205,7 @@ contract Account is Initializable, IAccount {
 
     /**
      * @dev Takes a loan, and call `callbackFunction` inside the loan.
-     * _tokens Tokens that was Flashloan.
+     * param Tokens that was Flashloan.
      * @param _amounts Amounts that was Flashloan.
      * @param _premiums Loan repayment fee.
      * @param _initiator Address from which the loan was initiated.

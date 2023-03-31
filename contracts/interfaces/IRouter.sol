@@ -39,7 +39,7 @@ interface IRouter {
         uint256 _amount,
         uint16 _route,
         bytes calldata _data
-    ) external payable;
+    ) external;
 
     function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;
 

@@ -13,7 +13,7 @@ interface IAccount {
         uint256 _amount,
         uint16 _route,
         bytes calldata _data
-    ) external payable;
+    ) external;
 
     function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;
 
@@ -22,14 +22,14 @@ interface IAccount {
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
         uint256 _repayAmount
-    ) external payable;
+    ) external;
 
     function closePositionCallback(
         string[] memory _targetNames,
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
         uint256 _repayAmount
-    ) external payable;
+    ) external;
 
     function executeOperation(
         address[] calldata /* _tokens */,
