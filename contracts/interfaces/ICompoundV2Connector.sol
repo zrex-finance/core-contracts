@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
 import { CErc20Interface } from './external/compound-v2/CTokenInterfaces.sol';

@@ -98,7 +98,7 @@ contract PositionCompoundV2 is LendingHelper {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        router.openPosition(_position, _token, _amount, _route, _data);
+        router.openPosition(_position, _route, _data);
     }
 
     function closePosition(DataTypes.Position memory _position, uint256 _index) public {
@@ -127,7 +127,7 @@ contract PositionCompoundV2 is LendingHelper {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        router.swapAndOpen(_position, _token, _amount, _route, _data, _params);
+        router.swapAndOpen(_position, _route, _data, _params);
     }
 
     function getOpenCallbackData(

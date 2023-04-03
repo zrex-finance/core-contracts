@@ -44,6 +44,17 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 contract PositionAaveV2 is LendingHelper {
     using UniversalERC20 for IERC20;
 
+    function test_OpenPosition_ClosePositionUSDT() public {
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdtC, wethC, 1000000000, 2, 0, 0);
+
+        topUpTokenBalance(usdtC, usdtWhale, _position.amountIn);
+
+        openPosition(_position);
+        uint256 index = router.positionsIndex(_position.account);
+
+        closePosition(_position, index);
+    }
+
     function test_OpenPosition_ClosePosition() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0);
 
@@ -82,7 +93,7 @@ contract PositionAaveV2 is LendingHelper {
 
         // approve tokens
         vm.prank(msg.sender);
-        IERC20(daiC).approve(address(router), shortAmt);
+        IERC20(daiC).universalApprove(address(router), shortAmt);
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
 
@@ -95,13 +106,14 @@ contract PositionAaveV2 is LendingHelper {
     }
 
     function openPosition(DataTypes.Position memory _position) public {
-        vm.prank(msg.sender);
-        IERC20(_position.debt).approve(address(router), _position.amountIn);
+        vm.startPrank(msg.sender);
+        IERC20(_position.debt).universalApprove(address(router), _position.amountIn);
+        vm.stopPrank();
 
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        router.openPosition(_position, _token, _amount, _route, _data);
+        router.openPosition(_position, _route, _data);
     }
 
     function closePosition(DataTypes.Position memory _position, uint256 _index) public {
@@ -130,7 +142,7 @@ contract PositionAaveV2 is LendingHelper {
         (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        router.swapAndOpen(_position, _token, _amount, _route, _data, _params);
+        router.swapAndOpen(_position, _route, _data, _params);
     }
 
     function getOpenCallbackData(

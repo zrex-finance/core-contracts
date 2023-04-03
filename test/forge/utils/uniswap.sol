@@ -6,6 +6,7 @@ import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 contract Tokens {
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address usdtC = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
     address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address ethC = 0x0000000000000000000000000000000000000000;
     address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

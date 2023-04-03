@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
 import { IERC20 } from './dependencies/openzeppelin/contracts/IERC20.sol';
@@ -140,41 +140,29 @@ contract Router is Initializable, IRouter {
     /**
      * @dev Exchanges the input token for the necessary token to create a position and opens it.
      * @param _position The structure of the current position.
-     * @param _token Flashloan token.
-     * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      * @param _params The additional parameters needed to the exchange.
      */
     function swapAndOpen(
         DataTypes.Position memory _position,
-        address _token,
-        uint256 _amount,
         uint16 _route,
         bytes calldata _data,
         SwapParams memory _params
     ) external payable override {
         _position.amountIn = _swap(_params);
-        _openPosition(_position, _token, _amount, _route, _data);
+        _openPosition(_position, _route, _data);
     }
 
     /**
      * @dev Create a position on the lendings protocol.
      * @param _position The structure of the current position.
-     * @param _token Flashloan token.
-     * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
-    function openPosition(
-        DataTypes.Position memory _position,
-        address _token,
-        uint256 _amount,
-        uint16 _route,
-        bytes calldata _data
-    ) external override {
+    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external override {
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
-        _openPosition(_position, _token, _amount, _route, _data);
+        _openPosition(_position, _route, _data);
     }
 
     /**
@@ -295,13 +283,7 @@ contract Router is Initializable, IRouter {
      * @dev Create user account if user doesn't have it. Update position index and position state.
      * Call openPosition on the user account proxy contract.
      */
-    function _openPosition(
-        DataTypes.Position memory _position,
-        address _token,
-        uint256 _amount,
-        uint16 _route,
-        bytes calldata _data
-    ) private {
+    function _openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) private {
         require(_position.account == msg.sender, Errors.CALLER_NOT_POSITION_OWNER);
 
         address account = getOrCreateAccount(msg.sender);
@@ -314,7 +296,7 @@ contract Router is Initializable, IRouter {
         positions[key] = _position;
 
         IERC20(_position.debt).universalApprove(account, _position.amountIn);
-        IAccount(account).openPosition(_position, _token, _amount, _route, _data);
+        IAccount(account).openPosition(_position, _route, _data);
 
         // Get the position on the key because, update it in the process of creating
         emit OpenPosition(key, account, index, positions[key]);

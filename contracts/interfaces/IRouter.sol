@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
 import { DataTypes } from '../lib/DataTypes.sol';
@@ -26,20 +26,12 @@ interface IRouter {
 
     function swapAndOpen(
         DataTypes.Position memory _position,
-        address _token,
-        uint256 _amount,
         uint16 _route,
         bytes calldata _data,
         SwapParams memory _params
     ) external payable;
 
-    function openPosition(
-        DataTypes.Position memory _position,
-        address _token,
-        uint256 _amount,
-        uint16 _route,
-        bytes calldata _data
-    ) external;
+    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external;
 
     function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;
 

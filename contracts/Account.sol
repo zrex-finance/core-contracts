@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
 import { IERC20 } from './dependencies/openzeppelin/contracts/IERC20.sol';
@@ -107,24 +107,18 @@ contract Account is Initializable, IAccount {
     /**
      * @dev Takes a loan, calls `openPositionCallback` inside the loan, and transfers the commission.
      * @param _position The structure of the current position.
-     * @param _token Flashloan token.
-     * @param _amount Flashloan amount.
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
-    function openPosition(
-        DataTypes.Position memory _position,
-        address _token,
-        uint256 _amount,
-        uint16 _route,
-        bytes calldata _data
-    ) external override {
+    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external override {
         require(_position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
 
-        flashloan(_token, _amount, _route, _data);
+        uint256 amount = _position.amountIn * (_position.sizeDelta - 1);
 
-        require(chargeFee(_position.amountIn + _amount, _position.debt), Errors.CHARGE_FEE_NOT_COMPLETED);
+        flashloan(_position.debt, amount, _route, _data);
+
+        require(chargeFee(_position.amountIn + amount, _position.debt), Errors.CHARGE_FEE_NOT_COMPLETED);
     }
 
     /**
@@ -173,7 +167,7 @@ contract Account is Initializable, IAccount {
         position.borrowAmount = _repayAmount;
 
         getRouter().updatePosition(position);
-        IERC20(position.debt).transfer(ADDRESSES_PROVIDER.getFlashloanAggregator(), _repayAmount);
+        IERC20(position.debt).universalTransfer(ADDRESSES_PROVIDER.getFlashloanAggregator(), _repayAmount);
     }
 
     /**
