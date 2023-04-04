@@ -10,7 +10,9 @@ library Errors {
     // The caller of the function is not a account owner
     string public constant CALLER_NOT_ACCOUNT_OWNER = '1';
     // The caller of the function is not a account contract
+    // The caller of the function is not a account contract
     string public constant CALLER_NOT_RECEIVER = '2';
+    // The caller of the function is not a flash aggregatoor contract
     // The caller of the function is not a flash aggregatoor contract
     string public constant CALLER_NOT_FLASH_AGGREGATOR = '3';
     // The caller of the function is not a position owner
@@ -51,6 +53,8 @@ library Errors {
     string public constant CALLER_NOT_CONNECTOR_ADMIN = '22';
     // Address should be not zero address
     string public constant ADDRESS_IS_ZERO = '23';
+    // The caller of the function is not a account contract
+    string public constant CALLER_NOT_ROUTER = '24';
     // The caller of the function is not a router contract
     string public constant CALLER_NOT_ROUTER = '24';
     // The call to the open/close callback function failed

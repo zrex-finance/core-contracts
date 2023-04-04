@@ -8,7 +8,11 @@ interface IAddressesProvider {
 
     function setConfiguratorImpl(address _newConfiguratorImpl) external;
 
+    function setReferralImpl(address _newReferralImpl) external;
+
     function getRouter() external view returns (address);
+
+    function getReferral() external view returns (address);
 
     function getConfigurator() external view returns (address);
 

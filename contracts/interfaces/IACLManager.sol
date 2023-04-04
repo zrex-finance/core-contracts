@@ -12,7 +12,13 @@ interface IACLManager {
 
     function removeRouterAdmin(address admin) external;
 
+    function addReferralAdmin(address admin) external;
+
+    function removeReferralAdmin(address admin) external;
+
     function isConnectorAdmin(address admin) external view returns (bool);
 
     function isRouterAdmin(address admin) external view returns (bool);
+
+    function isReferralAdmin(address admin) external view returns (bool);
 }
