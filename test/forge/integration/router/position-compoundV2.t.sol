@@ -41,7 +41,7 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 
 contract PositionCompoundV2 is LendingHelper {
     function test_OpenPosition_ClosePosition() public {
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, 1000000000, 2, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, 1000000000, 21000, 0, 0);
 
         topUpTokenBalance(usdcC, usdcWhale, _position.amountIn);
 
@@ -52,7 +52,7 @@ contract PositionCompoundV2 is LendingHelper {
     }
 
     function test_OpenAndClose_TwoPosition() public {
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, 1000000000, 2, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, 1000000000, 21000, 0, 0);
 
         topUpTokenBalance(usdcC, usdcWhale, _position.amountIn * 2);
 
@@ -82,7 +82,7 @@ contract PositionCompoundV2 is LendingHelper {
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, usdcC, shortAmt);
 
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, exchangeAmt, 2, 0, 0);
+        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, daiC, exchangeAmt, 21000, 0, 0);
 
         openShort(_position, _params);
         uint256 index = router.positionsIndex(_position.account);
@@ -195,11 +195,11 @@ contract PositionCompoundV2 is LendingHelper {
     }
 
     function _openPosition(DataTypes.Position memory _position) public view returns (uint16, bytes memory) {
-        uint256 loanAmt = _position.amountIn * (_position.leverage - 1);
+        uint256 loanAmt = _position.amountIn * (_position.leverage - 10000);
 
         uint16 _route = getFlashloanData(_position.debt, loanAmt);
 
-        uint256 swapAmount = _position.amountIn * _position.leverage;
+        uint256 swapAmount = (_position.amountIn * _position.leverage) / 10000;
         // protocol fee 0.5% denominator 10000
         uint256 swapAmountWithoutFee = swapAmount - ((swapAmount * 50) / 10000);
 

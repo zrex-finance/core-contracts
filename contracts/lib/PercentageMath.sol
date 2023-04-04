@@ -10,4 +10,8 @@ pragma solidity ^0.8.17;
 library PercentageMath {
     // Maximum percentage factor (100.00%)
     uint256 internal constant PERCENTAGE_FACTOR = 1e4;
+
+    function mulTo(uint256 _amount, uint256 _leverage) internal pure returns (uint256 amount) {
+        amount = (_amount * _leverage) / PERCENTAGE_FACTOR;
+    }
 }

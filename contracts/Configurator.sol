@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { Initializable } from './dependencies/openzeppelin/upgradeability/Initializable.sol';
+import { VersionedInitializable } from './dependencies/upgradeability/VersionedInitializable.sol';
 
 import { IRouter } from './interfaces/IRouter.sol';
 import { IConnectors } from './interfaces/IConnectors.sol';
@@ -16,7 +16,11 @@ import { Errors } from './lib/Errors.sol';
  * @author FlashFlow
  * @dev Implements the configuration methods for the FlashFlow protocol
  */
-contract Configurator is Initializable, IConfigurator {
+contract Configurator is VersionedInitializable, IConfigurator {
+    /* ============ Constants ============ */
+
+    uint256 public constant CONFIGURATOR_REVISION = 0x1;
+
     /* ============ State Variables ============ */
 
     IRouter internal _router;
@@ -106,5 +110,9 @@ contract Configurator is Initializable, IConfigurator {
     function _onlyConnectorAdmin() internal view {
         IACLManager aclManager = IACLManager(_addressesProvider.getACLManager());
         require(aclManager.isConnectorAdmin(msg.sender), Errors.CALLER_NOT_CONNECTOR_ADMIN);
+    }
+
+    function getRevision() internal pure virtual override returns (uint256) {
+        return CONFIGURATOR_REVISION;
     }
 }

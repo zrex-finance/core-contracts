@@ -22,7 +22,6 @@ const defaultGasParams = {
 
 import proxyArtifact from './artifacts/Proxy.json';
 import routerArtifact from './artifacts/Router.json';
-import accountArtifact from './artifacts/Account.json';
 import aclManagerArtifact from './artifacts/ACLManager.json';
 import connectorsArtifact from './artifacts/Connectors.json';
 import configuratorArtifact from './artifacts/Configurator.json';
@@ -40,7 +39,7 @@ async function deploy() {
 
   const configurator = await setImplToAddressesProvider(provider, routerImpl, configuratorImpl); // get proxy addresses
 
-  // await deployConnectors(configurator);
+  await deployConnectors(configurator);
 
   const flashAggregator = await deployFlashAggregator();
   await deployFlashResolver(flashAggregator);

@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import { Test } from 'forge-std/Test.sol';
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
+import { VersionedInitializable } from 'contracts/dependencies/upgradeability/VersionedInitializable.sol';
 
 import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
@@ -11,10 +12,28 @@ interface IProxy {
     function admin() external returns (address);
 }
 
-contract DummyContract {
+contract DummyContract is VersionedInitializable {
     uint256 public count = 1;
 
-    function initialize(address provider) external {}
+    uint256 public constant DUMMY_REVISION = 0x1;
+
+    function initialize(address provider) external initializer {}
+
+    function getRevision() internal pure virtual override returns (uint256) {
+        return DUMMY_REVISION;
+    }
+}
+
+contract DummyContract2 is VersionedInitializable {
+    uint256 public count = 1;
+
+    uint256 public constant DUMMY_REVISION = 0x2;
+
+    function initialize(address provider) external initializer {}
+
+    function getRevision() internal pure virtual override returns (uint256) {
+        return DUMMY_REVISION;
+    }
 }
 
 contract TestAddressesProvider is Test {
@@ -32,7 +51,7 @@ contract TestAddressesProvider is Test {
         addressesProvider.setConfiguratorImpl(testAddress);
         assertTrue(addressesProvider.getConfigurator() != address(0));
 
-        address newTestContract = address(new DummyContract());
+        address newTestContract = address(new DummyContract2());
 
         addressesProvider.setConfiguratorImpl(newTestContract);
         assertTrue(

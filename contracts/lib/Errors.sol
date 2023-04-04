@@ -55,4 +55,6 @@ library Errors {
     string public constant CALLER_NOT_ROUTER = '24';
     // The call to the open/close callback function failed
     string public constant EXECUTE_OPERATION_FAILED = '25';
+    // Invalid amount to leverage
+    string public constant LEVERAGE_IS_INVALID = '26';
 }

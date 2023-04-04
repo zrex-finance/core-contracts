@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from './dependencies/openzeppelin/contracts/IERC20.sol';
 import { Clones } from './dependencies/openzeppelin/upgradeability/Clones.sol';
-import { Initializable } from './dependencies/openzeppelin/upgradeability/Initializable.sol';
+import { VersionedInitializable } from './dependencies/upgradeability/VersionedInitializable.sol';
 
 import { Errors } from './lib/Errors.sol';
 import { DataTypes } from './lib/DataTypes.sol';
@@ -26,14 +26,19 @@ import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
  *   # Swap their tokens
  *   # Create acconut
  */
-contract Router is Initializable, IRouter {
+contract Router is VersionedInitializable, IRouter {
     using UniversalERC20 for IERC20;
     using ConnectorsCall for IAddressesProvider;
+    using PercentageMath for uint256;
 
     /* ============ Immutables ============ */
 
     // The contract by which all other contact addresses are obtained.
     IAddressesProvider public immutable ADDRESSES_PROVIDER;
+
+    /* ============ Constants ============ */
+
+    uint256 public constant ROUTER_REVISION = 0x1;
 
     /* ============ State Variables ============ */
 
@@ -276,7 +281,7 @@ contract Router is Initializable, IRouter {
      */
     function getFeeAmount(uint256 _amount) public view override returns (uint256 feeAmount) {
         require(_amount > 0, Errors.INVALID_CHARGE_AMOUNT);
-        feeAmount = (_amount * fee) / PercentageMath.PERCENTAGE_FACTOR;
+        feeAmount = _amount.mulTo(fee);
     }
 
     /* ============ Private Functions ============ */
@@ -287,6 +292,7 @@ contract Router is Initializable, IRouter {
      */
     function _openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) private {
         require(_position.account == msg.sender, Errors.CALLER_NOT_POSITION_OWNER);
+        require(_position.leverage > PercentageMath.PERCENTAGE_FACTOR, Errors.LEVERAGE_IS_INVALID);
 
         address account = getOrCreateAccount(msg.sender);
 
@@ -313,5 +319,9 @@ contract Router is Initializable, IRouter {
         IERC20(_params.fromToken).universalTransferFrom(msg.sender, address(this), _params.amount);
         bytes memory response = ADDRESSES_PROVIDER.connectorCall(_params.targetName, _params.data);
         value = abi.decode(response, (uint256));
+    }
+
+    function getRevision() internal pure virtual override returns (uint256) {
+        return ROUTER_REVISION;
     }
 }

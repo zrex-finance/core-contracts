@@ -7,6 +7,7 @@ import { Initializable } from './dependencies/openzeppelin/upgradeability/Initia
 
 import { Errors } from './lib/Errors.sol';
 import { DataTypes } from './lib/DataTypes.sol';
+import { PercentageMath } from './lib/PercentageMath.sol';
 import { ConnectorsCall } from './lib/ConnectorsCall.sol';
 import { UniversalERC20 } from './lib/UniversalERC20.sol';
 
@@ -26,6 +27,7 @@ contract Account is Initializable, IAccount {
     using UniversalERC20 for IERC20;
     using ConnectorsCall for IAddressesProvider;
     using Address for address;
+    using PercentageMath for uint256;
 
     /* ============ Immutables ============ */
 
@@ -130,7 +132,7 @@ contract Account is Initializable, IAccount {
         require(_position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
 
-        uint256 amount = _position.amountIn * (_position.leverage - 1);
+        uint256 amount = _position.amountIn.mulTo(_position.leverage - PercentageMath.PERCENTAGE_FACTOR);
 
         flashloan(_position.debt, amount, _route, _data);
 
