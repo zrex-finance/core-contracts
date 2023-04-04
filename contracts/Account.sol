@@ -2,10 +2,12 @@
 pragma solidity ^0.8.17;
 
 import { IERC20 } from './dependencies/openzeppelin/contracts/IERC20.sol';
+import { Address } from './dependencies/openzeppelin/contracts/Address.sol';
 import { Initializable } from './dependencies/openzeppelin/upgradeability/Initializable.sol';
 
 import { Errors } from './lib/Errors.sol';
 import { DataTypes } from './lib/DataTypes.sol';
+import { ConnectorsCall } from './lib/ConnectorsCall.sol';
 import { UniversalERC20 } from './lib/UniversalERC20.sol';
 
 import { IRouter } from './interfaces/IRouter.sol';
@@ -22,6 +24,8 @@ import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
  */
 contract Account is Initializable, IAccount {
     using UniversalERC20 for IERC20;
+    using ConnectorsCall for IAddressesProvider;
+    using Address for address;
 
     /* ============ Immutables ============ */
 
@@ -82,6 +86,14 @@ contract Account is Initializable, IAccount {
         _;
     }
 
+    /**
+     * @dev Throws if called by any account other than the router contract.
+     */
+    modifier onlyRouter() {
+        require(msg.sender == address(ADDRESSES_PROVIDER.getRouter()), Errors.CALLER_NOT_ROUTER);
+        _;
+    }
+
     /* ============ Initializer ============ */
 
     /**
@@ -110,11 +122,15 @@ contract Account is Initializable, IAccount {
      * @param _route The path chosen to take the loan See `FlashAggregator` contract.
      * @param _data Calldata for the openPositionCallback.
      */
-    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external override {
+    function openPosition(
+        DataTypes.Position memory _position,
+        uint16 _route,
+        bytes calldata _data
+    ) external override onlyRouter {
         require(_position.account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
 
-        uint256 amount = _position.amountIn * (_position.sizeDelta - 1);
+        uint256 amount = _position.amountIn * (_position.leverage - 1);
 
         flashloan(_position.debt, amount, _route, _data);
 
@@ -135,7 +151,7 @@ contract Account is Initializable, IAccount {
         uint256 _amount,
         uint16 _route,
         bytes calldata _data
-    ) external override {
+    ) external override onlyRouter {
         (address account, , , , , , ) = getRouter().positions(_key);
         require(account == _owner, Errors.CALLER_NOT_POSITION_OWNER);
 
@@ -159,8 +175,8 @@ contract Account is Initializable, IAccount {
         uint256 _repayAmount
     ) external override onlyCallback {
         uint256 value = _swap(_targetNames[0], _datas[0]);
-        execute(_targetNames[1], abi.encodePacked(_datas[1], value));
-        execute(_targetNames[1], abi.encodePacked(_datas[2], _repayAmount));
+        ADDRESSES_PROVIDER.connectorCall(_targetNames[1], abi.encodePacked(_datas[1], value));
+        ADDRESSES_PROVIDER.connectorCall(_targetNames[1], abi.encodePacked(_datas[2], _repayAmount));
         DataTypes.Position memory position = getPosition(bytes32(_customDatas[0]));
 
         position.collateralAmount = value;
@@ -186,8 +202,8 @@ contract Account is Initializable, IAccount {
         bytes[] calldata _customDatas,
         uint256 _repayAmount
     ) external override onlyCallback {
-        execute(_targetNames[0], _datas[0]);
-        execute(_targetNames[1], _datas[1]);
+        ADDRESSES_PROVIDER.connectorCall(_targetNames[0], _datas[0]);
+        ADDRESSES_PROVIDER.connectorCall(_targetNames[1], _datas[1]);
 
         uint256 returnedAmt = _swap(_targetNames[2], _datas[2]);
 
@@ -211,16 +227,11 @@ contract Account is Initializable, IAccount {
         uint256[] calldata _premiums,
         address _initiator,
         bytes calldata _params
-    ) external override onlyAggregator returns (bool) {
+    ) external override onlyAggregator {
         require(_initiator == address(this), Errors.INITIATOR_NOT_ACCOUNT);
 
         bytes memory encodeParams = encodingParams(_params, _amounts[0] + _premiums[0]);
-        (bool success, bytes memory results) = address(this).call(encodeParams);
-        if (!success) {
-            revert(string(results));
-        }
-
-        return true;
+        address(this).functionCall(encodeParams, Errors.EXECUTE_OPERATION_FAILED);
     }
 
     /**
@@ -229,11 +240,7 @@ contract Account is Initializable, IAccount {
      * @param _amount The amount of the token to withdraw.
      */
     function claimTokens(address _token, uint256 _amount) external override onlyOwner {
-        if (IERC20(_token).isETH()) {
-            _amount = _amount == 0 ? address(this).balance : _amount;
-        } else {
-            _amount = _amount == 0 ? IERC20(_token).balanceOf(address(this)) : _amount;
-        }
+        _amount = _amount == 0 ? IERC20(_token).universalBalanceOf(address(this)) : _amount;
 
         IERC20(_token).universalTransfer(_owner, _amount);
 
@@ -296,7 +303,7 @@ contract Account is Initializable, IAccount {
      * @return value Returns the amount of tokens received.
      */
     function _swap(string memory _name, bytes memory _data) private returns (uint256 value) {
-        bytes memory response = execute(_name, _data);
+        bytes memory response = ADDRESSES_PROVIDER.connectorCall(_name, _data);
         value = abi.decode(response, (uint256));
     }
 
@@ -309,47 +316,6 @@ contract Account is Initializable, IAccount {
     function chargeFee(uint256 _amount, address _token) private returns (bool success) {
         uint256 feeAmount = getRouter().getFeeAmount(_amount);
         success = IERC20(_token).universalTransfer(ADDRESSES_PROVIDER.getTreasury(), feeAmount);
-    }
-
-    /**
-     * @dev They will check if the target is a finite connector, and if it is, they will call it.
-     * @param _targetName Name of the connector.
-     * @param _data Execute calldata.
-     * @return response Returns the result of calling the calldata.
-     */
-    function execute(string memory _targetName, bytes memory _data) private returns (bytes memory response) {
-        (bool isOk, address _target) = IConnectors(ADDRESSES_PROVIDER.getConnectors()).isConnector(_targetName);
-        require(isOk, Errors.NOT_CONNECTOR);
-
-        response = _delegatecall(_target, _data);
-
-        emit Execute(_target, _targetName);
-    }
-
-    /**
-     * @dev Delegates the current call to `target`.
-     * @param _target Name of the connector.
-     * @param _data Execute calldata.
-     * This function does not return to its internal call site, it will return directly to the external override caller.
-     */
-    function _delegatecall(address _target, bytes memory _data) private returns (bytes memory response) {
-        require(_target != address(0), Errors.INVALID_CONNECTOR_ADDRESS);
-        assembly {
-            let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
-            let size := returndatasize()
-
-            response := mload(0x40)
-            mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-            mstore(response, size)
-            returndatacopy(add(response, 0x20), 0, size)
-
-            switch iszero(succeeded)
-            case 1 {
-                // throw if delegatecall failed
-                returndatacopy(0x00, 0x00, size)
-                revert(0x00, size)
-            }
-        }
     }
 
     /**

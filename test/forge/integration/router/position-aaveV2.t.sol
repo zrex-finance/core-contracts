@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
+import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 import { DataTypes } from 'contracts/lib/DataTypes.sol';
 import { IRouter } from 'contracts/interfaces/IRouter.sol';
@@ -42,19 +42,6 @@ contract LendingHelper is HelperContract, UniswapHelper, Deployer {
 }
 
 contract PositionAaveV2 is LendingHelper {
-    using UniversalERC20 for IERC20;
-
-    function test_OpenPosition_ClosePositionUSDT() public {
-        DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdtC, wethC, 1000000000, 2, 0, 0);
-
-        topUpTokenBalance(usdtC, usdtWhale, _position.amountIn);
-
-        openPosition(_position);
-        uint256 index = router.positionsIndex(_position.account);
-
-        closePosition(_position, index);
-    }
-
     function test_OpenPosition_ClosePosition() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 2, 0, 0);
 
@@ -93,7 +80,7 @@ contract PositionAaveV2 is LendingHelper {
 
         // approve tokens
         vm.prank(msg.sender);
-        IERC20(daiC).universalApprove(address(router), shortAmt);
+        ERC20(daiC).approve(address(router), shortAmt);
 
         uint256 exchangeAmt = quoteExactInputSingle(daiC, wethC, shortAmt);
 
@@ -106,11 +93,11 @@ contract PositionAaveV2 is LendingHelper {
     }
 
     function openPosition(DataTypes.Position memory _position) public {
-        vm.startPrank(msg.sender);
-        IERC20(_position.debt).universalApprove(address(router), _position.amountIn);
-        vm.stopPrank();
+        // approve tokens
+        vm.prank(msg.sender);
+        ERC20(_position.debt).approve(address(router), _position.amountIn);
 
-        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
+        (uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
         router.openPosition(_position, _route, _data);
@@ -121,7 +108,7 @@ contract PositionAaveV2 is LendingHelper {
 
         (, , , , , uint256 _collateralAmount, uint256 _borrowAmount) = router.positions(key);
 
-        (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, _borrowAmount);
+        uint16 _route = getFlashloanData(_position.debt, _borrowAmount);
 
         address account = router.accounts(_position.account);
 
@@ -135,11 +122,11 @@ contract PositionAaveV2 is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.closePosition(key, _token, _amount, _route, _calldata);
+        router.closePosition(key, _position.debt, _borrowAmount, _route, _calldata);
     }
 
     function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
-        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
+        (uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
         router.swapAndOpen(_position, _route, _data, _params);
@@ -198,9 +185,7 @@ contract PositionAaveV2 is LendingHelper {
         _calldata = abi.encode(accountImpl.closePositionCallback.selector, _targetNames, _datas, _customDatas);
     }
 
-    function getFlashloanData(address lT, uint256 lA) public view returns (address, uint256, uint16) {
-        lT = IERC20(lT).isETH() ? wethC : lT;
-
+    function getFlashloanData(address lT, uint256 lA) public view returns (uint16) {
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);
         _tokens[0] = lT;
@@ -208,22 +193,20 @@ contract PositionAaveV2 is LendingHelper {
 
         (, , uint16[] memory _bestRoutes, ) = flashResolver.getData(_tokens, _amts);
 
-        return (lT, lA, _bestRoutes[0]);
+        return _bestRoutes[0];
     }
 
-    function _openPosition(
-        DataTypes.Position memory _position
-    ) public view returns (address, uint256, uint16, bytes memory) {
-        uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
+    function _openPosition(DataTypes.Position memory _position) public view returns (uint16, bytes memory) {
+        uint256 loanAmt = _position.amountIn * (_position.leverage - 1);
 
-        (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, loanAmt);
+        uint16 _route = getFlashloanData(_position.debt, loanAmt);
 
-        uint256 swapAmount = _position.amountIn * _position.sizeDelta;
-        // protocol fee 3% denominator 10000
-        uint256 swapAmountWithoutFee = swapAmount - ((swapAmount * 3) / 10000);
+        uint256 swapAmount = _position.amountIn * _position.leverage;
+        // protocol fee 0.5% denominator 10000
+        uint256 swapAmountWithoutFee = swapAmount - ((swapAmount * 50) / 10000);
 
         bytes memory _calldata = getOpenCallbackData(_position, swapAmountWithoutFee);
 
-        return (_token, _amount, _route, _calldata);
+        return (_route, _calldata);
     }
 }

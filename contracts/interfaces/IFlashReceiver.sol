@@ -8,5 +8,5 @@ interface IFlashReceiver {
         uint256[] calldata premiums,
         address initiator,
         bytes calldata _data
-    ) external returns (bool);
+    ) external;
 }

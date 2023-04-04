@@ -31,7 +31,7 @@ interface IAccount {
         uint256[] calldata _premiums,
         address _initiator,
         bytes calldata _params
-    ) external returns (bool);
+    ) external;
 
     function claimTokens(address _token, uint256 _amount) external;
 }

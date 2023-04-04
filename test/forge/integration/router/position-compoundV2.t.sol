@@ -95,7 +95,7 @@ contract PositionCompoundV2 is LendingHelper {
         vm.prank(msg.sender);
         ERC20(_position.debt).approve(address(router), _position.amountIn);
 
-        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
+        (uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
         router.openPosition(_position, _route, _data);
@@ -106,7 +106,7 @@ contract PositionCompoundV2 is LendingHelper {
 
         (, , , , , uint256 _collateralAmount, uint256 _borrowAmount) = router.positions(key);
 
-        (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, _borrowAmount);
+        uint16 _route = getFlashloanData(_position.debt, _borrowAmount);
 
         address account = router.accounts(_position.account);
 
@@ -120,11 +120,11 @@ contract PositionCompoundV2 is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.closePosition(key, _token, _amount, _route, _calldata);
+        router.closePosition(key, _position.debt, _borrowAmount, _route, _calldata);
     }
 
     function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
-        (address _token, uint256 _amount, uint16 _route, bytes memory _data) = _openPosition(_position);
+        (uint16 _route, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
         router.swapAndOpen(_position, _route, _data, _params);
@@ -183,7 +183,7 @@ contract PositionCompoundV2 is LendingHelper {
         _calldata = abi.encode(accountImpl.closePositionCallback.selector, _targetNames, _datas, _customDatas);
     }
 
-    function getFlashloanData(address lT, uint256 lA) public view returns (address, uint256, uint16) {
+    function getFlashloanData(address lT, uint256 lA) public view returns (uint16) {
         address[] memory _tokens = new address[](1);
         uint256[] memory _amts = new uint256[](1);
         _tokens[0] = lT;
@@ -191,22 +191,20 @@ contract PositionCompoundV2 is LendingHelper {
 
         (, , uint16[] memory _bestRoutes, ) = flashResolver.getData(_tokens, _amts);
 
-        return (lT, lA, _bestRoutes[0]);
+        return _bestRoutes[0];
     }
 
-    function _openPosition(
-        DataTypes.Position memory _position
-    ) public view returns (address, uint256, uint16, bytes memory) {
-        uint256 loanAmt = _position.amountIn * (_position.sizeDelta - 1);
+    function _openPosition(DataTypes.Position memory _position) public view returns (uint16, bytes memory) {
+        uint256 loanAmt = _position.amountIn * (_position.leverage - 1);
 
-        (address _token, uint256 _amount, uint16 _route) = getFlashloanData(_position.debt, loanAmt);
+        uint16 _route = getFlashloanData(_position.debt, loanAmt);
 
-        uint256 swapAmount = _position.amountIn * _position.sizeDelta;
-        // protocol fee 3% denominator 10000
-        uint256 swapAmountWithoutFee = swapAmount - ((swapAmount * 3) / 10000);
+        uint256 swapAmount = _position.amountIn * _position.leverage;
+        // protocol fee 0.5% denominator 10000
+        uint256 swapAmountWithoutFee = swapAmount - ((swapAmount * 50) / 10000);
 
         bytes memory _calldata = getOpenCallbackData(_position, swapAmountWithoutFee);
 
-        return (_token, _amount, _route, _calldata);
+        return (_route, _calldata);
     }
 }

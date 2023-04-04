@@ -7,6 +7,7 @@ import { Initializable } from './dependencies/openzeppelin/upgradeability/Initia
 
 import { Errors } from './lib/Errors.sol';
 import { DataTypes } from './lib/DataTypes.sol';
+import { ConnectorsCall } from './lib/ConnectorsCall.sol';
 import { PercentageMath } from './lib/PercentageMath.sol';
 import { UniversalERC20 } from './lib/UniversalERC20.sol';
 
@@ -27,6 +28,7 @@ import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
  */
 contract Router is Initializable, IRouter {
     using UniversalERC20 for IERC20;
+    using ConnectorsCall for IAddressesProvider;
 
     /* ============ Immutables ============ */
 
@@ -123,7 +125,7 @@ contract Router is Initializable, IRouter {
      */
     function initialize(address _provider) external virtual initializer {
         require(_provider == address(ADDRESSES_PROVIDER), Errors.INVALID_ADDRESSES_PROVIDER);
-        fee = 3; // 3%
+        fee = 50; // 0.5%
     }
 
     /* ============ External Functions ============ */
@@ -197,9 +199,9 @@ contract Router is Initializable, IRouter {
      * @param _params parameters required for the exchange.
      */
     function swap(SwapParams memory _params) external payable override {
-        uint256 initialBalance = IERC20(_params.toToken).balanceOf(address(this));
+        uint256 initialBalance = IERC20(_params.toToken).universalBalanceOf(address(this));
         uint256 value = _swap(_params);
-        uint256 finalBalance = IERC20(_params.toToken).balanceOf(address(this));
+        uint256 finalBalance = IERC20(_params.toToken).universalBalanceOf(address(this));
         require(finalBalance - initialBalance == value, 'value is not valid');
 
         IERC20(_params.toToken).universalTransfer(msg.sender, value);
@@ -309,45 +311,7 @@ contract Router is Initializable, IRouter {
      */
     function _swap(SwapParams memory _params) private returns (uint256 value) {
         IERC20(_params.fromToken).universalTransferFrom(msg.sender, address(this), _params.amount);
-        bytes memory response = execute(_params.targetName, _params.data);
+        bytes memory response = ADDRESSES_PROVIDER.connectorCall(_params.targetName, _params.data);
         value = abi.decode(response, (uint256));
-    }
-
-    /**
-     * @dev They will check if the target is a finite connector, and if it is, they will call it.
-     * @param _targetName Name of the connector.
-     * @param _data Execute calldata.
-     * @return response Returns the result of calling the calldata.
-     */
-    function execute(string memory _targetName, bytes memory _data) private returns (bytes memory response) {
-        (bool isOk, address _target) = IConnectors(ADDRESSES_PROVIDER.getConnectors()).isConnector(_targetName);
-        require(isOk, Errors.NOT_CONNECTOR);
-        response = _delegatecall(_target, _data);
-    }
-
-    /**
-     * @dev Delegates the current call to `target`.
-     * @param _target Name of the connector.
-     * @param _data Execute calldata.
-     * This function does not return to its internal call site, it will return directly to the external caller.
-     */
-    function _delegatecall(address _target, bytes memory _data) private returns (bytes memory response) {
-        require(_target != address(0), Errors.INVALID_CONNECTOR_ADDRESS);
-        assembly {
-            let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
-            let size := returndatasize()
-
-            response := mload(0x40)
-            mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-            mstore(response, size)
-            returndatacopy(add(response, 0x20), 0, size)
-
-            switch iszero(succeeded)
-            case 1 {
-                // throw if delegatecall failed
-                returndatacopy(0x00, 0x00, size)
-                revert(0x00, size)
-            }
-        }
     }
 }

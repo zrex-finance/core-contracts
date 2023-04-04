@@ -62,7 +62,7 @@ contract TestConfigurator is Test {
     }
 
     function _setFee() public {
-        assertEq(router.fee(), 3);
+        assertEq(router.fee(), 50);
 
         configurator.setFee(5);
         assertEq(router.fee(), 5);

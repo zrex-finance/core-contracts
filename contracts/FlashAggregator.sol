@@ -370,7 +370,7 @@ contract FlashAggregator is IFlashAggregator {
         uint256[] memory balances_ = new uint256[](_length);
         for (uint256 i = 0; i < _length; i++) {
             IERC20 token = IERC20(_tokens[i]);
-            balances_[i] = token.balanceOf(_account);
+            balances_[i] = token.universalBalanceOf(_account);
         }
         return balances_;
     }

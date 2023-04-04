@@ -8,6 +8,7 @@ import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clone
 import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
+import { Errors } from 'contracts/lib/Errors.sol';
 import { ERC20Mock } from 'contracts/mocks/ERC20Mock.sol';
 
 import { Account } from 'contracts/Account.sol';
@@ -93,7 +94,7 @@ contract TestAccount is Test {
         string[] memory _strings = new string[](1);
         _strings[0] = string('');
 
-        vm.expectRevert(bytes(''));
+        vm.expectRevert(bytes(Errors.EXECUTE_OPERATION_FAILED));
 
         vm.prank(msg.sender);
         account.executeOperation(

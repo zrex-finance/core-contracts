@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
 /**
@@ -9,9 +9,9 @@ pragma solidity ^0.8.17;
 library Errors {
     // The caller of the function is not a account owner
     string public constant CALLER_NOT_ACCOUNT_OWNER = '1';
-    // The caller of the function is not a account conntract
+    // The caller of the function is not a account contract
     string public constant CALLER_NOT_RECEIVER = '2';
-    // The caller of the function is not a flash aggregatoor conntract
+    // The caller of the function is not a flash aggregatoor contract
     string public constant CALLER_NOT_FLASH_AGGREGATOR = '3';
     // The caller of the function is not a position owner
     string public constant CALLER_NOT_POSITION_OWNER = '4';
@@ -51,4 +51,8 @@ library Errors {
     string public constant CALLER_NOT_CONNECTOR_ADMIN = '22';
     // Address should be not zero address
     string public constant ADDRESS_IS_ZERO = '23';
+    // The caller of the function is not a router contract
+    string public constant CALLER_NOT_ROUTER = '24';
+    // The call to the open/close callback function failed
+    string public constant EXECUTE_OPERATION_FAILED = '25';
 }
