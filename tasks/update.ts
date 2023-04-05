@@ -2,11 +2,11 @@ import { BytesLike } from 'ethers';
 import { ethers, artifacts } from 'hardhat';
 
 const EIP_DEPLOYER = '0xce0042B868300000d44A59004Da54A005ffdcf9f';
-const SALT = '0x0000000000000000000000000000000000000000000000000000000447441964';
+const SALT = '0x0000000000000000000000000000000000000000000000000000004447441962';
 
-const ACL_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697';
-const CONNECTOR_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697';
-const ROUTER_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697';
+const ACL_ADMIN = '0x1a5245ea5210C3B57B7Cfdf965990e63534A7b52';
+const CONNECTOR_ADMIN = '0x1a5245ea5210C3B57B7Cfdf965990e63534A7b52';
+const ROUTER_ADMIN = '0x1a5245ea5210C3B57B7Cfdf965990e63534A7b52'; // 0x0000076C91B41d2f872B9b061E75177E51CC1697
 
 const TREASURY = '0x3E324D5C62762BCbC9203Ab624d6Cd5d5066d170';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -22,21 +22,42 @@ const defaultGasParams = {
 
 import routerArtifact from './artifacts/Router.json';
 import configuratorArtifact from './artifacts/Configurator.json';
+import addressProviderArtifact from './artifacts/AddressesProvider.json';
 
 async function update() {
-  const provider = await ethers.getContractAt("AddressesProvider", "0x020ceb63149144087b5fb93174c6086555a7dde5");
+  const provider = await deployAddressesProvider();
 
-  const routerImpl = await deployRouter(provider.address);
+  const routerImpl = await deployRouter(provider);
   const configuratorImpl = await deployConfigurator();
 
-  const configurator = await setImplToAddressesProvider(provider.address, routerImpl, configuratorImpl);
+  await setImplToAddressesProvider(provider, routerImpl, configuratorImpl); // get proxy addresses
+}
 
-  const flashAggregator = await deployFlashAggregator();
-  await deployFlashResolver(flashAggregator);
+async function deployAddressesProvider() {
+  const bytecode = await getDeployByteCode(addressProviderArtifact.abi, addressProviderArtifact.bytecode, [
+    ROUTER_ADMIN,
+  ]);
+  const expectedAddress = getAddress(bytecode);
 
-  const account = await deployAccount(provider.address);
+  // deploy contracts
+  await deployCreate2(expectedAddress, bytecode);
 
-  await setLeftAddressesToAddressesProvider(provider.address, account, flashAggregator);
+  // set acl admin, needed before deployed acl manager
+  const addressesProvider = await ethers.getContractAt('AddressesProvider', expectedAddress);
+  const aclAdmin = await addressesProvider.callStatic.getACLAdmin();
+
+  if (aclAdmin === ZERO_ADDRESS) {
+    const gasLimit = await addressesProvider.estimateGas.setAddress(
+      ethers.utils.formatBytes32String('ACL_ADMIN'),
+      ACL_ADMIN,
+    );
+    await addressesProvider.setAddress(ethers.utils.formatBytes32String('ACL_ADMIN'), ACL_ADMIN, {
+      gasLimit: gasLimit.add(gasLimit.mul(BUMP_GAS_PRECENT).div(100)),
+      ...defaultGasParams,
+    });
+  }
+  console.log(`${addressProviderArtifact.contractName}: ${expectedAddress}`);
+  return expectedAddress;
 }
 
 // 1 step
@@ -66,7 +87,7 @@ async function setImplToAddressesProvider(provider: string, router: string, conf
 
   const gasLimit1 = await addressesProvider.estimateGas.setRouterImpl(router);
   await addressesProvider.setRouterImpl(router, {
-    gasLimit: gasLimit1.add(gasLimit1.mul(BUMP_GAS_PRECENT).div(100)),
+    gasLimit: 100000,
     ...defaultGasParams,
   });
 
@@ -76,14 +97,6 @@ async function setImplToAddressesProvider(provider: string, router: string, conf
     ...defaultGasParams,
   });
   await result.wait(3);
-
-  const configuratorProxy = await addressesProvider.callStatic.getConfigurator();
-
-  if (configuratorProxy === ZERO_ADDRESS) {
-    throw new Error('configurator proxy is 0x');
-  }
-
-  return configuratorProxy;
 }
 
 // 3 step

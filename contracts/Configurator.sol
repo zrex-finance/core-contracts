@@ -112,7 +112,7 @@ contract Configurator is VersionedInitializable, IConfigurator {
         require(aclManager.isConnectorAdmin(msg.sender), Errors.CALLER_NOT_CONNECTOR_ADMIN);
     }
 
-    function getRevision() internal pure virtual override returns (uint256) {
+    function getRevision() internal pure override returns (uint256) {
         return CONFIGURATOR_REVISION;
     }
 }

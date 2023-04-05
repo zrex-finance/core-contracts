@@ -2,11 +2,11 @@ import { BytesLike } from 'ethers';
 import { ethers, artifacts } from 'hardhat';
 
 const EIP_DEPLOYER = '0xce0042B868300000d44A59004Da54A005ffdcf9f';
-const SALT = '0x0000000000000000000000000000000000000000000000000000000447441964';
+const SALT = '0x0000000000000000000000000000000000000000000000000000004447441962';
 
 const ACL_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697';
 const CONNECTOR_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697';
-const ROUTER_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697';
+const ROUTER_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697'; // 0x0000076C91B41d2f872B9b061E75177E51CC1697
 
 const TREASURY = '0x3E324D5C62762BCbC9203Ab624d6Cd5d5066d170';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -16,7 +16,7 @@ const BUMP_GAS_PRECENT = 130;
 const DEFAULT_GAS_LIMIT = 2500000;
 
 const defaultGasParams = {
-  maxFeePerGas: 20e9,
+  maxFeePerGas: 35e9,
   maxPriorityFeePerGas: 3e9,
 };
 
@@ -48,8 +48,6 @@ async function deploy() {
   const proxy = await deployProxy(provider);
 
   await setLeftAddressesToAddressesProvider(provider, account, proxy, flashAggregator);
-
-  await setFee(configurator);
 }
 
 // 1 step
@@ -221,13 +219,22 @@ async function deployConnectors(configuratorAddress: string) {
     'UniswapConnector',
   ];
   const names = ['AaveV2', 'AaveV3', 'CompoundV2', 'CompoundV3', 'OneInchV5', 'UniswapAuto'];
-  const addresses = [];
+  // mainnet
+  const addresses = [
+    '0x87E82b4E7084F1f6F69775Caf104d81F78b2b335',
+    '0xFA5f129591b58ad625a0450251951E7cd2847409',
+    '0x0578746a6Ade6808C9Faf35C741F5dE4884d544F',
+    '0xEC9831e9b29C0C65F99aE07464E52a12f8A41170',
+    '0x1766C0CB1dDbD82EFe72A6Ab5f18aD92eb1ddCCd',
+    '0xcde67DbD46DA8DAAE07301499f2f7349f231927C',
+  ];
+  // const addresses = []
 
-  for await (const name of connectors) {
-    const address = await _deploy(name, []);
-    console.log(`${name}: ${address}`);
-    addresses.push(address);
-  }
+  // for await (const name of connectors) {
+  //   const address = await _deploy(name, []);
+  //   console.log(`${name}: ${address}`);
+  //   addresses.push(address);
+  // }
 
   const configurator = await ethers.getContractAt('Configurator', configuratorAddress);
   // @ts-ignore
@@ -319,17 +326,6 @@ async function setLeftAddressesToAddressesProvider(
       ...defaultGasParams,
     });
   }
-}
-
-// 14 step
-async function setFee(configuratorAddress: string) {
-  const configurator = await ethers.getContractAt('Configurator', configuratorAddress);
-  const gasLimit = await configurator.estimateGas.setFee(FEE);
-  await configurator.setFee(FEE),
-    {
-      gasLimit: gasLimit.add(gasLimit.mul(BUMP_GAS_PRECENT).div(100)),
-      ...defaultGasParams,
-    };
 }
 
 async function deployCreate2(expectedAddress: string, bytecode: BytesLike) {

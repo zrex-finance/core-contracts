@@ -41,7 +41,6 @@ contract TestAddressesProvider is Test {
 
     address testAddress;
 
-    // Main identifiers
     function test_setAddress_Configurator() public {
         addressesProvider.setConfiguratorImpl(testAddress);
         assertTrue(addressesProvider.getConfigurator() != address(0));

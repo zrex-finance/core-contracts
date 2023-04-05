@@ -321,7 +321,7 @@ contract Router is VersionedInitializable, IRouter {
         value = abi.decode(response, (uint256));
     }
 
-    function getRevision() internal pure virtual override returns (uint256) {
+    function getRevision() internal pure override returns (uint256) {
         return ROUTER_REVISION;
     }
 }
