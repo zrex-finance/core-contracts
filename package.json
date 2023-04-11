@@ -11,7 +11,8 @@
     "fix:prettier": "prettier --write \"**/*.*\"",
     "check:prettier": "prettier --check \"**/*.*\"",
     "deploy": "hardhat run tasks/deploy.ts",
-    "update": "hardhat run tasks/update.ts"
+    "update": "hardhat run tasks/update.ts",
+    "flat": "npx truffle-flattener contracts/Account.sol > contracts/Account_flat.sol"
   },
   "author": "Devan Non <devanon@chainstride.capital>",
   "license": "Apache-2.0",

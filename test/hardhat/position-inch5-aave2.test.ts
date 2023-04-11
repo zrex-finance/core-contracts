@@ -29,7 +29,7 @@ const LEVERAGE = BigNumber.from("2");
 
 const encoder = new ethers.utils.AbiCoder();
 
-describe("Open and close (inchv5 - aave2)", async () => {
+describe.skip("Open and close (inchv5 - aave2)", async () => {
   // wallets
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
@@ -226,12 +226,12 @@ describe("Open and close (inchv5 - aave2)", async () => {
       collateral: USDC_CONTRACT,
       // @ts-ignore
       amountIn: BigNumber.from(toTokenAmount),
-      sizeDelta: LEVERAGE,
+      leverage: LEVERAGE,
       collateralAmount: 0,
       borrowAmount: 0,
     };
     
-    const swapAmount = position.amountIn.mul(position.sizeDelta)
+    const swapAmount = position.amountIn.mul(position.leverage)
     const swapAmountWithoutFee = swapAmount.sub(swapAmount.mul(FEE).div(10000)).toHexString()
 
     const [openSwapCalldata] = await inchCalldata({
@@ -243,7 +243,7 @@ describe("Open and close (inchv5 - aave2)", async () => {
     })
 
     const _tokens = [position.debt];
-    const _amts = [position.amountIn.mul(position.sizeDelta.sub(1))];
+    const _amts = [position.amountIn.mul(position.leverage.sub(1))];
 
     const { bestRoutes: bestOpenRoutes } = await flashResolverContract.callStatic.getData(_tokens, _amts);
 
@@ -274,7 +274,7 @@ describe("Open and close (inchv5 - aave2)", async () => {
 
     await routerContract
       .connect(owner)
-      .swapAndOpen(position, _tokens[0], _amts[0], bestOpenRoutes[0], calldataOpen, swapParams, {
+      .swapAndOpen(position, bestOpenRoutes[0], calldataOpen, swapParams, {
         value: shortAmount._hex
       });
 

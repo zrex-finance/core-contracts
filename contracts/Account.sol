@@ -55,13 +55,6 @@ contract Account is Initializable, IAccount {
      */
     event Flashloan(address indexed token, uint256 amount, uint16 route);
 
-    /**
-     * @dev Emitted when the account contract execute connector calldata.
-     * @param target Connector contract address.
-     * @param targetName Conenctor name.
-     */
-    event Execute(address indexed target, string targetName);
-
     /* ============ Modifiers ============ */
 
     /**

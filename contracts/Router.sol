@@ -226,6 +226,9 @@ contract Router is VersionedInitializable, IRouter {
         positions[key] = _position;
     }
 
+    // solhint-disable-next-line
+    receive() external payable {}
+
     /* ============ Public Functions ============ */
 
     /**
@@ -321,6 +324,10 @@ contract Router is VersionedInitializable, IRouter {
         value = abi.decode(response, (uint256));
     }
 
+    /**
+     * @notice Returns the version of the Router contract.
+     * @return The version is needed to update the proxy.
+     */
     function getRevision() internal pure override returns (uint256) {
         return ROUTER_REVISION;
     }

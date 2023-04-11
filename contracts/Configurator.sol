@@ -112,6 +112,10 @@ contract Configurator is VersionedInitializable, IConfigurator {
         require(aclManager.isConnectorAdmin(msg.sender), Errors.CALLER_NOT_CONNECTOR_ADMIN);
     }
 
+    /**
+     * @notice Returns the version of the Configurator contract.
+     * @return The version is needed to update the proxy.
+     */
     function getRevision() internal pure override returns (uint256) {
         return CONFIGURATOR_REVISION;
     }

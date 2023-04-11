@@ -26,7 +26,7 @@ If the user does not have a token from the list, the flash flow protocol will be
 - `address` debt - token for the loan
 - `address` collateral - security token
 - `uint256` amountIn - original amount of the position
-- `uint256` sizeDelta - leverage
+- `uint256` leverage - leverage
 - `uint256` collateralAmount - amount for the collateral received after the trade 
 - `uint256` borrowAmount - amount of the loan for the redemption of the short-term loan and calculation of the fund
 
@@ -36,7 +36,7 @@ If the user does not have a token from the list, the flash flow protocol will be
 - `address` toToken - output token
 - `uint256` amount - exchange amount
 - `string` targetName - connector name
-- `bytes` data - coldata for the exchange
+- `bytes` data - calldata for the exchange
 
 ### Commission calculation
 
@@ -56,24 +56,18 @@ If the user does not have a token from the list, the flash flow protocol will be
 
 ### AddressesProvider
 
-- it gives all the other contracts the address of the contracts.
-- sets addresses for all main contracts in the protocol.
-- in the future it will create proxy contracts and update their implementations.
+- main registry of addresses part of or connected to the protocol.
 
 ### Connectors
 
 - sets the addresses for support contracts for interactions with other protocols.
-
-### Implementations
-
-- sets the address for the implementation that the proxy account gets.
-*Implementations will be merged with AddressesProvider in the future*
+- main registry of connector contract addresses.
 
 
 ### FlashAggregator
 
 - is used to take and return flash loans.
-- It works with aave, balancer, maker.
+- it works with aave, balancer, maker.
 - the parameters are calculated using the FlashResolver contract (in the future they will be calculated on the backend)
 
 ### FlashResolver
@@ -85,6 +79,14 @@ If the user does not have a token from the list, the flash flow protocol will be
 - contains the minimal logic for working with external protocols
 - they are handled by delegatecall
 *There's a thought of making libraries out of them*
+
+### ACLManager
+
+- access control list manager, main registry of system roles and permissions
+
+### Configurator
+
+- implements the configuration methods for the FlashFlow protocol
 
 ### License
 
