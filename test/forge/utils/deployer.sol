@@ -75,7 +75,7 @@ contract Deployer is Test {
         addressesProvider.setConfiguratorImpl(address(configurator));
 
         configurator = Configurator(addressesProvider.getConfigurator());
-        router = Router(addressesProvider.getRouter());
+        router = Router(payable(addressesProvider.getRouter()));
 
         setUpConnectors();
 

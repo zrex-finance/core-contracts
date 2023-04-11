@@ -91,7 +91,7 @@ contract TestRouterSwap is Test, UniswapHelper {
         addressesProvider.setConfiguratorImpl(address(configurator));
 
         configurator = Configurator(addressesProvider.getConfigurator());
-        router = Router(addressesProvider.getRouter());
+        router = Router(payable(addressesProvider.getRouter()));
 
         UniswapConnector swapConnector = new UniswapConnector();
 
