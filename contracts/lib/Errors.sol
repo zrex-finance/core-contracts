@@ -55,10 +55,12 @@ library Errors {
     string public constant ADDRESS_IS_ZERO = '23';
     // The caller of the function is not a account contract
     string public constant CALLER_NOT_ROUTER = '24';
-    // The caller of the function is not a router contract
-    string public constant CALLER_NOT_ROUTER = '24';
     // The call to the open/close callback function failed
     string public constant EXECUTE_OPERATION_FAILED = '25';
     // Invalid amount to leverage
     string public constant LEVERAGE_IS_INVALID = '26';
+    // 'The caller of the function is not an asset listing or router admin'
+    string public constant CALLER_NOT_ASSET_LISTING_OR_ROUTER_ADMIN = '27';
+    // 'Array parameters that should be equal length are not'
+    string public constant INCONSISTENT_PARAMS_LENGTH = '28';
 }

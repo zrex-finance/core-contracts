@@ -31,4 +31,6 @@ interface IAddressesProvider {
     function getAccountProxy() external view returns (address);
 
     function getAddress(bytes32 _id) external view returns (address);
+
+    function getOracle() external view returns (address);
 }

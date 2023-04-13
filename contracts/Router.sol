@@ -12,6 +12,7 @@ import { PercentageMath } from './lib/PercentageMath.sol';
 import { UniversalERC20 } from './lib/UniversalERC20.sol';
 
 import { IRouter } from './interfaces/IRouter.sol';
+import { IOracle } from './interfaces/IOracle.sol';
 import { IAccount } from './interfaces/IAccount.sol';
 import { IReferral } from './interfaces/IReferral.sol';
 import { IConnectors } from './interfaces/IConnectors.sol';
@@ -320,7 +321,11 @@ contract Router is VersionedInitializable, IRouter {
         IERC20(_position.debt).universalApprove(account, _position.amountIn);
         IAccount(account).openPosition(_position, _route, _data);
 
-        _emitOpenPositionReferral(_position.account, _position.sizeDelta);
+        uint256 debtPrice = IOracle(ADDRESSES_PROVIDER.getOracle()).getAssetPrice(_position.debt);
+
+        uint256 sizeDelta = debtPrice * _position.amountIn;
+
+        _emitOpenPositionReferral(_position.account, sizeDelta);
 
         // Get the position on the key because, update it in the process of creating
         emit OpenPosition(key, account, index, positions[key]);

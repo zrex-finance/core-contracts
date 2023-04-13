@@ -21,4 +21,10 @@ interface IACLManager {
     function isRouterAdmin(address admin) external view returns (bool);
 
     function isReferralAdmin(address admin) external view returns (bool);
+
+    function addAssetListingAdmin(address admin) external;
+
+    function removeAssetListingAdmin(address admin) external;
+
+    function isAssetListingAdmin(address admin) external view returns (bool);
 }

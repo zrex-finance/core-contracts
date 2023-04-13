@@ -17,6 +17,7 @@ contract AddressesProvider is Ownable, IAddressesProvider {
 
     // Main identifiers
     bytes32 private constant ROUTER = 'ROUTER';
+    bytes32 private constant ORACLE = 'ORACLE';
     bytes32 private constant ACCOUNT = 'ACCOUNT';
     bytes32 private constant REFERRAL = 'REFERRAL';
     bytes32 private constant TREASURY = 'TREASURY';
@@ -134,6 +135,14 @@ contract AddressesProvider is Ownable, IAddressesProvider {
      */
     function getReferral() external view override returns (address) {
         return getAddress(REFERRAL);
+    }
+
+    /**
+     * @notice Returns the address of the Router proxy.
+     * @return The Router proxy address
+     */
+    function getOracle() external view override returns (address) {
+        return getAddress(ORACLE);
     }
 
     /**
