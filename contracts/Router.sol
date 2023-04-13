@@ -103,11 +103,11 @@ contract Router is VersionedInitializable, IRouter {
     /**
      * @dev Emitted when the user close position.
      * @param account The address of the owner position.
-     * @param sizeDelta The USD value of the change in position size.
+     * @param size The USD value of the change in position size.
      * @param referralCode The referrer code.
      * @param referrer The referrer address.
      */
-    event IncreasePositionReferral(address account, uint256 sizeDelta, bytes32 referralCode, address referrer);
+    event IncreasePositionReferral(address account, uint256 size, bytes32 referralCode, address referrer);
 
     /* ============ Modifiers ============ */
 
@@ -206,6 +206,11 @@ contract Router is VersionedInitializable, IRouter {
         require(account != address(0), Errors.ACCOUNT_DOES_NOT_EXIST);
 
         IAccount(account).closePosition(_key, _token, _amount, _route, _data);
+
+        uint256 debtPrice = IOracle(ADDRESSES_PROVIDER.getOracle()).getAssetPrice(position.debt);
+        uint256 size = debtPrice * (position.amountIn.mulTo(position.leverage));
+
+        _emitPositionReferral(position.account, size);
 
         emit ClosePosition(_key, account, position);
         delete positions[_key];
@@ -322,10 +327,9 @@ contract Router is VersionedInitializable, IRouter {
         IAccount(account).openPosition(_position, _route, _data);
 
         uint256 debtPrice = IOracle(ADDRESSES_PROVIDER.getOracle()).getAssetPrice(_position.debt);
+        uint256 size = debtPrice * (_position.amountIn.mulTo(_position.leverage));
 
-        uint256 sizeDelta = debtPrice * _position.amountIn;
-
-        _emitOpenPositionReferral(_position.account, sizeDelta);
+        _emitPositionReferral(_position.account, size);
 
         // Get the position on the key because, update it in the process of creating
         emit OpenPosition(key, account, index, positions[key]);
@@ -342,7 +346,7 @@ contract Router is VersionedInitializable, IRouter {
         value = abi.decode(response, (uint256));
     }
 
-    function _emitOpenPositionReferral(address _account, uint256 _sizeDelta) internal {
+    function _emitPositionReferral(address _account, uint256 size) internal {
         (bytes32 referralCode, address referrer) = IReferral(ADDRESSES_PROVIDER.getReferral()).getTraderReferralInfo(
             _account
         );
@@ -351,7 +355,7 @@ contract Router is VersionedInitializable, IRouter {
             return;
         }
 
-        emit IncreasePositionReferral(_account, _sizeDelta, referralCode, referrer);
+        emit IncreasePositionReferral(_account, size, referralCode, referrer);
     }
 
     /**
