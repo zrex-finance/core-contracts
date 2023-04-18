@@ -207,11 +207,6 @@ contract Router is VersionedInitializable, IRouter {
 
         IAccount(account).closePosition(_key, _token, _amount, _route, _data);
 
-        uint256 debtPrice = IOracle(ADDRESSES_PROVIDER.getOracle()).getAssetPrice(position.debt);
-        uint256 size = debtPrice * (position.amountIn.mulTo(position.leverage));
-
-        _emitPositionReferral(position.account, size);
-
         emit ClosePosition(_key, account, position);
         delete positions[_key];
     }
