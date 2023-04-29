@@ -14,8 +14,8 @@ If the user does not have a token from the list, the flash flow protocol will be
 - choose a token based on the CF and LL of that token and available liquidity.
 - look for a loan based on the token, amount and loan fee.
 - look for a trade and prepare a stake date for it.
-- we put together a coldata for a trade, a short-term loan, a deposit and a loan.
-- the user gives an uproot to the protocol contract. (if the token supports it, it can only be signed)
+- we put together a calldata for a trade, a short-term loan, a deposit and a loan.
+- the user gives an approve to the protocol contract. (if the token supports it, it can only be signed).
 - trade execution (position opening).
 
 ### Domain model
@@ -40,14 +40,14 @@ If the user does not have a token from the list, the flash flow protocol will be
 
 ### Commission calculation
 
-- for each position opening, the commission is calculated based on the leveraged transaction amount and the commission set on the contract, the commission can only be changed by the ovner.
+- for each position opening, the commission is calculated based on the leveraged transaction amount and the commission set on the contract, the commission can only be changed by the configurator contract.
 
 ### Router
 
 - position opening and creation of proxy accounts for users.
-- Accounts are created by cloning a Proxy contract when a position is opened and the user has no account.
-- open and closing a position in a token that is not present in the LendingProtocols, there are methods by which we can make the exchange before opening or after closing a position.
-- It stores the data of all user accounts and positions.
+- accounts are created by cloning a proxy contract when a position is opened and the user has no account.
+- open and closing a position in a token that is not present in the lending protocols, there are methods by which we can make the exchange before opening or after closing a position.
+- it stores the data of all user accounts and positions.
 
 ### Account
 
@@ -68,26 +68,26 @@ If the user does not have a token from the list, the flash flow protocol will be
 
 - is used to take and return flash loans.
 - it works with aave, balancer, maker.
-- the parameters are calculated using the FlashResolver contract (in the future they will be calculated on the backend)
+- the parameters are calculated using the flash resolver contract (in the future they will be calculated on the backend).
 
 ### FlashResolver
 
-- calculates the parameters for working with FlashAggregator
+- calculates the parameters for working with flash aggregator.
 
 ### Connector
 
-- contains the minimal logic for working with external protocols
-- they are handled by delegatecall
+- contains the minimal logic for working with external protocols.
+- they are handled by delegatecall.
 *There's a thought of making libraries out of them*
 
 ### ACLManager
 
-- access control list manager, main registry of system roles and permissions
+- access control list manager, main registry of system roles and permissions.
 
 ### Configurator
 
-- implements the configuration methods for the FlashFlow protocol
+- implements the configuration methods for the FlashFlow protocol.
 
 ### License
 
-Smart contracts for NFTxCards protocol are available under the [MIT License](LICENSE.md).
+Smart contracts for FlashFlow protocol are available under the [MIT License](LICENSE.md).
