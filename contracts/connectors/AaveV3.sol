@@ -19,12 +19,14 @@ contract AaveV3Connector is IAaveV3Connector {
      * @dev Aave Pool Provider
      */
     IPoolAddressesProvider internal constant aaveProvider =
-        IPoolAddressesProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
+        IPoolAddressesProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb);
+    // IPoolAddressesProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
 
     /**
      * @dev Aave Pool Data Provider
      */
-    IPoolDataProvider internal constant aaveData = IPoolDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
+    IPoolDataProvider internal constant aaveData = IPoolDataProvider(0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654);
+    // IPoolDataProvider internal constant aaveData = IPoolDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
 
     /**
      * @dev Aave Referral Code

@@ -7,29 +7,42 @@ import { IAddressesProvider } from './IAddressesProvider.sol';
 interface IAccount {
     function initialize(address _user, IAddressesProvider _provider) external;
 
-    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external;
+    function openPosition(
+        DataTypes.Position memory _position,
+        string memory _targetName,
+        bytes calldata _data
+    ) external;
 
-    function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;
+    function closePosition(
+        bytes32 _key,
+        address _token,
+        uint256 _amount,
+        string memory _targetName,
+        bytes calldata _data
+    ) external;
 
     function openPositionCallback(
         string[] memory _targetNames,
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
-        uint256 _repayAmount
+        uint256 _repayAmount,
+        address _repayAddress
     ) external;
 
     function closePositionCallback(
         string[] memory _targetNames,
         bytes[] memory _datas,
         bytes[] calldata _customDatas,
-        uint256 _repayAmount
+        uint256 _repayAmount,
+        address _repayAddress
     ) external;
 
     function executeOperation(
-        address[] calldata /* _tokens */,
-        uint256[] calldata _amounts,
-        uint256[] calldata _premiums,
+        address _token,
+        uint256 _amount,
+        uint256 _fee,
         address _initiator,
+        string memory _targetName,
         bytes calldata _params
     ) external;
 

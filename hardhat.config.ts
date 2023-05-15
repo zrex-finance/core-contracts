@@ -7,7 +7,6 @@ import 'hardhat-tracer';
 import 'hardhat-gas-reporter';
 import 'hardhat-preprocessor';
 import 'solidity-coverage';
-import { HardhatUserConfig, task } from 'hardhat/config';
 import { config as dotEnvConfig } from 'dotenv';
 
 function getRemappings() {
@@ -22,7 +21,7 @@ dotEnvConfig();
 
 const { INFURA_TOKEN, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
-const config: HardhatUserConfig = {
+const config = {
   solidity: {
     version: '0.8.17',
     settings: {
@@ -90,7 +89,7 @@ const config: HardhatUserConfig = {
   },
   // This fully resolves paths for imports in the ./lib directory for Hardhat
   preprocess: {
-    eachLine: hre => ({
+    eachLine: () => ({
       transform: (line: string) => {
         if (line.match(/^\s*import /i)) {
           getRemappings().forEach(([find, replace]) => {

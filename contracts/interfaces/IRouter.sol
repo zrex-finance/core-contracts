@@ -26,14 +26,24 @@ interface IRouter {
 
     function swapAndOpen(
         DataTypes.Position memory _position,
-        uint16 _route,
+        string memory _targetName,
         bytes calldata _data,
         SwapParams memory _params
     ) external payable;
 
-    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external;
+    function openPosition(
+        DataTypes.Position memory _position,
+        string memory _targetName,
+        bytes calldata _data
+    ) external;
 
-    function closePosition(bytes32 _key, address _token, uint256 _amount, uint16 _route, bytes calldata _data) external;
+    function closePosition(
+        bytes32 _key,
+        address _token,
+        uint256 _amount,
+        string memory _targetName,
+        bytes calldata _data
+    ) external;
 
     function swap(SwapParams memory _params) external payable;
 

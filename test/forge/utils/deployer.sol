@@ -5,8 +5,6 @@ import { Test } from 'forge-std/Test.sol';
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 import { DataTypes } from 'contracts/lib/DataTypes.sol';
-
-import { IFlashAggregator } from 'contracts/interfaces/IFlashAggregator.sol';
 import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
 import { Proxy } from 'contracts/Proxy.sol';
@@ -17,12 +15,13 @@ import { IRouter } from 'contracts/interfaces/IRouter.sol';
 import { Router } from 'contracts/Router.sol';
 import { Configurator } from 'contracts/Configurator.sol';
 
-import { FlashResolver } from 'contracts/FlashResolver.sol';
-import { FlashAggregator } from 'contracts/FlashAggregator.sol';
-
 import { ACLManager } from 'contracts/ACLManager.sol';
 import { Connectors } from 'contracts/Connectors.sol';
 import { AddressesProvider } from 'contracts/AddressesProvider.sol';
+
+import { AaveV2Flashloan } from 'contracts/flashloan/AaveV2Flashloan.sol';
+import { MakerFlashloan } from 'contracts/flashloan/MakerFlashloan.sol';
+import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
 
 import { InchV5Connector } from 'contracts/connectors/InchV5.sol';
 import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
@@ -32,8 +31,6 @@ import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
 import { CompoundV2Connector } from 'contracts/connectors/CompoundV2.sol';
 
 contract Deployer is Test {
-    FlashResolver flashResolver;
-
     Router router;
     Proxy accountProxy;
     Connectors connectors;
@@ -45,11 +42,15 @@ contract Deployer is Test {
     CompoundV3Connector compoundV3Connector;
     CompoundV2Connector compoundV2Connector;
 
+    AaveV2Flashloan aaveV2Flashloan;
+    BalancerFlashloan balancerFlashloan;
+    MakerFlashloan makerFlashloan;
+
     Configurator configurator;
     Account accountImpl;
 
     function setUp() public {
-        string memory url = vm.rpcUrl('mainnet');
+        string memory url = vm.rpcUrl('polygon');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
@@ -79,23 +80,18 @@ contract Deployer is Test {
 
         setUpConnectors();
 
-        FlashAggregator flashloanAggregator = new FlashAggregator();
-        flashResolver = new FlashResolver(IFlashAggregator(address(flashloanAggregator)));
-
         accountImpl = new Account(address(addressesProvider));
         accountProxy = new Proxy(address(addressesProvider));
 
-        bytes32[] memory _namesA = new bytes32[](4);
+        bytes32[] memory _namesA = new bytes32[](3);
         _namesA[0] = bytes32('ACCOUNT');
         _namesA[1] = bytes32('TREASURY');
         _namesA[2] = bytes32('ACCOUNT_PROXY');
-        _namesA[3] = bytes32('FLASHLOAN_AGGREGATOR');
 
-        address[] memory _addresses = new address[](4);
+        address[] memory _addresses = new address[](3);
         _addresses[0] = address(accountImpl);
         _addresses[1] = msg.sender;
         _addresses[2] = address(accountProxy);
-        _addresses[3] = address(flashloanAggregator);
 
         for (uint i = 0; i < _namesA.length; i++) {
             addressesProvider.setAddress(_namesA[i], _addresses[i]);
@@ -106,6 +102,10 @@ contract Deployer is Test {
     }
 
     function setUpConnectors() public {
+        aaveV2Flashloan = new AaveV2Flashloan();
+        balancerFlashloan = new BalancerFlashloan();
+        makerFlashloan = new MakerFlashloan();
+
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();
         aaveV2Connector = new AaveV2Connector();
@@ -113,21 +113,27 @@ contract Deployer is Test {
         compoundV3Connector = new CompoundV3Connector();
         compoundV2Connector = new CompoundV2Connector();
 
-        string[] memory _names = new string[](6);
+        string[] memory _names = new string[](9);
         _names[0] = aaveV2Connector.name();
         _names[1] = aaveV3Connector.name();
         _names[2] = compoundV3Connector.name();
         _names[3] = inchV5Connector.name();
         _names[4] = uniswapConnector.name();
         _names[5] = compoundV2Connector.name();
+        _names[6] = aaveV2Flashloan.name();
+        _names[7] = balancerFlashloan.name();
+        _names[8] = makerFlashloan.name();
 
-        address[] memory _connectors = new address[](6);
+        address[] memory _connectors = new address[](9);
         _connectors[0] = address(aaveV2Connector);
         _connectors[1] = address(aaveV3Connector);
         _connectors[2] = address(compoundV3Connector);
         _connectors[3] = address(inchV5Connector);
         _connectors[4] = address(uniswapConnector);
         _connectors[5] = address(compoundV2Connector);
+        _connectors[6] = address(aaveV2Flashloan);
+        _connectors[7] = address(balancerFlashloan);
+        _connectors[8] = address(makerFlashloan);
 
         vm.prank(msg.sender);
         configurator.addConnectors(_names, _connectors);
