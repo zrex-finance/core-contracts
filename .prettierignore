@@ -4,7 +4,7 @@
 **/build
 **/cache
 **/cache_hardhat
-./lib/
+**/lib
 **/coverage
 **/node_modules
 **/out

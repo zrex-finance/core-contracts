@@ -5,12 +5,15 @@ import { Test } from 'forge-std/Test.sol';
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 contract Tokens {
-    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address usdcC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+    // address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address usdtC = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    // address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address daiC = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
     address ethC = 0x0000000000000000000000000000000000000000;
     address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address wethC = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
+    // address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
 }
@@ -76,7 +79,7 @@ contract UniswapHelper is Tokens, Test {
         IUni.ExactInputSingleParams memory params = IUni.ExactInputSingleParams(
             _fromToken,
             _toToken,
-            500, // pool fee
+            _toToken == usdcC ? 500 : 3000, // pool fee
             _recipient,
             _amount,
             0,
@@ -91,7 +94,7 @@ contract UniswapHelper is Tokens, Test {
         address tokenOut,
         uint256 amountIn
     ) public returns (uint256 amountOut) {
-        amountOut = quoter.quoteExactInputSingle(tokenIn, tokenOut, 500, amountIn, 0);
+        amountOut = quoter.quoteExactInputSingle(tokenIn, tokenOut, tokenOut == usdcC ? 500 : 3000, amountIn, 0);
     }
 
     function getSwapData(

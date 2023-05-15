@@ -3,10 +3,11 @@ pragma solidity ^0.8.17;
 
 interface IFlashReceiver {
     function executeOperation(
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata premiums,
+        address token,
+        uint256 amount,
+        uint256 fee,
         address initiator,
-        bytes calldata _data
+        string memory targetName,
+        bytes calldata params
     ) external;
 }

@@ -95,10 +95,10 @@ contract PositionCompoundV2 is LendingHelper {
         vm.prank(msg.sender);
         ERC20(_position.debt).approve(address(router), _position.amountIn);
 
-        (uint16 _route, bytes memory _data) = _openPosition(_position);
+        (string memory _targetName, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        router.openPosition(_position, _route, _data);
+        router.openPosition(_position, _targetName, _data);
     }
 
     function closePosition(DataTypes.Position memory _position, uint256 _index) public {
@@ -106,7 +106,7 @@ contract PositionCompoundV2 is LendingHelper {
 
         (, , , , , uint256 _collateralAmount, uint256 _borrowAmount) = router.positions(key);
 
-        uint16 _route = getFlashloanData(_position.debt, _borrowAmount);
+        string memory _targetName = getFlashloanData(_position.debt, _borrowAmount);
 
         address account = router.accounts(_position.account);
 
@@ -120,14 +120,14 @@ contract PositionCompoundV2 is LendingHelper {
         );
 
         vm.prank(msg.sender);
-        router.closePosition(key, _position.debt, _borrowAmount, _route, _calldata);
+        router.closePosition(key, _position.debt, _borrowAmount, _targetName, _calldata);
     }
 
     function openShort(DataTypes.Position memory _position, IRouter.SwapParams memory _params) public {
-        (uint16 _route, bytes memory _data) = _openPosition(_position);
+        (string memory _targetName, bytes memory _data) = _openPosition(_position);
 
         vm.prank(msg.sender);
-        router.swapAndOpen(_position, _route, _data, _params);
+        router.swapAndOpen(_position, _targetName, _data, _params);
     }
 
     function getOpenCallbackData(
@@ -183,21 +183,33 @@ contract PositionCompoundV2 is LendingHelper {
         _calldata = abi.encode(accountImpl.closePositionCallback.selector, _targetNames, _datas, _customDatas);
     }
 
-    function getFlashloanData(address lT, uint256 lA) public view returns (uint16) {
-        address[] memory _tokens = new address[](1);
-        uint256[] memory _amts = new uint256[](1);
-        _tokens[0] = lT;
-        _amts[0] = lA;
+    function getFlashloanData(address lT, uint256 lA) public view returns (string memory targetName) {
+        uint256 fee = type(uint256).max;
 
-        (, , uint16[] memory _bestRoutes, ) = flashResolver.getData(_tokens, _amts);
-
-        return _bestRoutes[0];
+        if (aaveV2Flashloan.getAvailability(lT, lA)) {
+            fee = aaveV2Flashloan.calculateFeeBPS();
+            targetName = aaveV2Flashloan.name();
+        }
+        if (makerFlashloan.getAvailability(lT, lA)) {
+            uint256 makerFee = makerFlashloan.calculateFeeBPS();
+            if (fee > makerFee) {
+                fee = makerFee;
+                targetName = makerFlashloan.name();
+            }
+        }
+        if (balancerFlashloan.getAvailability(lT, lA)) {
+            uint256 balancerFee = balancerFlashloan.calculateFeeBPS();
+            if (fee > balancerFee) {
+                fee = balancerFee;
+                targetName = balancerFlashloan.name();
+            }
+        }
     }
 
-    function _openPosition(DataTypes.Position memory _position) public view returns (uint16, bytes memory) {
-        uint256 loanAmt = _position.amountIn * (_position.leverage - 10000);
+    function _openPosition(DataTypes.Position memory _position) public view returns (string memory, bytes memory) {
+        uint256 loanAmt = (_position.amountIn * (_position.leverage - 10000)) / 10000;
 
-        uint16 _route = getFlashloanData(_position.debt, loanAmt);
+        string memory _targetName = getFlashloanData(_position.debt, loanAmt);
 
         uint256 swapAmount = (_position.amountIn * _position.leverage) / 10000;
         // protocol fee 0.5% denominator 10000
@@ -205,6 +217,6 @@ contract PositionCompoundV2 is LendingHelper {
 
         bytes memory _calldata = getOpenCallbackData(_position, swapAmountWithoutFee);
 
-        return (_route, _calldata);
+        return (_targetName, _calldata);
     }
 }

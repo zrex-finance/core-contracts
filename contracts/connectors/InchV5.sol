@@ -19,6 +19,17 @@ contract InchV5Connector is IInchV5Connector {
      */
     address internal constant oneInchV5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
+    /* ============ Events ============ */
+
+    /**
+     * @dev Emitted when the sender swap tokens.
+     * @param account Address who create operation.
+     * @param fromToken The address of the token to sell.
+     * @param toToken The address of the token to buy.
+     * @param amount The amount of the token to sell.
+     */
+    event LogExchange(address indexed account, address toToken, address fromToken, uint256 amount);
+
     /* ============ External Functions ============ */
 
     /**
@@ -72,6 +83,4 @@ contract InchV5Connector is IInchV5Connector {
 
         buyAmount = finalBalalance - initalBalalance;
     }
-
-    event LogExchange(address indexed account, address buyAddr, address sellAddr, uint256 sellAmt);
 }
