@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
 import { IKyber } from '../interfaces/external/kyber/IKyber.sol';
-import { IKyberConnector } from '../interfaces/IKyberConnector.sol';
+import { IKyberConnector } from '../interfaces/connectors/IKyberConnector.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 

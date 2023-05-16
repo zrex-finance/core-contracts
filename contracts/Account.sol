@@ -17,13 +17,15 @@ import { IConnectors } from './interfaces/IConnectors.sol';
 import { IBaseFlashloan } from './interfaces/IBaseFlashloan.sol';
 import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
 
+import 'forge-std/Test.sol';
+
 /**
  * @title Account
  * @author FlashFlow
  * @notice Contract used as implimentation user account.
  * @dev Interaction with contracts is carried out by means of calling the proxy contract.
  */
-contract Account is Initializable, IAccount {
+contract Account is Initializable, IAccount, Test {
     using UniversalERC20 for IERC20;
     using ConnectorsCall for IAddressesProvider;
     using Address for address;

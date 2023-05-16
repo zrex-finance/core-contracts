@@ -8,7 +8,7 @@ import { DataTypes } from 'contracts/lib/DataTypes.sol';
 
 import { EthConverter } from 'contracts/mocks/EthConverter.sol';
 
-import { CompoundV2Connector } from 'contracts/connectors/CompoundV2.sol';
+import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
 import { CTokenInterface } from 'contracts/interfaces/external/compound-v2/CTokenInterfaces.sol';
 import { ComptrollerInterface } from 'contracts/interfaces/external/compound-v2/ComptrollerInterface.sol';
 

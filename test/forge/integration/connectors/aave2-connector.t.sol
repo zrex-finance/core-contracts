@@ -6,7 +6,7 @@ import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 import { Connectors } from 'contracts/Connectors.sol';
 import { EthConverter } from 'contracts/mocks/EthConverter.sol';
-import { AaveV2Connector } from 'contracts/connectors/AaveV2.sol';
+import { AaveV2Connector } from 'contracts/connectors/mainnet/AaveV2.sol';
 
 import { DataTypes } from 'contracts/lib/DataTypes.sol';
 import { ILendingPool } from 'contracts/interfaces/external/aave-v2/ILendingPool.sol';

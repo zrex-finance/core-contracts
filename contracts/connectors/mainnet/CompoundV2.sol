@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
+import { IERC20 } from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { ICompoundV2Connector } from '../interfaces/ICompoundV2Connector.sol';
-import { CErc20Interface } from '../interfaces/external/compound-v2/CTokenInterfaces.sol';
-import { ComptrollerInterface } from '../interfaces/external/compound-v2/ComptrollerInterface.sol';
+import { ICompoundV2Connector } from '../../interfaces/connectors/ICompoundV2Connector.sol';
+import { CErc20Interface } from '../../interfaces/external/compound-v2/CTokenInterfaces.sol';
+import { ComptrollerInterface } from '../../interfaces/external/compound-v2/ComptrollerInterface.sol';
 
-import { UniversalERC20 } from '../lib/UniversalERC20.sol';
+import { UniversalERC20 } from '../../lib/UniversalERC20.sol';
 
 contract CompoundV2Connector is ICompoundV2Connector {
     using UniversalERC20 for IERC20;

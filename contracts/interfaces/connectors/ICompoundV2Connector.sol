@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { CErc20Interface } from './external/compound-v2/CTokenInterfaces.sol';
+import { CErc20Interface } from '../external/compound-v2/CTokenInterfaces.sol';
 
 interface ICompoundV2Connector {
     function name() external returns (string memory);

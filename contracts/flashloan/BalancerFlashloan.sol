@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
 import { IFlashReceiver } from '../interfaces/IFlashReceiver.sol';
-import { IBalancerFlashloan } from '../interfaces/IBalancerFlashloan.sol';
+import { IBalancerFlashloan } from '../interfaces/connectors/IBalancerFlashloan.sol';
 
 import { IVault } from '../interfaces/external/balancer/IVault.sol';
 import { IFlashLoanRecipient } from '../interfaces/external/balancer/IFlashLoanRecipient.sol';

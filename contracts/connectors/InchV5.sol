@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IInchV5Connector } from '../interfaces/IInchV5Connector.sol';
+import { IInchV5Connector } from '../interfaces/connectors/IInchV5Connector.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 
