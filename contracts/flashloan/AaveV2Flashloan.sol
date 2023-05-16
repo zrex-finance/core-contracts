@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
 import { IFlashReceiver } from '../interfaces/IFlashReceiver.sol';
-import { IAaveFlashloan } from '../interfaces/IAaveFlashloan.sol';
+import { IAaveFlashloan } from '../interfaces/connectors/IAaveFlashloan.sol';
 
 import { ILendingPool } from '../interfaces/external/aave-v2/ILendingPool.sol';
 import { IProtocolDataProvider } from '../interfaces/external/aave-v2/IProtocolDataProvider.sol';

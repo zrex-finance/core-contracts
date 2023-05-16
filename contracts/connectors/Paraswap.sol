@@ -3,21 +3,22 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IUniswapConnector } from '../interfaces/connectors/IUniswapConnector.sol';
+import { IAugustusSwapper } from '../interfaces/external/paraswap/IAugustusSwapper.sol';
+import { IParaSwapConnector } from '../interfaces/connectors/IParaSwapConnector.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 
-contract UniswapConnector is IUniswapConnector {
+contract ParaSwapConnector is IParaSwapConnector {
     using UniversalERC20 for IERC20;
 
     /* ============ Constants ============ */
 
-    string public constant name = 'UniswapAuto';
+    string public constant name = 'ParaSwap';
 
     /**
-     * @dev UniswapV3 Auto Swap Router Address
+     * @dev Paraswap Router Address
      */
-    address internal constant uniAutoRouter = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
+    address internal constant paraswap = 0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57;
 
     /* ============ Events ============ */
 
@@ -33,12 +34,12 @@ contract UniswapConnector is IUniswapConnector {
     /* ============ External Functions ============ */
 
     /**
-     * @dev Sell ETH/ERC20_Token using uniswap v3 auto router.
-     * @notice Swap tokens from getting an optimized trade routes
-     * @param _toToken The address of the token to buy.
-     * @param _fromToken The address of the token to sell.
+     * @dev Swap ETH/ERC20_Token using ParaSwap.
+     * @notice Swap tokens from exchanges like kyber, 0x etc, with calculation done off-chain.
+     * @param _toToken The address of the token to buy.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _fromToken The address of the token to sell.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param _amount The amount of the token to sell.
-     * @param _callData Data from uniswap API.
+     * @param _callData Data from ParaSwap API.
      * @return buyAmount Returns the amount of tokens received.
      */
     function swap(
@@ -54,11 +55,11 @@ contract UniswapConnector is IUniswapConnector {
     /* ============ Internal Functions ============ */
 
     /**
-     * @dev Universal approve tokens to uniswap router and execute calldata.
-     * @param _toToken The address of the token to buy.
-     * @param _fromToken The address of the token to sell.
+     * @dev Universal approve tokens to paraswap router and execute calldata.
+     * @param _toToken The address of the token to buy.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param _fromToken The address of the token to sell.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param _amount The amount of the token to sell.
-     * @param _callData Data from uniswap API.
+     * @param _callData Data from ParaSwap API.
      * @return buyAmount Returns the amount of tokens received.
      */
     function _swap(
@@ -67,11 +68,14 @@ contract UniswapConnector is IUniswapConnector {
         uint256 _amount,
         bytes calldata _callData
     ) internal returns (uint256 buyAmount) {
-        IERC20(_fromToken).universalApprove(uniAutoRouter, _amount);
+        address tokenProxy = IAugustusSwapper(paraswap).getTokenTransferProxy();
+        IERC20(_fromToken).universalApprove(tokenProxy, _amount);
+
+        uint256 value = IERC20(_fromToken).isETH() ? _amount : 0; // matic have the same address
 
         uint256 initalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = uniAutoRouter.call(_callData);
+        (bool success, bytes memory results) = paraswap.call{ value: value }(_callData);
 
         if (!success) {
             revert(string(results));

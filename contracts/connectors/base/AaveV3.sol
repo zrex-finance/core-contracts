@@ -1,39 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
+import { IERC20 } from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IAaveV3Connector } from '../interfaces/IAaveV3Connector.sol';
-import { IPool } from '../interfaces/external/aave-v3/IPool.sol';
-import { IPoolDataProvider } from '../interfaces/external/aave-v3/IPoolDataProvider.sol';
-import { IPoolAddressesProvider } from '../interfaces/external/aave-v3/IPoolAddressesProvider.sol';
+import { IAaveV3Connector } from '../../interfaces/connectors/IAaveV3Connector.sol';
+import { IPool } from '../../interfaces/external/aave-v3/IPool.sol';
+import { IPoolDataProvider } from '../../interfaces/external/aave-v3/IPoolDataProvider.sol';
+import { IPoolAddressesProvider } from '../../interfaces/external/aave-v3/IPoolAddressesProvider.sol';
 
-import { UniversalERC20 } from '../lib/UniversalERC20.sol';
+import { UniversalERC20 } from '../../lib/UniversalERC20.sol';
 
-contract AaveV3Connector is IAaveV3Connector {
+contract AaveV3BaseConnector is IAaveV3Connector {
     using UniversalERC20 for IERC20;
 
     /* ============ Constants ============ */
 
-    /**
-     * @dev Aave Pool Provider
-     */
-    IPoolAddressesProvider internal constant aaveProvider =
-        IPoolAddressesProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb);
-    // IPoolAddressesProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
-
-    /**
-     * @dev Aave Pool Data Provider
-     */
-    IPoolDataProvider internal constant aaveData = IPoolDataProvider(0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654);
-    // IPoolDataProvider internal constant aaveData = IPoolDataProvider(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
-
-    /**
-     * @dev Aave Referral Code
-     */
-    uint16 internal constant referralCode = 0;
-
     string public constant override name = 'AaveV3';
+
+    /* ============ State Variables ============ */
+
+    IPoolAddressesProvider public immutable aaveProvider;
+    IPoolDataProvider public immutable aaveData;
+    uint16 public immutable referralCode;
+
+    /* ============ Constructor ============ */
+
+    /**
+     * @dev Constructor.
+     * @param _aaveProvider The address of the AddressesProvider contract
+     * @param _aaveData The address of the DataProvider contract
+     * @param _referralCode  The referral code number
+     */
+    constructor(IPoolAddressesProvider _aaveProvider, IPoolDataProvider _aaveData, uint16 _referralCode) {
+        aaveProvider = _aaveProvider;
+        aaveData = _aaveData;
+        referralCode = _referralCode;
+    }
 
     /* ============ External Functions ============ */
 

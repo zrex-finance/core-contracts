@@ -8,8 +8,8 @@ import { SafeERC20 } from 'contracts/dependencies/openzeppelin/contracts/SafeERC
 contract HelperContract is Test {
     using SafeERC20 for ERC20;
 
-    // address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
-    address daiWhale = 0x79990a901281bEe059BB3F4D7Db477F7495e2049;
+    address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
+    // address daiWhale = 0x79990a901281bEe059BB3F4D7Db477F7495e2049; // polygon
     address usdtWhale = 0xee5B5B923fFcE93A870B3104b7CA09c3db80047A;
     address usdcWhale = 0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078;
 

@@ -25,10 +25,10 @@ import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
 
 import { InchV5Connector } from 'contracts/connectors/InchV5.sol';
 import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
-import { AaveV2Connector } from 'contracts/connectors/AaveV2.sol';
-import { AaveV3Connector } from 'contracts/connectors/AaveV3.sol';
-import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
-import { CompoundV2Connector } from 'contracts/connectors/CompoundV2.sol';
+import { AaveV2Connector } from 'contracts/connectors/mainnet/AaveV2.sol';
+import { AaveV3Connector } from 'contracts/connectors/mainnet/AaveV3.sol';
+import { CompoundV3Connector } from 'contracts/connectors/mainnet/CompoundV3.sol';
+import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
 
 contract Deployer is Test {
     Router router;
@@ -50,7 +50,7 @@ contract Deployer is Test {
     Account accountImpl;
 
     function setUp() public {
-        string memory url = vm.rpcUrl('polygon');
+        string memory url = vm.rpcUrl('mainnet');
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 

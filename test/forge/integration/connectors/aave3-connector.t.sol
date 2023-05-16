@@ -5,7 +5,7 @@ import 'forge-std/Test.sol';
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 import { EthConverter } from 'contracts/mocks/EthConverter.sol';
-import { AaveV3Connector } from 'contracts/connectors/AaveV3.sol';
+import { AaveV3Connector } from 'contracts/connectors/mainnet/AaveV3.sol';
 
 import { DataTypes } from 'contracts/lib/DataTypes.sol';
 
