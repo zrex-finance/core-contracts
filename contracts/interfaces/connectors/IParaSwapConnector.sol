@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 interface IParaSwapConnector {
-    function name() external returns (string memory);
+    function NAME() external returns (string memory);
 
     function swap(
         address _toToken,

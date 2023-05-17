@@ -13,12 +13,15 @@ contract ParaSwapConnector is IParaSwapConnector {
 
     /* ============ Constants ============ */
 
-    string public constant name = 'ParaSwap';
+    /**
+     * @dev Connector name
+     */
+    string public constant NAME = 'ParaSwap';
 
     /**
      * @dev Paraswap Router Address
      */
-    address internal constant paraswap = 0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57;
+    address internal constant PARASWAP_ROUTER = 0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57;
 
     /* ============ Events ============ */
 
@@ -68,14 +71,14 @@ contract ParaSwapConnector is IParaSwapConnector {
         uint256 _amount,
         bytes calldata _callData
     ) internal returns (uint256 buyAmount) {
-        address tokenProxy = IAugustusSwapper(paraswap).getTokenTransferProxy();
+        address tokenProxy = IAugustusSwapper(PARASWAP_ROUTER).getTokenTransferProxy();
         IERC20(_fromToken).universalApprove(tokenProxy, _amount);
 
         uint256 value = IERC20(_fromToken).isETH() ? _amount : 0; // matic have the same address
 
         uint256 initalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = paraswap.call{ value: value }(_callData);
+        (bool success, bytes memory results) = PARASWAP_ROUTER.call{ value: value }(_callData);
 
         if (!success) {
             revert(string(results));

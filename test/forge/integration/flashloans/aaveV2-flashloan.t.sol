@@ -15,6 +15,9 @@ contract TestAaveV2Flashloan is Test {
     address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
+    address aaveLending = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
+    address aaveData = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
+
     uint256 public amount = 1000 ether;
     address public token = daiC;
     uint256 public fee = 900000000000000000;
@@ -39,7 +42,7 @@ contract TestAaveV2Flashloan is Test {
         uint256[] memory fees = new uint256[](1);
         fees[0] = fee;
 
-        vm.prank(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
+        vm.prank(aaveLending);
         connector.executeOperation(tokens, amounts, fees, address(connector), data);
     }
 
@@ -60,7 +63,7 @@ contract TestAaveV2Flashloan is Test {
         fees[0] = fee;
 
         vm.expectRevert(abi.encodePacked('not same sender'));
-        vm.prank(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
+        vm.prank(aaveLending);
         connector.executeOperation(tokens, amounts, fees, msg.sender, data);
     }
 
@@ -115,6 +118,6 @@ contract TestAaveV2Flashloan is Test {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        connector = new AaveV2Flashloan();
+        connector = new AaveV2Flashloan(aaveLending, aaveData);
     }
 }

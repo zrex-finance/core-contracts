@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { CErc20Interface } from '../external/compound-v2/CTokenInterfaces.sol';
 
 interface ICompoundV2Connector {
-    function name() external returns (string memory);
+    function NAME() external returns (string memory);
 
     function deposit(address _token, uint256 _amount) external payable;
 

@@ -14,7 +14,7 @@ import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 import { Errors } from 'contracts/lib/Errors.sol';
 
 contract ConnectorImpl {
-    string public constant name = 'ConnectorImpl';
+    string public constant NAME = 'ConnectorImpl';
 }
 
 contract TestConnectors is Test {
@@ -27,7 +27,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](2);
         _connectors[0] = address(connector);
@@ -40,7 +40,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(0);
@@ -53,8 +53,8 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](2);
-        _names[0] = connector.name();
-        _names[1] = connector.name(); // same name
+        _names[0] = connector.NAME();
+        _names[1] = connector.NAME(); // same name
 
         address[] memory _connectors = new address[](2);
         _connectors[0] = address(connector);
@@ -68,7 +68,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
@@ -84,7 +84,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](2);
         _connectors[0] = address(connector);
@@ -97,7 +97,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
@@ -114,7 +114,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](2);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](2);
         _connectors[0] = address(connector);
@@ -127,7 +127,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
@@ -152,7 +152,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](2);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](2);
         _connectors[0] = address(connector);
@@ -165,7 +165,7 @@ contract TestConnectors is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);

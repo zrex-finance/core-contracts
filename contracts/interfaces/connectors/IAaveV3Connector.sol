@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 interface IAaveV3Connector {
-    function name() external returns (string memory);
+    function NAME() external returns (string memory);
 
     function deposit(address _token, uint256 _amount) external payable;
 

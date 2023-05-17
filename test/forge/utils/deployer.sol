@@ -25,9 +25,9 @@ import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
 
 import { InchV5Connector } from 'contracts/connectors/InchV5.sol';
 import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
+import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
 import { AaveV2Connector } from 'contracts/connectors/mainnet/AaveV2.sol';
 import { AaveV3Connector } from 'contracts/connectors/mainnet/AaveV3.sol';
-import { CompoundV3Connector } from 'contracts/connectors/mainnet/CompoundV3.sol';
 import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
 
 contract Deployer is Test {
@@ -102,9 +102,15 @@ contract Deployer is Test {
     }
 
     function setUpConnectors() public {
-        aaveV2Flashloan = new AaveV2Flashloan();
-        balancerFlashloan = new BalancerFlashloan();
-        makerFlashloan = new MakerFlashloan();
+        aaveV2Flashloan = new AaveV2Flashloan(
+            0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9,
+            0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d
+        );
+        balancerFlashloan = new BalancerFlashloan(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+        makerFlashloan = new MakerFlashloan(
+            0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853,
+            0x6B175474E89094C44Da98b954EedeAC495271d0F
+        );
 
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();
@@ -114,15 +120,15 @@ contract Deployer is Test {
         compoundV2Connector = new CompoundV2Connector();
 
         string[] memory _names = new string[](9);
-        _names[0] = aaveV2Connector.name();
-        _names[1] = aaveV3Connector.name();
-        _names[2] = compoundV3Connector.name();
-        _names[3] = inchV5Connector.name();
-        _names[4] = uniswapConnector.name();
-        _names[5] = compoundV2Connector.name();
-        _names[6] = aaveV2Flashloan.name();
-        _names[7] = balancerFlashloan.name();
-        _names[8] = makerFlashloan.name();
+        _names[0] = aaveV2Connector.NAME();
+        _names[1] = aaveV3Connector.NAME();
+        _names[2] = compoundV3Connector.NAME();
+        _names[3] = inchV5Connector.NAME();
+        _names[4] = uniswapConnector.NAME();
+        _names[5] = compoundV2Connector.NAME();
+        _names[6] = aaveV2Flashloan.NAME();
+        _names[7] = balancerFlashloan.NAME();
+        _names[8] = makerFlashloan.NAME();
 
         address[] memory _connectors = new address[](9);
         _connectors[0] = address(aaveV2Connector);

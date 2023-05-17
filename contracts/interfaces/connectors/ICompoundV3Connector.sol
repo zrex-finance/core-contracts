@@ -23,7 +23,7 @@ interface ICompoundV3Connector {
         DEPOSIT
     }
 
-    function name() external returns (string memory);
+    function NAME() external returns (string memory);
 
     function deposit(address _market, address _token, uint256 _amount) external payable;
 

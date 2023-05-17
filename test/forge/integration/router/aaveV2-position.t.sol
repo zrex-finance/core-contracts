@@ -140,9 +140,9 @@ contract PositionAaveV2 is LendingHelper {
         bytes32 key = router.getKey(_position.account, index + 1);
 
         string[] memory _targetNames = new string[](3);
-        _targetNames[0] = uniswapConnector.name();
-        _targetNames[1] = aaveV2Connector.name();
-        _targetNames[2] = aaveV2Connector.name();
+        _targetNames[0] = uniswapConnector.NAME();
+        _targetNames[1] = aaveV2Connector.NAME();
+        _targetNames[2] = aaveV2Connector.NAME();
 
         bytes[] memory _customDatas = new bytes[](1);
         _customDatas[0] = abi.encode(key);
@@ -173,9 +173,9 @@ contract PositionAaveV2 is LendingHelper {
         _customDatas[0] = abi.encodePacked(key);
 
         string[] memory _targetNames = new string[](3);
-        _targetNames[0] = aaveV2Connector.name();
-        _targetNames[1] = aaveV2Connector.name();
-        _targetNames[2] = uniswapConnector.name();
+        _targetNames[0] = aaveV2Connector.NAME();
+        _targetNames[1] = aaveV2Connector.NAME();
+        _targetNames[2] = uniswapConnector.NAME();
 
         bytes[] memory _datas = new bytes[](3);
         _datas[0] = getPaybackData(borrowAmt, debt);
@@ -190,20 +190,20 @@ contract PositionAaveV2 is LendingHelper {
 
         if (aaveV2Flashloan.getAvailability(lT, lA)) {
             fee = aaveV2Flashloan.calculateFeeBPS();
-            targetName = aaveV2Flashloan.name();
+            targetName = aaveV2Flashloan.NAME();
         }
         if (makerFlashloan.getAvailability(lT, lA)) {
             uint256 makerFee = makerFlashloan.calculateFeeBPS();
             if (fee > makerFee) {
                 fee = makerFee;
-                targetName = makerFlashloan.name();
+                targetName = makerFlashloan.NAME();
             }
         }
         if (balancerFlashloan.getAvailability(lT, lA)) {
             uint256 balancerFee = balancerFlashloan.calculateFeeBPS();
             if (fee > balancerFee) {
                 fee = balancerFee;
-                targetName = balancerFlashloan.name();
+                targetName = balancerFlashloan.NAME();
             }
         }
     }

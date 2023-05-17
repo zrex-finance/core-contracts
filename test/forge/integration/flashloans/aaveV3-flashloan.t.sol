@@ -7,27 +7,27 @@ import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clone
 
 import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
 
-import { MakerFlashloan } from 'contracts/flashloan/MakerFlashloan.sol';
+import { AaveV3Flashloan } from 'contracts/flashloan/AaveV3Flashloan.sol';
 
-contract TestMakerFlashloan is Test {
-    MakerFlashloan connector;
+contract TestAaveV3Flashloan is Test {
+    AaveV3Flashloan connector;
 
     address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
-    address daiToken = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address makerLending = 0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853;
+    address aaveLending = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+    address aaveData = 0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3;
 
     uint256 public amount = 1000 ether;
     address public token = daiC;
+    uint256 public fee = 900000000000000000;
 
-    function test_flashloan_MakerTryCatch() public {
-        // maker disable flashloan
-        try connector.flashLoan(token, amount, bytes('')) {} catch {}
+    function test_flashloan() public {
+        connector.flashLoan(token, amount, bytes(''));
     }
 
-    function test_onFlashLoan() public {
-        bytes memory data = abi.encode(token, amount, address(this), bytes(''));
+    function test_executeOperation() public {
+        bytes memory data = abi.encode(address(this), bytes('Hello'));
 
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
@@ -35,12 +35,12 @@ contract TestMakerFlashloan is Test {
         vm.prank(daiWhale);
         IERC20(token).transfer(address(connector), amount);
 
-        vm.prank(makerLending);
-        connector.onFlashLoan(address(connector), address(0), type(uint256).max, type(uint256).max, data);
+        vm.prank(aaveLending);
+        connector.executeOperation(token, amount, fee, address(connector), data);
     }
 
-    function test_onFlashLoan_NotSameSender() public {
-        bytes memory data = abi.encode(token, amount, address(this), bytes(''));
+    function test_executeOperation_NotSameSender() public {
+        bytes memory data = abi.encode(address(this), bytes('Hello'));
 
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
@@ -49,12 +49,12 @@ contract TestMakerFlashloan is Test {
         IERC20(token).transfer(address(connector), amount);
 
         vm.expectRevert(abi.encodePacked('not same sender'));
-        vm.prank(makerLending);
-        connector.onFlashLoan(address(msg.sender), address(0), type(uint256).max, type(uint256).max, data);
+        vm.prank(aaveLending);
+        connector.executeOperation(token, amount, fee, msg.sender, data);
     }
 
-    function test_onFlashLoan_NotMakerSender() public {
-        bytes memory data = abi.encode(token, amount, address(this), bytes(''));
+    function test_executeOperation_NotAaveSender() public {
+        bytes memory data = abi.encode(address(this), bytes('Hello'));
 
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
@@ -62,8 +62,8 @@ contract TestMakerFlashloan is Test {
         vm.prank(daiWhale);
         IERC20(token).transfer(address(connector), amount);
 
-        vm.expectRevert(abi.encodePacked('not maker sender'));
-        connector.onFlashLoan(address(connector), address(0), type(uint256).max, type(uint256).max, data);
+        vm.expectRevert(abi.encodePacked('not aave sender'));
+        connector.executeOperation(token, amount, fee, address(connector), data);
     }
 
     function executeOperation(
@@ -97,6 +97,6 @@ contract TestMakerFlashloan is Test {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        connector = new MakerFlashloan(makerLending, daiToken);
+        connector = new AaveV3Flashloan(aaveLending, aaveData);
     }
 }

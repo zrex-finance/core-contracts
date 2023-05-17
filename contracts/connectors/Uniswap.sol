@@ -12,12 +12,15 @@ contract UniswapConnector is IUniswapConnector {
 
     /* ============ Constants ============ */
 
-    string public constant name = 'UniswapAuto';
+    /**
+     * @dev Connector name
+     */
+    string public constant NAME = 'UniswapAuto';
 
     /**
      * @dev UniswapV3 Auto Swap Router Address
      */
-    address internal constant uniAutoRouter = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
+    address internal constant UNI_AUTO_ROUTER = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
 
     /* ============ Events ============ */
 
@@ -67,11 +70,11 @@ contract UniswapConnector is IUniswapConnector {
         uint256 _amount,
         bytes calldata _callData
     ) internal returns (uint256 buyAmount) {
-        IERC20(_fromToken).universalApprove(uniAutoRouter, _amount);
+        IERC20(_fromToken).universalApprove(UNI_AUTO_ROUTER, _amount);
 
         uint256 initalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = uniAutoRouter.call(_callData);
+        (bool success, bytes memory results) = UNI_AUTO_ROUTER.call(_callData);
 
         if (!success) {
             revert(string(results));

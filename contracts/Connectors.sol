@@ -86,7 +86,7 @@ contract Connectors is IConnectors {
 
             require(connectors[name] == address(0), Errors.CONNECTOR_ALREADY_EXIST);
             require(connector != address(0), Errors.INVALID_CONNECTOR_ADDRESS);
-            IConnector(connector).name();
+            IConnector(connector).NAME();
             connectors[name] = connector;
 
             emit ConnectorAdded(name, connector);
@@ -111,7 +111,7 @@ contract Connectors is IConnectors {
 
             require(connectors[name] != address(0), Errors.CONNECTOR_DOES_NOT_EXIST);
             require(connector != address(0), Errors.INVALID_CONNECTOR_ADDRESS);
-            IConnector(connector).name();
+            IConnector(connector).NAME();
             connectors[name] = connector;
 
             emit ConnectorUpdated(name, oldConnector, connector);

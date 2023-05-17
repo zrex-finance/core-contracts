@@ -11,17 +11,30 @@ import { IFlashLoanRecipient } from '../interfaces/external/balancer/IFlashLoanR
 
 import { BaseFlashloan } from './BaseFlashloan.sol';
 
-import 'forge-std/Test.sol';
-
-contract BalancerFlashloan is IBalancerFlashloan, BaseFlashloan, Test {
+contract BalancerFlashloan is IBalancerFlashloan, BaseFlashloan {
     /* ============ Constants ============ */
 
     /**
      * @dev Balancer Lending
      */
-    IVault internal constant balancerLending = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+    IVault internal immutable LENDING_POOL;
 
-    string public constant override name = 'BalancerFlashloan';
+    /**
+     * @dev Connector name
+     */
+    string public constant override NAME = 'BalancerFlashloan';
+
+    /* ============ Constructor ============ */
+
+    /**
+     * @dev Constructor.
+     * @param _balancerLending The address of the Balancer lending contract
+     */
+    constructor(address _balancerLending) {
+        LENDING_POOL = IVault(_balancerLending);
+    }
+
+    /* ============ External Functions ============ */
 
     /**
      * @dev Fallback function for balancer flashloan.
@@ -35,7 +48,7 @@ contract BalancerFlashloan is IBalancerFlashloan, BaseFlashloan, Test {
         uint256[] memory _fees,
         bytes memory _data
     ) external override verifyDataHash(_data) {
-        require(msg.sender == address(balancerLending), 'not balancer sender');
+        require(msg.sender == address(LENDING_POOL), 'not balancer sender');
 
         (address asset, uint256 amount, address sender, bytes memory data) = abi.decode(
             _data,
@@ -46,11 +59,11 @@ contract BalancerFlashloan is IBalancerFlashloan, BaseFlashloan, Test {
         uint256 initialBalance = getBalance(asset);
 
         safeTransfer(asset, amount, sender);
-        IFlashReceiver(sender).executeOperation(asset, amount, fee, sender, name, data);
+        IFlashReceiver(sender).executeOperation(asset, amount, fee, sender, NAME, data);
 
         require(initialBalance + fee <= getBalance(asset), 'amount paid less');
 
-        safeTransfer(asset, amount + fee, address(balancerLending));
+        safeTransfer(asset, amount + fee, address(LENDING_POOL));
     }
 
     /**
@@ -71,7 +84,7 @@ contract BalancerFlashloan is IBalancerFlashloan, BaseFlashloan, Test {
      * @notice Returns fee for the passed route in BPS. 1 BPS == 0.01%.
      */
     function calculateFeeBPS() public view override returns (uint256 bps) {
-        bps = (balancerLending.getProtocolFeesCollector().getFlashLoanFeePercentage()) * 100;
+        bps = (LENDING_POOL.getProtocolFeesCollector().getFlashLoanFeePercentage()) * 100;
     }
 
     /* ============ Internal Functions ============ */
@@ -92,11 +105,11 @@ contract BalancerFlashloan is IBalancerFlashloan, BaseFlashloan, Test {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = _amount;
 
-        balancerLending.flashLoan(IFlashLoanRecipient(address(this)), tokens, amounts, data);
+        LENDING_POOL.flashLoan(IFlashLoanRecipient(address(this)), tokens, amounts, data);
     }
 
     function getAvailability(address _token, uint256 _amount) external view override returns (bool) {
-        if (IERC20(_token).balanceOf(address(balancerLending)) < _amount) {
+        if (IERC20(_token).balanceOf(address(LENDING_POOL)) < _amount) {
             return false;
         }
         return true;

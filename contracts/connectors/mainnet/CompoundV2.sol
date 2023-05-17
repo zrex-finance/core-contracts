@@ -15,11 +15,15 @@ contract CompoundV2Connector is ICompoundV2Connector {
     /* ============ Constants ============ */
 
     /**
-     * @dev Compound Comptroller
+     * @dev Compound COMPTROLLER
      */
-    ComptrollerInterface internal constant troller = ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    ComptrollerInterface internal constant COMPTROLLER =
+        ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
-    string public constant override name = 'CompoundV2';
+    /**
+     * @dev Connector name
+     */
+    string public constant override NAME = 'CompoundV2';
 
     /* ============ External Functions ============ */
 
@@ -200,7 +204,7 @@ contract CompoundV2Connector is ICompoundV2Connector {
      * @dev Enter compound market
      */
     function enterMarket(address cToken) internal {
-        address[] memory markets = troller.getAssetsIn(address(this));
+        address[] memory markets = COMPTROLLER.getAssetsIn(address(this));
         bool isEntered = false;
         for (uint i = 0; i < markets.length; i++) {
             if (markets[i] == cToken) {
@@ -210,7 +214,7 @@ contract CompoundV2Connector is ICompoundV2Connector {
         if (!isEntered) {
             address[] memory toEnter = new address[](1);
             toEnter[0] = cToken;
-            troller.enterMarkets(toEnter);
+            COMPTROLLER.enterMarkets(toEnter);
         }
     }
 }

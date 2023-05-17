@@ -15,6 +15,8 @@ contract TestBalancerFlashloan is Test {
     address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address wethWhale = 0x44Cc771fBE10DeA3836f37918cF89368589b6316;
 
+    address balancerLending = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+
     uint256 public amount = 1 ether;
     uint256 public fee = 0;
     address public token = wethC;
@@ -39,7 +41,7 @@ contract TestBalancerFlashloan is Test {
         uint256[] memory fees = new uint256[](1);
         fees[0] = fee;
 
-        vm.prank(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+        vm.prank(balancerLending);
         connector.receiveFlashLoan(tokens, amounts, fees, data);
     }
 
@@ -87,6 +89,6 @@ contract TestBalancerFlashloan is Test {
         uint256 forkId = vm.createFork(url);
         vm.selectFork(forkId);
 
-        connector = new BalancerFlashloan();
+        connector = new BalancerFlashloan(balancerLending);
     }
 }

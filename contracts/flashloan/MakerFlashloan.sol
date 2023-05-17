@@ -15,12 +15,29 @@ contract MakerFlashloan is IMakerFlashloan, BaseFlashloan {
     /**
      * @dev Maker Lending
      */
-    IERC3156FlashLender internal constant makerLending =
-        IERC3156FlashLender(0x1EB4CF3A948E7D72A198fe073cCb8C7a948cD853);
+    IERC3156FlashLender internal immutable LENDING_POOL;
 
-    address public constant DAI_TOKEN = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    /**
+     * @dev DAI contract address
+     */
+    address internal immutable DAI_TOKEN;
 
-    string public constant override name = 'MakerFlashloan';
+    /**
+     * @dev Connector name
+     */
+    string public constant override NAME = 'MakerFlashloan';
+
+    /* ============ Constructor ============ */
+
+    /**
+     * @dev Constructor.
+     * @param _makerLending The address of the AddressesProvider contract
+     * @param _daiToken The address of the DAI contract
+     */
+    constructor(address _makerLending, address _daiToken) {
+        LENDING_POOL = IERC3156FlashLender(_makerLending);
+        DAI_TOKEN = _daiToken;
+    }
 
     /* ============ External Functions ============ */
 
@@ -39,7 +56,7 @@ contract MakerFlashloan is IMakerFlashloan, BaseFlashloan {
         bytes calldata _data
     ) external override verifyDataHash(_data) returns (bytes32) {
         require(_initiator == address(this), 'not same sender');
-        require(msg.sender == address(makerLending), 'not maker sender');
+        require(msg.sender == address(LENDING_POOL), 'not maker sender');
 
         (address asset, uint256 amount, address sender, bytes memory data) = abi.decode(
             _data,
@@ -49,10 +66,10 @@ contract MakerFlashloan is IMakerFlashloan, BaseFlashloan {
         uint256 fee = calculateFee(amount, calculateFeeBPS());
         uint256 initialBalance = getBalance(asset);
 
-        safeApprove(asset, amount + fee, address(makerLending));
+        safeApprove(asset, amount + fee, address(LENDING_POOL));
         safeTransfer(asset, amount, sender);
 
-        IFlashReceiver(sender).executeOperation(asset, amount, fee, sender, name, data);
+        IFlashReceiver(sender).executeOperation(asset, amount, fee, sender, NAME, data);
 
         require(initialBalance + fee <= getBalance(asset), 'amount paid less');
 
@@ -77,7 +94,7 @@ contract MakerFlashloan is IMakerFlashloan, BaseFlashloan {
      * @notice Returns fee for the passed route in BPS. 1 BPS == 0.01%.
      */
     function calculateFeeBPS() public view override returns (uint256 bps) {
-        bps = (makerLending.toll()) / (10 ** 14);
+        bps = (LENDING_POOL.toll()) / (10 ** 14);
     }
 
     /* ============ Internal Functions ============ */
@@ -91,12 +108,12 @@ contract MakerFlashloan is IMakerFlashloan, BaseFlashloan {
     function _flashLoan(address _token, uint256 _amount, bytes memory _data) internal {
         bytes memory data = abi.encode(_token, _amount, msg.sender, _data);
         _dataHash = bytes32(keccak256(data));
-        makerLending.flashLoan(IERC3156FlashBorrower(address(this)), _token, _amount, data);
+        LENDING_POOL.flashLoan(IERC3156FlashBorrower(address(this)), _token, _amount, data);
     }
 
     function getAvailability(address _token, uint256 _amount) external view override returns (bool) {
         if (_token == DAI_TOKEN) {
-            return _amount <= makerLending.maxFlashLoan(DAI_TOKEN);
+            return _amount <= LENDING_POOL.maxFlashLoan(DAI_TOKEN);
         }
         return false;
     }

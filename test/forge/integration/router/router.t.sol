@@ -96,7 +96,7 @@ contract TestRouterSwap is Test, UniswapHelper {
         UniswapConnector swapConnector = new UniswapConnector();
 
         string[] memory _names = new string[](1);
-        _names[0] = swapConnector.name();
+        _names[0] = swapConnector.NAME();
 
         address[] memory _addresses = new address[](1);
         _addresses[0] = address(swapConnector);

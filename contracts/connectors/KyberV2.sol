@@ -3,11 +3,11 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IInchV5Connector } from '../interfaces/connectors/IInchV5Connector.sol';
+import { IKyberConnector } from '../interfaces/connectors/IKyberConnector.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 
-contract InchV5Connector is IInchV5Connector {
+contract KyberV2Connector is IKyberConnector {
     using UniversalERC20 for IERC20;
 
     /* ============ Constants ============ */
@@ -15,12 +15,12 @@ contract InchV5Connector is IInchV5Connector {
     /**
      * @dev Connector name
      */
-    string public constant NAME = 'OneInchV5';
+    string public constant NAME = 'KyberV2';
 
     /**
-     * @dev 1Inch Router v5 Address
+     * @dev Kyber Interface
      */
-    address internal constant INCH_V5_AGGREGATOR = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+    address internal constant KYBER_V2_ROUTER = 0x6131B5fae19EA4f9D964eAc0408E4408b66337b5;
 
     /* ============ Events ============ */
 
@@ -36,12 +36,12 @@ contract InchV5Connector is IInchV5Connector {
     /* ============ External Functions ============ */
 
     /**
-     * @dev Swap ETH/ERC20_Token using 1Inch.
+     * @dev Swap ETH/ERC20_Token using kyber.
      * @notice Swap tokens from exchanges like kyber, 0x etc, with calculation done off-chain.
      * @param _toToken The address of the token to buy.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param _fromToken The address of the token to sell.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param _amount The amount of the token to sell.
-     * @param _callData Data from 1inch API.
+     * @param _callData Data from kyber API.
      * @return buyAmount Returns the amount of tokens received.
      */
     function swap(
@@ -57,11 +57,11 @@ contract InchV5Connector is IInchV5Connector {
     /* ============ Internal Functions ============ */
 
     /**
-     * @dev Universal approve tokens to inch router and execute calldata.
+     * @dev Universal approve tokens to kyber router and execute calldata.
      * @param _toToken The address of the token to buy.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param _fromToken The address of the token to sell.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param _amount The amount of the token to sell.
-     * @param _callData Data from 1inch API.
+     * @param _callData Data from kyber API.
      * @return buyAmount Returns the amount of tokens received.
      */
     function _swap(
@@ -70,13 +70,13 @@ contract InchV5Connector is IInchV5Connector {
         uint256 _amount,
         bytes calldata _callData
     ) internal returns (uint256 buyAmount) {
-        IERC20(_fromToken).universalApprove(INCH_V5_AGGREGATOR, _amount);
+        IERC20(_fromToken).universalApprove(KYBER_V2_ROUTER, _amount);
 
         uint256 value = IERC20(_fromToken).isETH() ? _amount : 0;
 
         uint256 initalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = INCH_V5_AGGREGATOR.call{ value: value }(_callData);
+        (bool success, bytes memory results) = KYBER_V2_ROUTER.call{ value: value }(_callData);
 
         if (!success) {
             revert(string(results));

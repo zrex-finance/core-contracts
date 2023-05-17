@@ -7,7 +7,7 @@ import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 import { DataTypes } from 'contracts/lib/DataTypes.sol';
 import { EthConverter } from 'contracts/mocks/EthConverter.sol';
 
-import { CompoundV3Connector } from 'contracts/connectors/mainnet/CompoundV3.sol';
+import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
 
 import { HelperContract } from '../../utils/helper.sol';
 

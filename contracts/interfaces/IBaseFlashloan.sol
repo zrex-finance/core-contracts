@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 interface IBaseFlashloan {
-    function name() external returns (string memory);
+    function NAME() external returns (string memory);
 
     function flashLoan(address _token, uint256 _amount, bytes calldata _data) external;
 

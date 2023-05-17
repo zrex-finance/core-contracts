@@ -29,7 +29,7 @@ const LEVERAGE = BigNumber.from("2");
 
 const encoder = new ethers.utils.AbiCoder();
 
-describe.skip("Open and close (inchv5 - aave2)", async () => {
+describe("Open and close (inchv5 - aave2)", async () => {
   // wallets
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
@@ -136,12 +136,12 @@ describe.skip("Open and close (inchv5 - aave2)", async () => {
     const configuratorContrcat = await ethers.getContractAt("Configurator", configuratorProxy)
     await configuratorContrcat.connect(owner).addConnectors(
       [
-        await InchV5Connector.callStatic.name(),
-        await UniswapConnector.callStatic.name(),
-        await AaveV2Connector.callStatic.name(),
-        await AaveV3Connector.callStatic.name(),
-        await CompoundV3Connector.callStatic.name(),
-        await CompoundV2Connector.callStatic.name(),
+        await InchV5Connector.callStatic.NAME(),
+        await UniswapConnector.callStatic.NAME(),
+        await AaveV2Connector.callStatic.NAME(),
+        await AaveV3Connector.callStatic.NAME(),
+        await CompoundV3Connector.callStatic.NAME(),
+        await CompoundV2Connector.callStatic.NAME(),
       ],
       [
         InchV5Connector.address,
