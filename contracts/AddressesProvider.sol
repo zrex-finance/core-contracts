@@ -24,7 +24,6 @@ contract AddressesProvider is Ownable, IAddressesProvider {
     bytes32 private constant ACL_MANAGER = 'ACL_MANAGER';
     bytes32 private constant CONFIGURATOR = 'CONFIGURATOR';
     bytes32 private constant ACCOUNT_PROXY = 'ACCOUNT_PROXY';
-    bytes32 private constant FLASHLOAN_AGGREGATOR = 'FLASHLOAN_AGGREGATOR';
 
     /* ============ State Variables ============ */
 
@@ -146,14 +145,6 @@ contract AddressesProvider is Ownable, IAddressesProvider {
      */
     function getConnectors() external view override returns (address) {
         return getAddress(CONNECTORS);
-    }
-
-    /**
-     * @notice Returns the address of the Flashloan aggregator proxy.
-     * @return The Flashloan aggregator proxy address
-     */
-    function getFlashloanAggregator() external view override returns (address) {
-        return getAddress(FLASHLOAN_AGGREGATOR);
     }
 
     /**

@@ -83,11 +83,6 @@ contract TestAddressesProvider is Test {
         assertEq(addressesProvider.getAccountProxy(), testAddress);
     }
 
-    function test_setAddress_FlashloanAggregator() public {
-        addressesProvider.setAddress(bytes32('FLASHLOAN_AGGREGATOR'), testAddress);
-        assertEq(addressesProvider.getFlashloanAggregator(), testAddress);
-    }
-
     receive() external payable {}
 
     function setUp() public {
