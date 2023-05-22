@@ -33,6 +33,6 @@ interface IERC3156FlashLender {
         bytes calldata data
     ) external returns (bool);
 
-    // state variables
+    // state variables maker
     function toll() external view returns (uint256);
 }

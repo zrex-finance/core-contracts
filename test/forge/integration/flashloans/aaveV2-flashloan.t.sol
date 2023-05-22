@@ -3,20 +3,19 @@ pragma solidity ^0.8.17;
 
 import 'forge-std/Test.sol';
 import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
-import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
 import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
 
 import { AaveV2Flashloan } from 'contracts/flashloan/AaveV2Flashloan.sol';
 
 contract TestAaveV2Flashloan is Test {
-    AaveV2Flashloan connector;
+    AaveV2Flashloan public connector;
 
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
+    address public daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
-    address aaveLending = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
-    address aaveData = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
+    address public aaveLending = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
+    address public aaveData = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
 
     uint256 public amount = 1000 ether;
     address public token = daiC;
@@ -32,7 +31,7 @@ contract TestAaveV2Flashloan is Test {
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
 
-        vm.prank(daiWhale);
+        vm.prank(daiC);
         IERC20(token).transfer(address(connector), amount);
 
         address[] memory tokens = new address[](1);
@@ -52,7 +51,7 @@ contract TestAaveV2Flashloan is Test {
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
 
-        vm.prank(daiWhale);
+        vm.prank(daiC);
         IERC20(token).transfer(address(connector), amount);
 
         address[] memory tokens = new address[](1);
@@ -73,7 +72,7 @@ contract TestAaveV2Flashloan is Test {
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
 
-        vm.prank(daiWhale);
+        vm.prank(daiC);
         IERC20(token).transfer(address(connector), amount);
 
         address[] memory tokens = new address[](1);
@@ -100,7 +99,7 @@ contract TestAaveV2Flashloan is Test {
         assertEq(_amount, IERC20(_token).balanceOf(address(this)));
 
         if (_fee > 0) {
-            vm.prank(daiWhale);
+            vm.prank(daiC);
             IERC20(daiC).transfer(address(this), _fee);
 
             IERC20(_token).transfer(address(connector), _amount + _fee);

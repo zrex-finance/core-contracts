@@ -26,11 +26,12 @@ describe('Kyber v2 connector', async () => {
   beforeEach(async () => {
     [owner, other] = await ethers.getSigners();
 
-    daiContract = (await ethers.getContractAt('contracts/dependencies/openzeppelin/contracts/IERC20.sol:IERC20', DAI_CONTRACT)) as ERC20;
+    daiContract = (await ethers.getContractAt(
+      'contracts/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
+      DAI_CONTRACT,
+    )) as ERC20;
 
-    daiContract = await daiContract.connect(
-      await getSignerFromAddress("0xb527a981e1d415af696936b3174f2d7ac8d11369")
-    );
+    daiContract = await daiContract.connect(await getSignerFromAddress('0xb527a981e1d415af696936b3174f2d7ac8d11369'));
 
     await daiContract.transfer(owner.address, DEFAULT_AMOUNT.mul(5));
 
@@ -72,9 +73,7 @@ describe('Kyber v2 connector', async () => {
 
     await daiContract.transfer(kyberV2Connector.address, swapAmount);
 
-    await kyberV2Connector
-      .connect(other)
-      .swap(ETH_CONTRACT_2, DAI_CONTRACT, swapAmount, calldata as string);
+    await kyberV2Connector.connect(other).swap(ETH_CONTRACT_2, DAI_CONTRACT, swapAmount, calldata as string);
 
     expect(
       parseInt(ethers.utils.formatEther((await ethers.provider.getBalance(kyberV2Connector.address)).toString())),
