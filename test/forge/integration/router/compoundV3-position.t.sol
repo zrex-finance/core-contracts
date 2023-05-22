@@ -11,40 +11,9 @@ import { Deployer } from '../../utils/deployer.sol';
 import { UniswapHelper } from '../../utils/uniswap.sol';
 import { HelperContract } from '../../utils/helper.sol';
 
-contract LendingHelper is HelperContract, UniswapHelper, Deployer {
+contract PositionCompoundV3 is HelperContract, UniswapHelper, Deployer {
     address USDC_MARKET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-    string NAME = 'CompoundV3';
 
-    function getCollateralAmt(address _token, address _recipient) public view returns (uint256 collateralAmount) {
-        collateralAmount = compoundV3Connector.collateralBalanceOf(
-            USDC_MARKET,
-            _recipient,
-            _token == ethC || _token == ethC2 ? wethC : _token
-        );
-    }
-
-    function getBorrowAmt(address /* _token */, address _recipient) public view returns (uint256 borrowAmount) {
-        borrowAmount = compoundV3Connector.borrowBalanceOf(USDC_MARKET, _recipient);
-    }
-
-    function getPaybackData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.payback.selector, USDC_MARKET, _token, _amount);
-    }
-
-    function getWithdrawData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.withdraw.selector, USDC_MARKET, _token, _amount);
-    }
-
-    function getDepositData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.deposit.selector, USDC_MARKET, _token);
-    }
-
-    function getBorrowData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(compoundV3Connector.borrow.selector, USDC_MARKET, _token);
-    }
-}
-
-contract PositionCompoundV3 is LendingHelper {
     function test_OpenPosition_ClosePosition() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, usdcC, wethC, 1000000000, 21000, 0, 0);
 
@@ -158,8 +127,8 @@ contract PositionCompoundV3 is LendingHelper {
 
         bytes[] memory _datas = new bytes[](3);
         _datas[0] = getSwapData(_position.debt, _position.collateral, account, swapAmount);
-        _datas[1] = getDepositData(_position.collateral);
-        _datas[2] = getBorrowData(_position.debt);
+        _datas[1] = abi.encodeWithSelector(compoundV3Connector.deposit.selector, USDC_MARKET, _position.collateral);
+        _datas[2] = abi.encodeWithSelector(compoundV3Connector.borrow.selector, USDC_MARKET, _position.debt);
 
         _calldata = abi.encode(accountImpl.openPositionCallback.selector, _targetNames, _datas, _customDatas);
     }
@@ -181,8 +150,8 @@ contract PositionCompoundV3 is LendingHelper {
         _targetNames[2] = uniswapConnector.NAME();
 
         bytes[] memory _datas = new bytes[](3);
-        _datas[0] = getPaybackData(borrowAmt, debt);
-        _datas[1] = getWithdrawData(swapAmt, collateral);
+        _datas[0] = abi.encodeWithSelector(compoundV3Connector.payback.selector, USDC_MARKET, debt, borrowAmt);
+        _datas[1] = abi.encodeWithSelector(compoundV3Connector.withdraw.selector, USDC_MARKET, collateral, swapAmt);
         _datas[2] = getSwapData(collateral, debt, account, swapAmt);
 
         _calldata = abi.encode(accountImpl.closePositionCallback.selector, _targetNames, _datas, _customDatas);

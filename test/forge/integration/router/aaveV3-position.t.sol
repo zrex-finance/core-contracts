@@ -11,37 +11,9 @@ import { Deployer } from '../../utils/deployer.sol';
 import { UniswapHelper } from '../../utils/uniswap.sol';
 import { HelperContract } from '../../utils/helper.sol';
 
-contract LendingHelper is HelperContract, UniswapHelper, Deployer {
+contract PositionAaveV3 is HelperContract, UniswapHelper, Deployer {
     uint256 RATE_TYPE = 2;
-    uint256 ROUTE = 4;
-    string NAME = 'AaveV3';
 
-    function getCollateralAmt(address _token, address _recipient) public view returns (uint256 collateralAmount) {
-        collateralAmount = aaveV3Connector.getCollateralBalance(_token == ethC ? wethC : _token, _recipient);
-    }
-
-    function getBorrowAmt(address _token, address _recipient) public view returns (uint256 borrowAmount) {
-        borrowAmount = aaveV3Connector.getPaybackBalance(_token, _recipient, RATE_TYPE);
-    }
-
-    function getPaybackData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.payback.selector, _token, _amount, RATE_TYPE);
-    }
-
-    function getWithdrawData(uint256 _amount, address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _token, _amount);
-    }
-
-    function getDepositData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _token);
-    }
-
-    function getBorrowData(address _token) public view returns (bytes memory _data) {
-        _data = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _token, RATE_TYPE);
-    }
-}
-
-contract PositionAaveV3 is LendingHelper {
     function test_OpenPosition_ClosePosition() public {
         DataTypes.Position memory _position = DataTypes.Position(msg.sender, daiC, wethC, 1000 ether, 21000, 0, 0);
 
@@ -155,8 +127,8 @@ contract PositionAaveV3 is LendingHelper {
 
         bytes[] memory _datas = new bytes[](3);
         _datas[0] = getSwapData(_position.debt, _position.collateral, account, swapAmount);
-        _datas[1] = getDepositData(_position.collateral);
-        _datas[2] = getBorrowData(_position.debt);
+        _datas[1] = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _position.collateral);
+        _datas[2] = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _position.debt, RATE_TYPE);
 
         _calldata = abi.encode(accountImpl.openPositionCallback.selector, _targetNames, _datas, _customDatas);
     }
@@ -178,8 +150,8 @@ contract PositionAaveV3 is LendingHelper {
         _targetNames[2] = uniswapConnector.NAME();
 
         bytes[] memory _datas = new bytes[](3);
-        _datas[0] = getPaybackData(borrowAmt, debt);
-        _datas[1] = getWithdrawData(swapAmt, collateral);
+        _datas[0] = abi.encodeWithSelector(aaveV3Connector.payback.selector, debt, borrowAmt, RATE_TYPE);
+        _datas[1] = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, collateral, swapAmt);
         _datas[2] = getSwapData(collateral, debt, account, swapAmt);
 
         _calldata = abi.encode(accountImpl.closePositionCallback.selector, _targetNames, _datas, _customDatas);

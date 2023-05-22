@@ -86,7 +86,7 @@ export async function kyberCalldata({
   fromToken = fromToken === ETH_CONTRACT ? ETH_CONTRACT_E : fromToken;
   toToken = toToken === ETH_CONTRACT ? ETH_CONTRACT_E : toToken;
 
-  const call = `https://aggregator-api.kyberswap.com/ethereum/route/encode?tokenIn=${fromToken}&tokenOut=${toToken}&amountIn=${amount}&to=${toAddress}&slippageTolerance=${slippage}`
+  const call = `https://aggregator-api.kyberswap.com/ethereum/route/encode?tokenIn=${fromToken}&tokenOut=${toToken}&amountIn=${amount}&to=${toAddress}&slippageTolerance=${slippage}`;
   console.log('call', call);
 
   const { data: resp } = await axios.get<{ encodedSwapData: string; outputAmount: string }>(call);

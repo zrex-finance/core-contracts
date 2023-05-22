@@ -4,6 +4,11 @@ pragma solidity ^0.8.17;
 import { Test } from 'forge-std/Test.sol';
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
+import { IQuoter } from 'contracts/interfaces/external/uniswap-v3/IQuoter.sol';
+import { IAutoRouter } from 'contracts/interfaces/external/uniswap-v3/IAutoRouter.sol';
+import { IUniswapV3Pool } from 'contracts/interfaces/external/uniswap-v3/IUniswapV3Pool.sol';
+import { IUniswapV3Factory } from 'contracts/interfaces/external/uniswap-v3/IUniswapV3Factory.sol';
+
 contract Tokens {
     // address usdcC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
     address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -18,42 +23,11 @@ contract Tokens {
     address uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
 }
 
-interface IUni {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-    function multicall(uint256 deadline, bytes[] calldata data) external payable returns (bytes[] memory);
-
-    function exactInputSingle(ExactInputSingleParams memory params) external payable returns (uint256 amountOut);
-
-    function swap(
-        address toToken,
-        address fromToken,
-        uint256 amount,
-        bytes calldata callData
-    ) external payable returns (uint256 _buyAmt);
-}
-
-interface IQouter {
-    function quoteExactInputSingle(
-        address tokenIn,
-        address tokenOut,
-        uint24 fee,
-        uint256 amountIn,
-        uint160 sqrtPriceLimitX96
-    ) external returns (uint256 amountOut);
-}
-
 contract UniswapHelper is Tokens, Test {
     string UNI_NAME = 'UniswapAuto';
-    IQouter quoter = IQouter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+
+    IUniswapV3Factory internal constant UNISWAP_FACTORY = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+    IQuoter internal constant QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
     function getMulticalSwapData(
         address _fromToken,
@@ -62,48 +36,75 @@ contract UniswapHelper is Tokens, Test {
         uint256 _amount
     ) public view returns (bytes memory data) {
         bytes[] memory _calldata = new bytes[](1);
-        _calldata[0] = getExactInputSingleData(_fromToken, _toToken, _recipient, _amount);
-
-        data = abi.encodeWithSelector(IUni.multicall.selector, block.timestamp + 10 days, _calldata);
+        _calldata[0] = getExactInputData(_fromToken, _toToken, _recipient, _amount, 0);
+        data = abi.encodeWithSelector(IAutoRouter.multicall.selector, block.timestamp + 10 days, _calldata);
     }
 
-    function getExactInputSingleData(
-        address _fromToken,
-        address _toToken,
+    function getExactInputData(
+        address _tokenIn,
+        address _tokenOut,
         address _recipient,
-        uint256 _amount
-    ) public view returns (bytes memory data) {
-        _fromToken = _fromToken == ethC || _fromToken == ethC2 ? wethC : _fromToken;
-        _toToken = _toToken == ethC || _toToken == ethC2 ? wethC : _toToken;
-
-        IUni.ExactInputSingleParams memory params = IUni.ExactInputSingleParams(
-            _fromToken,
-            _toToken,
-            500, // pool fee
+        uint256 _amountIn,
+        uint256 _minReceiveAmount
+    ) public view returns (address, uint256, bytes memory) {
+        bytes memory path = _getPath(_tokenIn, _tokenOut, address(0));
+        IAutoRouter.ExactInputParams memory params = IAutoRouter.ExactInputParams(
+            path,
             _recipient,
-            _amount,
-            0,
-            0
+            _amountIn,
+            _minReceiveAmount
         );
 
-        data = abi.encodeWithSelector(IUni.exactInputSingle.selector, params);
+        data = abi.encodeWithSelector(IAutoRouter.exactInput.selector, params);
     }
 
-    function quoteExactInputSingle(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn
+    function quoteExactInput(
+        address _tokenIn,
+        address _tokenOut,
+        uint256 _amountIn,
+        address _hopToken
     ) public returns (uint256 amountOut) {
-        amountOut = quoter.quoteExactInputSingle(tokenIn, tokenOut, 500, amountIn, 0);
+        bytes memory path = _getPath(_tokenIn, _tokenOut, _hopToken);
+        amountOut = QUOTER.quoteExactInput(path, _amountIn);
     }
 
-    function getSwapData(
+    function _getPath(address _tokenIn, address _tokenOut, address _hopToken) private view returns (bytes memory path) {
+        if (_hopToken == address(0) || _tokenIn == _hopToken || _tokenOut == _hopToken) {
+            (, uint24 fee) = _getUniswapPool(_tokenIn, _tokenOut);
+            path = abi.encodePacked(_tokenIn, fee, _tokenOut);
+        } else {
+            (, uint24 fee0) = _getUniswapPool(_tokenIn, _hopToken);
+            (, uint24 fee1) = _getUniswapPool(_tokenOut, _hopToken);
+            path = abi.encodePacked(_tokenIn, fee0, _hopToken, fee1, _tokenOut);
+        }
+    }
+
+    function _getUniswapPool(
+        address _tokenIn,
+        address _tokenOut
+    ) private view returns (IUniswapV3Pool pool, uint24 fee) {
+        IUniswapV3Pool poolLow = IUniswapV3Pool(UNISWAP_FACTORY.getPool(_tokenIn, _tokenOut, FEE_LOW));
+        IUniswapV3Pool poolMedium = IUniswapV3Pool(UNISWAP_FACTORY.getPool(_tokenIn, _tokenOut, FEE_MEDIUM));
+        IUniswapV3Pool poolHigh = IUniswapV3Pool(UNISWAP_FACTORY.getPool(_tokenIn, _tokenOut, FEE_HIGH));
+
+        uint128 liquidityLow = address(poolLow) != address(0) ? poolLow.liquidity() : 0;
+        uint128 liquidityMedium = address(poolMedium) != address(0) ? poolMedium.liquidity() : 0;
+        uint128 liquidityHigh = address(poolHigh) != address(0) ? poolHigh.liquidity() : 0;
+        if (liquidityLow > liquidityMedium && liquidityLow >= liquidityHigh) {
+            return (poolLow, FEE_LOW);
+        }
+        if (liquidityMedium > liquidityLow && liquidityMedium >= liquidityHigh) {
+            return (poolMedium, FEE_MEDIUM);
+        }
+        return (poolHigh, FEE_HIGH);
+    }
+
+    function getUniSwapCallData(
         address _fromToken,
         address _toToken,
         address _recipient,
         uint256 _amount
     ) public view returns (bytes memory _data) {
-        bytes memory swapdata = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
-        _data = abi.encodeWithSelector(IUni.swap.selector, _toToken, _fromToken, _amount, swapdata);
+        _data = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
     }
 }

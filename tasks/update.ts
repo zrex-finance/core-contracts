@@ -16,7 +16,7 @@ const BUMP_GAS_PRECENT = 130;
 const DEFAULT_GAS_LIMIT = 2500000;
 
 const defaultGasParams = {
-  gasPrice: 180e9
+  gasPrice: 180e9,
   // maxFeePerGas: 35e9,
   // maxPriorityFeePerGas: 3e9,
 };
@@ -29,7 +29,7 @@ async function update() {
   const configurator = await ethers.getContractAt('Configurator', '0x1e4d2dE6a33394dA0e8A15218ad76c8Df3378733');
 
   await configurator.setFee('16', {
-    ...defaultGasParams
+    ...defaultGasParams,
   });
 
   // const provider = await deployAddressesProvider();
@@ -128,11 +128,7 @@ async function deployAccount(addressesProvider: string) {
 }
 
 // 6 step
-async function setLeftAddressesToAddressesProvider(
-  provider: string,
-  account: string,
-  aggregator: string,
-) {
+async function setLeftAddressesToAddressesProvider(provider: string, account: string, aggregator: string) {
   const addressesProvider = await ethers.getContractAt('AddressesProvider', provider);
 
   const gasLimit1 = await addressesProvider.estimateGas.setAddress(

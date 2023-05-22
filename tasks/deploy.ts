@@ -15,7 +15,7 @@ const BUMP_GAS_PRECENT = 130;
 const DEFAULT_GAS_LIMIT = 2500000;
 
 const defaultGasParams = {
-  gasPrice: 180e9
+  gasPrice: 180e9,
   // maxFeePerGas: 35e9,
   // maxPriorityFeePerGas: 3e9,
 };
@@ -217,10 +217,21 @@ async function deployConnectors(configuratorAddress: string) {
     'ParaSwapConnector',
     'AaveV2Flashloan',
     'AaveV3Flashloan',
-    'BalancerFlashloan'
+    'BalancerFlashloan',
   ];
-  const names = ['AaveV2', 'AaveV3', 'CompoundV3', 'OneInchV5', 'UniswapAuto', 'KyberV2', 'ParaSwap', 'AaveV2Flashloan', 'AaveV3Flashloan', 'BalancerFlashloan'];
-  
+  const names = [
+    'AaveV2',
+    'AaveV3',
+    'CompoundV3',
+    'OneInchV5',
+    'UniswapAuto',
+    'KyberV2',
+    'ParaSwap',
+    'AaveV2Flashloan',
+    'AaveV3Flashloan',
+    'BalancerFlashloan',
+  ];
+
   const addresses = [
     '0x87E82b4E7084F1f6F69775Caf104d81F78b2b335',
     '0xFA5f129591b58ad625a0450251951E7cd2847409',
@@ -231,7 +242,7 @@ async function deployConnectors(configuratorAddress: string) {
     '0x9F0aDe5cfD086144a2c0bc4BC14534B98a74Be4e',
     '0x7ecdc5DA73e3d5B97D1b7aF2a5AEe737a4eEcE9c',
     '0x8529807Ab32B0470fea76b70f752B011835eC05c',
-    '0x3429E0637d9b32cd2Cc79fD77c491A7449582c7a'
+    '0x3429E0637d9b32cd2Cc79fD77c491A7449582c7a',
   ];
   // let args: any[] = [];
 
@@ -274,11 +285,7 @@ async function deployProxy(addressesProvider: string) {
 }
 
 // 11 step
-async function setLeftAddressesToAddressesProvider(
-  provider: string,
-  account: string,
-  proxy: string
-) {
+async function setLeftAddressesToAddressesProvider(provider: string, account: string, proxy: string) {
   const addressesProvider = await ethers.getContractAt('AddressesProvider', provider);
 
   const accountAddress = await addressesProvider.callStatic.getAccountImpl();
