@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-interface IUniswapConnector {
+interface IBaseSwap {
     function NAME() external returns (string memory);
 
     function swap(

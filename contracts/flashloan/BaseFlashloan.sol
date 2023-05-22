@@ -58,8 +58,6 @@ abstract contract BaseFlashloan is IBaseFlashloan {
 
     /* ============ External Functions ============ */
 
-    receive() external payable {}
-
     /* ============ Public Functions ============ */
 
     /* ============ Internal Functions ============ */

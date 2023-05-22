@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 import { IFlashReceiver } from '../interfaces/IFlashReceiver.sol';
 import { IMakerFlashloan } from '../interfaces/connectors/IMakerFlashloan.sol';
 
-import { IERC3156FlashLender } from '../interfaces/external/maker/IERC3156FlashLender.sol';
-import { IERC3156FlashBorrower } from '../interfaces/external/maker/IERC3156FlashBorrower.sol';
+import { IERC3156FlashLender } from '../interfaces/external/IERC3156/IERC3156FlashLender.sol';
+import { IERC3156FlashBorrower } from '../interfaces/external/IERC3156/IERC3156FlashBorrower.sol';
 
 import { BaseFlashloan } from './BaseFlashloan.sol';
 

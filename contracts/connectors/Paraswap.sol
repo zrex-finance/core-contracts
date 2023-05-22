@@ -3,12 +3,12 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
+import { IBaseSwap } from '../interfaces/IBaseSwap.sol';
 import { IAugustusSwapper } from '../interfaces/external/paraswap/IAugustusSwapper.sol';
-import { IParaSwapConnector } from '../interfaces/connectors/IParaSwapConnector.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 
-contract ParaSwapConnector is IParaSwapConnector {
+contract ParaSwapConnector is IBaseSwap {
     using UniversalERC20 for IERC20;
 
     /* ============ Constants ============ */

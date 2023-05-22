@@ -3,11 +3,11 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IKyberConnector } from '../interfaces/connectors/IKyberConnector.sol';
+import { IBaseSwap } from '../interfaces/IBaseSwap.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 
-contract KyberV2Connector is IKyberConnector {
+contract KyberV2Connector is IBaseSwap {
     using UniversalERC20 for IERC20;
 
     /* ============ Constants ============ */

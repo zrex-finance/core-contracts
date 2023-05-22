@@ -165,7 +165,7 @@ contract Account is Initializable, IAccount {
     ) external override onlyCallback {
         uint256 value = _swap(_targetNames[0], _datas[0]);
         ADDRESSES_PROVIDER.connectorCall(_targetNames[1], abi.encodePacked(_datas[1], value));
-        ADDRESSES_PROVIDER.connectorCall(_targetNames[1], abi.encodePacked(_datas[2], _repayAmount));
+        ADDRESSES_PROVIDER.connectorCall(_targetNames[2], abi.encodePacked(_datas[2], _repayAmount));
         DataTypes.Position memory position = getPosition(bytes32(_customDatas[0]));
 
         position.collateralAmount = value;
