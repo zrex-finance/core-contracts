@@ -16,8 +16,9 @@ const BUMP_GAS_PRECENT = 130;
 const DEFAULT_GAS_LIMIT = 2500000;
 
 const defaultGasParams = {
-  maxFeePerGas: 35e9,
-  maxPriorityFeePerGas: 3e9,
+  gasPrice: 180e9
+  // maxFeePerGas: 35e9,
+  // maxPriorityFeePerGas: 3e9,
 };
 
 import routerArtifact from './artifacts/Router.json';
@@ -25,12 +26,18 @@ import configuratorArtifact from './artifacts/Configurator.json';
 import addressProviderArtifact from './artifacts/AddressesProvider.json';
 
 async function update() {
-  const provider = await deployAddressesProvider();
+  const configurator = await ethers.getContractAt('Configurator', '0x1e4d2dE6a33394dA0e8A15218ad76c8Df3378733');
 
-  const routerImpl = await deployRouter(provider);
-  const configuratorImpl = await deployConfigurator();
+  await configurator.setFee('16', {
+    ...defaultGasParams
+  });
 
-  await setImplToAddressesProvider(provider, routerImpl, configuratorImpl); // get proxy addresses
+  // const provider = await deployAddressesProvider();
+
+  // const routerImpl = await deployRouter(provider);
+  // const configuratorImpl = await deployConfigurator();
+
+  // await setImplToAddressesProvider(provider, routerImpl, configuratorImpl); // get proxy addresses
 }
 
 async function deployAddressesProvider() {
