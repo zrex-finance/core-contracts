@@ -9,6 +9,7 @@ import { DataTypes } from 'contracts/lib/DataTypes.sol';
 import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
 import { IRouter } from 'contracts/interfaces/IRouter.sol';
+import { IBaseSwap } from 'contracts/interfaces/IBaseSwap.sol';
 
 import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
 
@@ -18,9 +19,10 @@ import { ACLManager } from 'contracts/ACLManager.sol';
 import { Configurator } from 'contracts/Configurator.sol';
 import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
+import { Tokens } from '../../utils/tokens.sol';
 import { UniswapHelper } from '../../utils/uniswap.sol';
 
-contract TestRouterSwap is Test, UniswapHelper {
+contract TestRouterSwap is UniswapHelper, Tokens {
     Router router;
     Connectors connectors;
     Configurator configurator;
@@ -28,41 +30,41 @@ contract TestRouterSwap is Test, UniswapHelper {
     AddressesProvider addressesProvider;
 
     address testAddress;
-    address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
     function test_swapDaiToWeth() public {
         uint256 amount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), amount);
+        address fromToken = getToken('dai');
+        address toToken = getToken('weth');
 
-        ERC20(daiC).approve(address(router), amount);
+        vm.prank(fromToken);
+        ERC20(fromToken).transfer(address(this), amount);
 
-        bytes memory swapdata = getSwapData(daiC, wethC, address(this), amount);
-        router.swap(IRouter.SwapParams(daiC, wethC, amount, 'UniswapAuto', swapdata));
+        ERC20(fromToken).approve(address(router), amount);
 
-        assertTrue(ERC20(wethC).balanceOf(address(this)) > 0);
+        bytes memory swapdata = getUniSwapCallData(fromToken, toToken, address(this), amount);
+        bytes memory data = abi.encodeWithSelector(IBaseSwap.swap.selector, toToken, fromToken, amount, swapdata);
+        router.swap(IRouter.SwapParams(fromToken, toToken, amount, 'UniswapAuto', data));
+
+        assertTrue(ERC20(toToken).balanceOf(address(this)) > 0);
     }
 
     function test_swapDaiToWeth_Revert() public {
         uint256 amount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), amount);
+        address fromToken = getToken('dai');
+        address toToken = getToken('weth');
 
-        ERC20(daiC).approve(address(router), amount);
+        vm.prank(fromToken);
+        ERC20(fromToken).transfer(address(this), amount);
 
-        bytes memory _data = getMulticalSwapData(daiC, wethC, address(this), amount);
-        bytes memory swapData = abi.encodeWithSelector(
-            UniswapConnector.swap.selector,
-            wethC,
-            daiC,
-            amount,
-            abi.encode(uint(123), _data)
-        );
+        ERC20(fromToken).approve(address(router), amount);
+
+        bytes memory swapdata = getUniSwapCallData(fromToken, toToken, address(this), amount);
+        bytes memory data = abi.encodeWithSelector(IBaseSwap.swap.selector, toToken, fromToken, amount, swapdata);
 
         vm.expectRevert(bytes(''));
-        router.swap(IRouter.SwapParams(daiC, wethC, amount, 'UniswapAuto', swapData));
+        router.swap(IRouter.SwapParams(fromToken, toToken, amount, 'UniswapAuto', abi.encode(uint(123), data)));
     }
 
     receive() external payable {}

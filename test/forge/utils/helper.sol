@@ -1,21 +1,43 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { Test } from 'forge-std/Test.sol';
+import 'forge-std/Test.sol';
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 import { SafeERC20 } from 'contracts/dependencies/openzeppelin/contracts/SafeERC20.sol';
 
-contract HelperContract is Test {
+import { Tokens } from './tokens.sol';
+
+contract HelperContract is Tokens, Test {
     using SafeERC20 for ERC20;
 
-    address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
-    // address daiWhale = 0x79990a901281bEe059BB3F4D7Db477F7495e2049; // polygon
-    address usdtWhale = 0xee5B5B923fFcE93A870B3104b7CA09c3db80047A;
-    address usdcWhale = 0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078;
-
-    function topUpTokenBalance(address token, address whale, uint256 amt) public {
+    function topUpTokenBalance(address _recipient, address _token, uint256 _amount) public {
+        address whale = getWhaleFromToken(_token);
         // top up msg sender balance
         vm.prank(whale);
-        ERC20(token).safeTransfer(msg.sender, amt);
+        ERC20(_token).safeTransfer(_recipient, _amount);
+    }
+
+    function getWhaleFromToken(address _token) public view returns (address) {
+        uint256 chainId = getChainID();
+
+        if (chainId == 1) {
+            if (_token == getToken('usdc')) {
+                return 0xDa9CE944a37d218c3302F6B82a094844C6ECEb17;
+            } else if (_token == getToken('dai')) {
+                return getToken('dai');
+            } else if (_token == getToken('weth')) {
+                return getToken('weth');
+            }
+        } else if (chainId == 137) {
+            if (_token == getToken('usdc')) {
+                return 0x19aB546E77d0cD3245B2AAD46bd80dc4707d6307;
+            } else if (_token == getToken('dai')) {
+                return 0x79990a901281bEe059BB3F4D7Db477F7495e2049;
+            } else if (_token == getToken('weth')) {
+                return 0x62ac55b745F9B08F1a81DCbbE630277095Cf4Be1;
+            }
+        } else {
+            require(false, 'dont have whale');
+        }
     }
 }

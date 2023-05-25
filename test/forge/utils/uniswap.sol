@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { Test } from 'forge-std/Test.sol';
+import 'forge-std/Test.sol';
+
 import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 import { IQuoter } from 'contracts/interfaces/external/uniswap-v3/IQuoter.sol';
@@ -9,22 +10,12 @@ import { IAutoRouter } from 'contracts/interfaces/external/uniswap-v3/IAutoRoute
 import { IUniswapV3Pool } from 'contracts/interfaces/external/uniswap-v3/IUniswapV3Pool.sol';
 import { IUniswapV3Factory } from 'contracts/interfaces/external/uniswap-v3/IUniswapV3Factory.sol';
 
-contract Tokens {
-    // address usdcC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address usdtC = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    // address daiC = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
-    address ethC = 0x0000000000000000000000000000000000000000;
-    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    // address wethC = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    address uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-}
-
-contract UniswapHelper is Tokens, Test {
+contract UniswapHelper is Test {
     string UNI_NAME = 'UniswapAuto';
+
+    uint24 internal constant FEE_LOW = 500;
+    uint24 internal constant FEE_MEDIUM = 3000;
+    uint24 internal constant FEE_HIGH = 10000;
 
     IUniswapV3Factory internal constant UNISWAP_FACTORY = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
     IQuoter internal constant QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
@@ -34,10 +25,10 @@ contract UniswapHelper is Tokens, Test {
         address _toToken,
         address _recipient,
         uint256 _amount
-    ) public view returns (bytes memory data) {
+    ) public view returns (bytes memory) {
         bytes[] memory _calldata = new bytes[](1);
         _calldata[0] = getExactInputData(_fromToken, _toToken, _recipient, _amount, 0);
-        data = abi.encodeWithSelector(IAutoRouter.multicall.selector, block.timestamp + 10 days, _calldata);
+        return abi.encodeWithSelector(IAutoRouter.multicall.selector, block.timestamp + 10 days, _calldata);
     }
 
     function getExactInputData(
@@ -46,7 +37,7 @@ contract UniswapHelper is Tokens, Test {
         address _recipient,
         uint256 _amountIn,
         uint256 _minReceiveAmount
-    ) public view returns (address, uint256, bytes memory) {
+    ) public view returns (bytes memory) {
         bytes memory path = _getPath(_tokenIn, _tokenOut, address(0));
         IAutoRouter.ExactInputParams memory params = IAutoRouter.ExactInputParams(
             path,
@@ -55,7 +46,7 @@ contract UniswapHelper is Tokens, Test {
             _minReceiveAmount
         );
 
-        data = abi.encodeWithSelector(IAutoRouter.exactInput.selector, params);
+        return abi.encodeWithSelector(IAutoRouter.exactInput.selector, params);
     }
 
     function quoteExactInput(
@@ -105,6 +96,6 @@ contract UniswapHelper is Tokens, Test {
         address _recipient,
         uint256 _amount
     ) public view returns (bytes memory _data) {
-        _data = getMulticalSwapData(_fromToken, _toToken, address(_recipient), _amount);
+        _data = getMulticalSwapData(_fromToken, _toToken, _recipient, _amount);
     }
 }

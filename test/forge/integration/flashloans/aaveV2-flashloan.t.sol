@@ -32,7 +32,7 @@ contract TestAaveV2Flashloan is Test {
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
 
-        vm.prank(daiWhale);
+        vm.prank(daiC);
         IERC20(token).transfer(address(connector), amount);
 
         address[] memory tokens = new address[](1);
@@ -52,7 +52,7 @@ contract TestAaveV2Flashloan is Test {
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
 
-        vm.prank(daiWhale);
+        vm.prank(daiC);
         IERC20(token).transfer(address(connector), amount);
 
         address[] memory tokens = new address[](1);
@@ -73,7 +73,7 @@ contract TestAaveV2Flashloan is Test {
         vm.store(address(connector), bytes32(uint256(0)), bytes32(uint256(2)));
         vm.store(address(connector), bytes32(uint256(1)), bytes32(keccak256(data)));
 
-        vm.prank(daiWhale);
+        vm.prank(daiC);
         IERC20(token).transfer(address(connector), amount);
 
         address[] memory tokens = new address[](1);
@@ -100,7 +100,7 @@ contract TestAaveV2Flashloan is Test {
         assertEq(_amount, IERC20(_token).balanceOf(address(this)));
 
         if (_fee > 0) {
-            vm.prank(daiWhale);
+            vm.prank(daiC);
             IERC20(daiC).transfer(address(this), _fee);
 
             IERC20(_token).transfer(address(connector), _amount + _fee);

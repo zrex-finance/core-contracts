@@ -15,19 +15,11 @@ import { ILendingPoolAddressesProvider } from 'contracts/interfaces/external/aav
 
 import { HelperContract } from '../../utils/helper.sol';
 
-contract Tokens {
-    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address ethC = 0x0000000000000000000000000000000000000000;
-    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-}
-
 interface AaveOracle {
     function getAssetPrice(address asset) external view returns (uint256);
 }
 
-contract LendingHelper is HelperContract, Tokens {
+contract LendingHelper is HelperContract {
     uint256 RATE_TYPE = 2;
     string NAME = 'AaveV3';
 
@@ -83,7 +75,7 @@ contract AaveV2 is LendingHelper, EthConverter {
     function test_Deposit() public {
         uint256 depositAmount = 1000 ether;
         depositDai(depositAmount);
-        assertGt(getCollateralAmt(daiC, address(this)), 0);
+        assertGt(getCollateralAmt(getToken('dai'), address(this)), 0);
     }
 
     function test_Deposit_ReserveAsCollateral() public {
@@ -91,20 +83,20 @@ contract AaveV2 is LendingHelper, EthConverter {
         depositDai(depositAmount);
 
         ILendingPool aave = ILendingPool(aaveProvider.getLendingPool());
-        aave.setUserUseReserveAsCollateral(daiC, false);
+        aave.setUserUseReserveAsCollateral(getToken('dai'), false);
 
         depositDai(depositAmount);
 
-        assertGt(getCollateralAmt(daiC, address(this)), 0);
+        assertGt(getCollateralAmt(getToken('dai'), address(this)), 0);
     }
 
     function test_DepositMax() public {
         uint256 depositAmount = 1000 ether;
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, type(uint256).max));
-        assertGt(getCollateralAmt(daiC, address(this)), 0);
+        execute(getDepositData(getToken('dai'), type(uint256).max));
+        assertGt(getCollateralAmt(getToken('dai'), address(this)), 0);
     }
 
     function test_Borrow() public {
@@ -113,7 +105,7 @@ contract AaveV2 is LendingHelper, EthConverter {
 
         uint256 borrowAmount = 0.1 ether;
         borrowWeth(borrowAmount, 2);
-        assertEq(borrowAmount, getBorrowAmt(wethC, address(this)));
+        assertEq(borrowAmount, getBorrowAmt(getToken('weth'), address(this)));
     }
 
     function test_Payback() public {
@@ -124,8 +116,8 @@ contract AaveV2 is LendingHelper, EthConverter {
         borrowWeth(borrowAmount, 2);
         paybackWeth(borrowAmount);
 
-        assertEq(0, getBorrowAmt(wethC, address(this)));
-        assertEq(0, ERC20(wethC).balanceOf(address(this)));
+        assertEq(0, getBorrowAmt(getToken('weth'), address(this)));
+        assertEq(0, ERC20(getToken('weth')).balanceOf(address(this)));
     }
 
     function test_PaybackMax() public {
@@ -136,8 +128,8 @@ contract AaveV2 is LendingHelper, EthConverter {
         borrowWeth(borrowAmount, 2);
         paybackWeth(type(uint256).max);
 
-        assertEq(0, getBorrowAmt(wethC, address(this)));
-        assertEq(0, ERC20(wethC).balanceOf(address(this)));
+        assertEq(0, getBorrowAmt(getToken('weth'), address(this)));
+        assertEq(0, ERC20(getToken('weth')).balanceOf(address(this)));
     }
 
     function test_Withdraw() public {
@@ -149,25 +141,25 @@ contract AaveV2 is LendingHelper, EthConverter {
         paybackWeth(type(uint256).max);
         withdraw(depositAmount);
 
-        assertEq(0, getCollateralAmt(daiC, address(this)));
+        assertEq(0, getCollateralAmt(getToken('dai'), address(this)));
     }
 
     function depositDai(uint256 _amount) public {
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), _amount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), _amount);
 
-        execute(getDepositData(daiC, _amount));
+        execute(getDepositData(getToken('dai'), _amount));
     }
 
     function borrowWeth(uint256 _amount, uint256 _rate) public {
-        execute(getBorrowData(wethC, _amount, _rate));
+        execute(getBorrowData(getToken('weth'), _amount, _rate));
     }
 
     function paybackWeth(uint256 _amount) public {
-        execute(getPaybackData(_amount, wethC));
+        execute(getPaybackData(_amount, getToken('weth')));
     }
 
     function withdraw(uint256 _amount) public {
-        execute(getWithdrawData(_amount, daiC));
+        execute(getWithdrawData(_amount, getToken('dai')));
     }
 }

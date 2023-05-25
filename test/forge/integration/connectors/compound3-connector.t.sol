@@ -11,15 +11,7 @@ import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
 
 import { HelperContract } from '../../utils/helper.sol';
 
-contract Tokens {
-    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address ethC = 0x0000000000000000000000000000000000000000;
-    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-}
-
-contract LendingHelper is HelperContract, Tokens {
+contract LendingHelper is HelperContract {
     address USDC_MARKET = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
 
     CompoundV3Connector compoundV3Connector;
@@ -67,16 +59,16 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
-        assertEq(depositAmount, getCollateralAmt(wethC, address(this)));
+        execute(getDepositData(getToken('weth'), depositAmount));
+        assertEq(depositAmount, getCollateralAmt(getToken('weth'), address(this)));
     }
 
     function test_Deposit_MaxAmount() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, type(uint256).max));
-        assertEq(depositAmount, getCollateralAmt(wethC, address(this)));
+        execute(getDepositData(getToken('weth'), type(uint256).max));
+        assertEq(depositAmount, getCollateralAmt(getToken('weth'), address(this)));
     }
 
     function test_Deposit_InvalidToken() public {
@@ -92,34 +84,35 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         convertEthToWeth(address(0), depositAmount);
 
         vm.expectRevert(abi.encodePacked('invalid market/token address'));
-        execute(abi.encodeWithSelector(compoundV3Connector.deposit.selector, address(0), wethC, depositAmount));
+        execute(
+            abi.encodeWithSelector(compoundV3Connector.deposit.selector, address(0), getToken('weth'), depositAmount)
+        );
     }
 
     function test_Deposit_DebtNotRepaid() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
-        execute(getBorrowData(usdcC, 100000000));
+        execute(getBorrowData(getToken('usdc'), 100000000));
 
         uint256 depositAmount2 = 1000000000;
 
-        vm.prank(usdcWhale);
-        ERC20(usdcC).transfer(address(this), depositAmount2);
+        topUpTokenBalance(address(this), getToken('usdc'), depositAmount2);
 
         vm.expectRevert(abi.encodePacked('debt not repaid'));
-        execute(getDepositData(usdcC, depositAmount2));
+        execute(getDepositData(getToken('usdc'), depositAmount2));
     }
 
     function test_borrow() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
         assertEq(borrowAmount, getBorrowAmt(address(this)));
     }
 
@@ -127,46 +120,47 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
         vm.expectRevert(abi.encodePacked('invalid market address'));
-        execute(abi.encodeWithSelector(compoundV3Connector.borrow.selector, address(0), usdcC, borrowAmount));
+        execute(
+            abi.encodeWithSelector(compoundV3Connector.borrow.selector, address(0), getToken('usdc'), borrowAmount)
+        );
     }
 
     function test_borrow_InvalidToken() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
         vm.expectRevert(abi.encodePacked('invalid token'));
-        execute(getBorrowData(wethC, borrowAmount));
+        execute(getBorrowData(getToken('weth'), borrowAmount));
     }
 
     function test_borrow_Disabled() public {
         uint256 depositAmount = 1000000000;
 
-        vm.prank(usdcWhale);
-        ERC20(usdcC).transfer(address(this), depositAmount);
+        topUpTokenBalance(address(this), getToken('usdc'), depositAmount);
 
-        execute(getDepositData(usdcC, depositAmount));
+        execute(getDepositData(getToken('usdc'), depositAmount));
 
         uint256 borrowAmount = 100000000;
         vm.expectRevert(abi.encodePacked('borrow-disabled-when-supplied-base'));
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
     }
 
     function test_payback() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
         assertEq(0, getBorrowAmt(address(this)));
     }
@@ -175,10 +169,10 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
         vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(getPaybackData(borrowAmount, address(0)));
     }
@@ -187,47 +181,49 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
         vm.expectRevert(abi.encodePacked('invalid market/token address'));
-        execute(abi.encodeWithSelector(compoundV3Connector.payback.selector, address(0), usdcC, borrowAmount));
+        execute(
+            abi.encodeWithSelector(compoundV3Connector.payback.selector, address(0), getToken('usdc'), borrowAmount)
+        );
     }
 
     function test_payback_InvalidBaseToken() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
         vm.expectRevert(abi.encodePacked('invalid token'));
-        execute(getPaybackData(borrowAmount, wethC));
+        execute(getPaybackData(borrowAmount, getToken('weth')));
     }
 
     function test_payback_GreaterThanBorrows() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
         vm.expectRevert(abi.encodePacked('payback-amount-greater-than-borrows'));
-        execute(getPaybackData(borrowAmount + 100, usdcC));
+        execute(getPaybackData(borrowAmount + 100, getToken('usdc')));
     }
 
     function test_payback_max() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(type(uint256).max, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(type(uint256).max, getToken('usdc')));
 
         assertEq(0, getBorrowAmt(address(this)));
     }
@@ -236,40 +232,42 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
-        execute(getWithdrawData(depositAmount, wethC));
+        execute(getWithdrawData(depositAmount, getToken('weth')));
 
-        assertEq(0, getCollateralAmt(wethC, address(this)));
+        assertEq(0, getCollateralAmt(getToken('weth'), address(this)));
     }
 
     function test_withdraw_InvalidMarket() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
         vm.expectRevert(abi.encodePacked('invalid market/token address'));
-        execute(abi.encodeWithSelector(compoundV3Connector.withdraw.selector, address(0), wethC, depositAmount));
+        execute(
+            abi.encodeWithSelector(compoundV3Connector.withdraw.selector, address(0), getToken('weth'), depositAmount)
+        );
     }
 
     function test_withdraw_InvalidToken() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
         vm.expectRevert(abi.encodePacked('invalid market/token address'));
         execute(getWithdrawData(depositAmount, address(0)));
@@ -279,28 +277,28 @@ contract CompoundV3Logic is LendingHelper, EthConverter {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
         vm.expectRevert(abi.encodePacked('withdraw-amount-greater-than-supplies'));
-        execute(getWithdrawData(10000000000, usdcC));
+        execute(getWithdrawData(10000000000, getToken('usdc')));
     }
 
     function test_withdraw_Max() public {
         uint256 depositAmount = 1 ether;
         convertEthToWeth(address(0), depositAmount);
 
-        execute(getDepositData(wethC, depositAmount));
+        execute(getDepositData(getToken('weth'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
-        execute(getWithdrawData(type(uint256).max, wethC));
+        execute(getWithdrawData(type(uint256).max, getToken('weth')));
 
-        assertEq(0, getCollateralAmt(wethC, address(this)));
+        assertEq(0, getCollateralAmt(getToken('weth'), address(this)));
     }
 }

@@ -16,32 +16,6 @@ import { Deployer } from '../../utils/deployer.sol';
 import { UniswapHelper } from '../../utils/uniswap.sol';
 import { HelperContract } from '../../utils/helper.sol';
 
-contract TestAaveV3Connector {
-    uint256 public constant RATE_TYPE = 2;
-
-    function _getDepositCallData(address _collateral) public view returns (bytes memory depositData) {
-        depositData = abi.encodeWithSelector(aaveV3Connector.deposit.selector, _collateral);
-    }
-
-    function _getBorrowCallData(address _debt) public view returns (bytes memory borrowData) {
-        borrowData = abi.encodeWithSelector(aaveV3Connector.borrow.selector, _debt, RATE_TYPE);
-    }
-
-    function _getPaybackCallData(
-        address _debt,
-        uint256 _borrowAmount
-    ) public view returns (bytes memory paybackData, bytes memory withdrawData) {
-        paybackData = abi.encodeWithSelector(aaveV3Connector.payback.selector, _debt, _borrowAmount, RATE_TYPE);
-    }
-
-    function _getWithdrawCallData(
-        address _collateral,
-        uint256 _collateralAmount
-    ) public view returns (bytes memory paybackData, bytes memory withdrawData) {
-        withdrawData = abi.encodeWithSelector(aaveV3Connector.withdraw.selector, _collateral, _collateralAmount);
-    }
-}
-
 contract UniswapConnector is UniswapHelper {
     function _getSwapCallData(
         address _fromToken,
@@ -56,6 +30,7 @@ contract UniswapConnector is UniswapHelper {
 
 contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
     function openPosition(
+        address _user,
         address _debt,
         address _collateral,
         uint256 _amountIn,
@@ -63,17 +38,12 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         address _swapConnector,
         address _lendingConnector,
         address _flashloanConnector
-    ) public {
-        DataTypes.Position memory position = DataTypes.Position(
-            msg.sender,
-            _debt,
-            _collateral,
-            _amountIn,
-            _leverage,
-            0,
-            0
-        );
-        approveTokenToRouter(_position.debt, _position.amountIn);
+    ) public returns (DataTypes.Position memory, uint256) {
+        DataTypes.Position memory position = DataTypes.Position(_user, _debt, _collateral, _amountIn, _leverage, 0, 0);
+
+        topUpTokenBalance(position.account, position.debt, position.amountIn);
+
+        approveTokenToRouter(position.account, position.debt, position.amountIn);
 
         (string memory targetName, bytes memory data) = _getOpenPositionCallData(
             _swapConnector,
@@ -82,42 +52,38 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
             position
         );
 
-        vm.prank(msg.sender);
-        router.openPosition(_position, targetName, data);
+        vm.prank(position.account);
+        router.openPosition(position, targetName, data);
+
+        uint256 index = router.positionsIndex(position.account);
+
+        return (position, index);
     }
 
     function swapAndOpen(
+        address _user,
         address _debt,
         address _collateral,
-        uint256 _swapToken,
+        address _swapToken,
         uint256 _swapAmount,
         uint256 _leverage,
         address _swapConnector,
         address _lendingConnector,
         address _flashloanConnector
-    ) public {
-        bytes memory swapCallData = _getSwapCallData(_swapToken, _debt, address(router), _swapAmount);
-        IRouter.SwapParams memory params = IRouter.SwapParams(
-            _swapToken,
-            _debt,
-            _swapAmount,
-            'UniswapAuto',
-            swapCallData
-        );
+    ) public returns (DataTypes.Position memory, uint256) {
+        IRouter.SwapParams memory params;
 
-        approveTokenToRouter(_position.debt, _swapAmount);
+        {
+            bytes memory swapCallData = _getSwapCallData(_swapToken, _debt, address(router), _swapAmount);
+            params = IRouter.SwapParams(_swapToken, _debt, _swapAmount, 'UniswapAuto', swapCallData);
+        }
 
         uint256 amountIn = quoteExactInput(_swapToken, _debt, _swapAmount, address(0));
 
-        DataTypes.Position memory position = DataTypes.Position(
-            msg.sender,
-            _debt,
-            _collateral,
-            amountIn,
-            _leverage,
-            0,
-            0
-        );
+        DataTypes.Position memory position = DataTypes.Position(_user, _debt, _collateral, amountIn, _leverage, 0, 0);
+
+        topUpTokenBalance(position.account, _swapToken, _swapAmount);
+        approveTokenToRouter(position.account, _swapToken, _swapAmount);
 
         (string memory targetName, bytes memory data) = _getOpenPositionCallData(
             _swapConnector,
@@ -126,11 +92,16 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
             position
         );
 
-        vm.prank(msg.sender);
+        vm.prank(position.account);
         router.swapAndOpen(position, targetName, data, params);
+
+        uint256 index = router.positionsIndex(position.account);
+
+        return (position, index);
     }
 
     function closePosition(
+        address _user,
         uint256 _indexPosition,
         address _swapConnector,
         address _lendingConnector,
@@ -138,7 +109,7 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         DataTypes.Position memory _position
     ) public {
         bytes32 key = router.getKey(_position.account, _indexPosition);
-        (, , , , , uint256 collateralAmount, uint256 borrowAmount) = router.positions(key);
+        (, , , , , , uint256 borrowAmount) = router.positions(key);
 
         (string memory targetName, bytes memory data) = _getClosePositionCallData(
             key,
@@ -148,7 +119,7 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
             _position
         );
 
-        vm.prank(msg.sender);
+        vm.prank(_user);
         router.closePosition(key, _position.debt, borrowAmount, targetName, data);
     }
 
@@ -157,7 +128,7 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         address _lendingConnector,
         address _flashloanConnector,
         DataTypes.Position memory _position
-    ) public view returns (string memory, bytes memory) {
+    ) public returns (string memory, bytes memory) {
         uint256 loanAmt = getLoanAmount(_position.amountIn, _position.leverage);
 
         string memory _targetName = getFlashloanData(_flashloanConnector, _position.debt, loanAmt);
@@ -172,8 +143,10 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         address _lendingConnector,
         address _flashloanConnector,
         DataTypes.Position memory _position
-    ) public view returns (string memory, bytes memory) {
-        string memory targetName = getFlashloanData(_flashloanConnector, _position.debt, _borrowAmount);
+    ) public returns (string memory, bytes memory) {
+        (, , , , , , uint256 borrowAmount) = router.positions(_key);
+
+        string memory targetName = getFlashloanData(_flashloanConnector, _position.debt, borrowAmount);
         bytes memory _calldata = _getClosePositionCallbackCallData(_swapConnector, _lendingConnector, _position, _key);
 
         return (targetName, _calldata);
@@ -183,7 +156,7 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         address _swapConnector,
         address _lendingConnector,
         DataTypes.Position memory _position
-    ) public view returns (bytes[] memory callData) {
+    ) public view returns (bytes memory callData) {
         string[] memory targetNames = _getOpenConnectorNames(_swapConnector, _lendingConnector);
         bytes[] memory datas = _getOpenConnectorDatas(_position);
         bytes[] memory customDatas = _getOpenCustomCallData(_position.account);
@@ -196,7 +169,7 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         address _lendingConnector,
         DataTypes.Position memory _position,
         bytes32 _positionKey
-    ) public view returns (bytes[] memory callData) {
+    ) public view returns (bytes memory callData) {
         string[] memory targetNames = _getCloseConnectorNames(_swapConnector, _lendingConnector);
         bytes[] memory datas = _getCloseConnectorDatas(_position, _positionKey);
         bytes[] memory customDatas = _getCloseCustomCallData(_positionKey);
@@ -206,14 +179,14 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
 
     function _getOpenCustomCallData(address _account) public view returns (bytes[] memory) {
         bytes[] memory _customDatas = new bytes[](1);
-        _customDatas.push(abi.encode(_getPositionKey(_account)));
+        _customDatas[0] = abi.encode(_getPositionKey(_account));
 
         return _customDatas;
     }
 
-    function _getCloseCustomCallData(bytes32 _positionKey) public view returns (bytes[] memory) {
+    function _getCloseCustomCallData(bytes32 _positionKey) public pure returns (bytes[] memory) {
         bytes[] memory _customDatas = new bytes[](1);
-        _customDatas.push(abi.encode(_positionKey));
+        _customDatas[0] = abi.encode(_positionKey);
 
         return _customDatas;
     }
@@ -251,13 +224,13 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         DataTypes.Position memory _position,
         bytes32 _positionKey
     ) public view returns (bytes[] memory datas) {
-        (address recipient, uint256 amount) = _getRecipientAndAmount(_position);
+        (address recipient, ) = _getRecipientAndAmount(_position);
         (, , , , , uint256 collateralAmount, uint256 borrowAmount) = router.positions(_positionKey);
 
         datas = new bytes[](3);
         datas[0] = _getPaybackCallData(_position.debt, borrowAmount);
         datas[1] = _getWithdrawCallData(_position.collateral, collateralAmount);
-        datas[2] = _getSwapCallData(_position.collateral, _position.debt, recipient, amount);
+        datas[2] = _getSwapCallData(_position.collateral, _position.debt, recipient, collateralAmount);
     }
 
     function _getUserAccountAddress(address _user) public view returns (address account) {
@@ -284,24 +257,33 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
         return (recipient, swapAmountWithoutFee);
     }
 
-    function approveTokenToRouter(address _token, uint256 _amount) public {
+    function approveTokenToRouter(address _user, address _token, uint256 _amount) public {
         // approve tokens
-        vm.prank(msg.sender);
+        vm.prank(_user);
         ERC20(_token).approve(address(router), _amount);
     }
 
-    function getLoanAmount(uint256 _amount, uint256 _leverage) public view returns (uint256 amount) {
+    function getLoanAmount(uint256 _amount, uint256 _leverage) public pure returns (uint256 amount) {
         // leverage - 1 = position size without user amount
         amount = (_amount * (_leverage - PercentageMath.PERCENTAGE_FACTOR)) / PercentageMath.PERCENTAGE_FACTOR;
     }
 
-    function getFlashloanData(
-        address _connector,
-        address lT,
-        uint256 lA
-    ) public view returns (string memory targetName) {
+    function getFlashloanData(address _connector, address lT, uint256 lA) public returns (string memory targetName) {
         if (IBaseFlashloan(_connector).getAvailability(lT, lA)) {
             targetName = IBaseFlashloan(_connector).NAME();
         }
     }
+
+    // virtual function
+
+    function _getDepositCallData(address _collateral) public view virtual returns (bytes memory) {}
+
+    function _getBorrowCallData(address _debt) public view virtual returns (bytes memory) {}
+
+    function _getPaybackCallData(address _debt, uint256 _borrowAmount) public view virtual returns (bytes memory) {}
+
+    function _getWithdrawCallData(
+        address _collateral,
+        uint256 _collateralAmount
+    ) public view virtual returns (bytes memory) {}
 }
