@@ -17,5 +17,6 @@ cache_path  = 'cache'
 [rpc_endpoints]
 mainnet = "https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q"
 polygon = "https://polygon-mainnet.g.alchemy.com/v2/HghRGb1iay3CRNxxmD-dTwsxi8PEK88H"
+bsc = "https://bsc-dataseed.binance.org"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

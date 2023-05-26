@@ -36,8 +36,13 @@ contract HelperContract is Tokens, Test {
             } else if (_token == getToken('weth')) {
                 return 0x62ac55b745F9B08F1a81DCbbE630277095Cf4Be1;
             }
-        } else {
-            require(false, 'dont have whale');
+        } else if (chainId == 56) {
+            if (_token == getToken('usdc')) {
+                return getToken('usdc');
+            } else if (_token == getToken('dai')) {
+                return getToken('dai');
+            }
         }
+        revert('dont have whale');
     }
 }

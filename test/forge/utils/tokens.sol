@@ -29,9 +29,18 @@ contract Tokens {
             } else if (compare(_name, 'usdt')) {
                 return 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
             }
-        } else {
-            require(false, 'dont have token');
+        } else if (chainId == 56) {
+            if (compare(_name, 'dai')) {
+                return 0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3;
+            } else if (compare(_name, 'usdc')) {
+                return 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+            } else if (compare(_name, 'bnb')) {
+                return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+            } else if (compare(_name, 'usdt')) {
+                return 0x55d398326f99059fF775485246999027B3197955;
+            }
         }
+        revert('dont have token');
     }
 
     function compare(string memory str1, string memory str2) public pure returns (bool) {

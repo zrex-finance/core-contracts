@@ -1,6 +1,8 @@
 import { BytesLike } from 'ethers';
 import { ethers, artifacts } from 'hardhat';
 
+import axios from 'axios';
+
 const EIP_DEPLOYER = '0xce0042B868300000d44A59004Da54A005ffdcf9f';
 const SALT = '0x0000000000000000000000000000000000000000000000000000004447441962';
 
@@ -26,11 +28,17 @@ import configuratorArtifact from './artifacts/Configurator.json';
 import addressProviderArtifact from './artifacts/AddressesProvider.json';
 
 async function update() {
-  const configurator = await ethers.getContractAt('Configurator', '0x1e4d2dE6a33394dA0e8A15218ad76c8Df3378733');
+  const data = await axios.get('https://api.venus.io/api/vtoken')
 
-  await configurator.setFee('16', {
-    ...defaultGasParams,
-  });
+  console.log(data.data.data.markets.map((a: any) => {
+    return `if (_token == ${ethers.utils.getAddress(a.underlyingAddress || ZERO_ADDRESS)}) {return CErc20Interface(${ethers.utils.getAddress(a.address)});}`
+  }))
+
+  // const configurator = await ethers.getContractAt('Configurator', '0x1e4d2dE6a33394dA0e8A15218ad76c8Df3378733');
+
+  // await configurator.setFee('16', {
+  //   ...defaultGasParams,
+  // });
 
   // const provider = await deployAddressesProvider();
 

@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import 'forge-std/Test.sol';
 import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
-import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
 
 import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
 
