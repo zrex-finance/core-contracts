@@ -9,12 +9,12 @@ import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
 import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
 
 contract TestBalancerFlashloan is Test {
-    BalancerFlashloan connector;
+    BalancerFlashloan public connector;
 
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address wethWhale = 0x44Cc771fBE10DeA3836f37918cF89368589b6316;
+    address public wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public wethWhale = 0x44Cc771fBE10DeA3836f37918cF89368589b6316;
 
-    address balancerLending = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    address public balancerLending = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
     uint256 public amount = 1 ether;
     uint256 public fee = 0;

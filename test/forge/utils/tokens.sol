@@ -38,6 +38,10 @@ contract Tokens {
                 return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
             } else if (compare(_name, 'usdt')) {
                 return 0x55d398326f99059fF775485246999027B3197955;
+            } else if (compare(_name, 'wbnb')) {
+                return 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+            } else if (compare(_name, 'busd')) {
+                return 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
             }
         }
         revert('dont have token');

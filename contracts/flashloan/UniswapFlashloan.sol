@@ -38,11 +38,17 @@ contract UniswapFlashloan is IUniswapFlashloan, PeripheryImmutableState, Periphe
      * @dev Main function for flashloan for all routes. Calls the middle functions according to routes.
      * @notice Main function for flashloan for all routes. Calls the middle functions according to routes.
      *  _token token addresses for flashloan.
-     *  _amount list of amounts for the corresponding assets.
+     *  @param _amount list of amounts for the corresponding assets.
      * @param _data extra data passed.
      */
-    function flashLoan(address, uint256, bytes calldata _data) external override reentrancy {
+    function flashLoan(address, uint256 _amount, bytes calldata _data) external override reentrancy {
         (FlashParams memory params, bytes memory data) = abi.decode(_data, (FlashParams, bytes));
+        if (params.amount0 > 0) {
+            params.amount0 = _amount;
+        }
+        if (params.amount1 > 0) {
+            params.amount1 = _amount;
+        }
         _flashLoan(params, data);
     }
 

@@ -9,13 +9,13 @@ import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
 import { AaveV2Flashloan } from 'contracts/flashloan/AaveV2Flashloan.sol';
 
 contract TestAaveV2Flashloan is Test {
-    AaveV2Flashloan connector;
+    AaveV2Flashloan public connector;
 
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
+    address public daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public daiWhale = 0xb527a981e1d415AF696936B3174f2d7aC8D11369;
 
-    address aaveLending = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
-    address aaveData = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
+    address public aaveLending = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
+    address public aaveData = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
 
     uint256 public amount = 1000 ether;
     address public token = daiC;

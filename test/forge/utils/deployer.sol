@@ -22,32 +22,36 @@ import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 import { AaveV2Flashloan } from 'contracts/flashloan/AaveV2Flashloan.sol';
 import { MakerFlashloan } from 'contracts/flashloan/MakerFlashloan.sol';
 import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
+import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
 
 import { InchV5Connector } from 'contracts/connectors/InchV5.sol';
 import { UniswapConnector } from 'contracts/connectors/Uniswap.sol';
 import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
+import { VenusConnector } from 'contracts/connectors/bsc/Venus.sol';
 import { AaveV2Connector } from 'contracts/connectors/mainnet/AaveV2.sol';
 import { AaveV3Connector } from 'contracts/connectors/mainnet/AaveV3.sol';
 import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
 
 contract Deployer is Test {
-    Router router;
-    Proxy accountProxy;
-    Connectors connectors;
+    Router public router;
+    Proxy public accountProxy;
+    Connectors public connectors;
 
-    InchV5Connector inchV5Connector;
-    UniswapConnector uniswapConnector;
-    AaveV2Connector aaveV2Connector;
-    AaveV3Connector aaveV3Connector;
-    CompoundV3Connector compoundV3Connector;
-    CompoundV2Connector compoundV2Connector;
+    InchV5Connector public inchV5Connector;
+    UniswapConnector public uniswapConnector;
+    AaveV2Connector public aaveV2Connector;
+    AaveV3Connector public aaveV3Connector;
+    CompoundV3Connector public compoundV3Connector;
+    CompoundV2Connector public compoundV2Connector;
+    VenusConnector public venusConnector;
 
-    AaveV2Flashloan aaveV2Flashloan;
-    BalancerFlashloan balancerFlashloan;
-    MakerFlashloan makerFlashloan;
+    AaveV2Flashloan public aaveV2Flashloan;
+    BalancerFlashloan public balancerFlashloan;
+    MakerFlashloan public makerFlashloan;
+    UniswapFlashloan public uniswapFlashloan;
 
-    Configurator configurator;
-    Account accountImpl;
+    Configurator public configurator;
+    Account public accountImpl;
 
     function setUp() public {
         string memory url = vm.rpcUrl('mainnet');
@@ -112,6 +116,11 @@ contract Deployer is Test {
             0x6B175474E89094C44Da98b954EedeAC495271d0F
         );
 
+        venusConnector = new VenusConnector();
+        uniswapFlashloan = new UniswapFlashloan(
+            0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7,
+            0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f
+        );
         inchV5Connector = new InchV5Connector();
         uniswapConnector = new UniswapConnector();
         aaveV2Connector = new AaveV2Connector();
@@ -119,7 +128,7 @@ contract Deployer is Test {
         compoundV3Connector = new CompoundV3Connector();
         compoundV2Connector = new CompoundV2Connector();
 
-        string[] memory _names = new string[](9);
+        string[] memory _names = new string[](11);
         _names[0] = aaveV2Connector.NAME();
         _names[1] = aaveV3Connector.NAME();
         _names[2] = compoundV3Connector.NAME();
@@ -129,8 +138,10 @@ contract Deployer is Test {
         _names[6] = aaveV2Flashloan.NAME();
         _names[7] = balancerFlashloan.NAME();
         _names[8] = makerFlashloan.NAME();
+        _names[9] = uniswapFlashloan.NAME();
+        _names[10] = venusConnector.NAME();
 
-        address[] memory _connectors = new address[](9);
+        address[] memory _connectors = new address[](11);
         _connectors[0] = address(aaveV2Connector);
         _connectors[1] = address(aaveV3Connector);
         _connectors[2] = address(compoundV3Connector);
@@ -140,6 +151,8 @@ contract Deployer is Test {
         _connectors[6] = address(aaveV2Flashloan);
         _connectors[7] = address(balancerFlashloan);
         _connectors[8] = address(makerFlashloan);
+        _connectors[9] = address(uniswapFlashloan);
+        _connectors[10] = address(venusConnector);
 
         vm.prank(msg.sender);
         configurator.addConnectors(_names, _connectors);

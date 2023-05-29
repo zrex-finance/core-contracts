@@ -41,6 +41,8 @@ contract HelperContract is Tokens, Test {
                 return getToken('usdc');
             } else if (_token == getToken('dai')) {
                 return getToken('dai');
+            } else if (_token == getToken('wbnb')) {
+                return getToken('wbnb');
             }
         }
         revert('dont have whale');

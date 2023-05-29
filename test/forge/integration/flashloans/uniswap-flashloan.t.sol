@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import 'forge-std/Test.sol';
+import { Test } from 'forge-std/Test.sol';
+import { Script } from 'forge-std/Script.sol';
 import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 import { PoolAddress } from 'contracts/dependencies/uniswap/libraries/PoolAddress.sol';
 
@@ -10,7 +11,7 @@ import { IUniswapFlashloan } from 'contracts/interfaces/connectors/IUniswapFlash
 
 import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
 
-contract TestUniswapFlashloan is Test {
+contract TestUniswapFlashloan is Test, Script {
     UniswapFlashloan public connector;
 
     uint24 public fee = 3000;

@@ -6,11 +6,15 @@ import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
 
 import { DataTypes } from 'contracts/lib/DataTypes.sol';
 import { PercentageMath } from 'contracts/lib/PercentageMath.sol';
+import { PoolAddress } from 'contracts/dependencies/uniswap/libraries/PoolAddress.sol';
 
 import { IRouter } from 'contracts/interfaces/IRouter.sol';
 import { IBaseSwap } from 'contracts/interfaces/IBaseSwap.sol';
 import { IConnector } from 'contracts/interfaces/IConnector.sol';
 import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
+import { IUniswapFlashloan } from 'contracts/interfaces/connectors/IUniswapFlashloan.sol';
+
+import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
 
 import { Deployer } from '../../utils/deployer.sol';
 import { UniswapHelper } from '../../utils/uniswap.sol';
@@ -131,10 +135,23 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
     ) public returns (string memory, bytes memory) {
         uint256 loanAmt = getLoanAmount(_position.amountIn, _position.leverage);
 
-        string memory _targetName = getFlashloanData(_flashloanConnector, _position.debt, loanAmt);
+        string memory targetName = getFlashloanData(_flashloanConnector, _position.debt, loanAmt);
         bytes memory _calldata = _getOpenPositionCallbackCallData(_swapConnector, _lendingConnector, _position);
 
-        return (_targetName, _calldata);
+        uint256 chainId = getChainID();
+        if (chainId == 56) {
+            // hardcode becasuse serach pool on the UI side
+            IUniswapFlashloan.FlashParams memory params = IUniswapFlashloan.FlashParams(
+                PoolAddress.PoolKey(0x55d398326f99059fF775485246999027B3197955, _position.debt, 100),
+                0,
+                loanAmt
+            );
+
+            _calldata = abi.encode(params, _calldata);
+            targetName = 'UniswapFlashloan';
+        }
+
+        return (targetName, _calldata);
     }
 
     function _getClosePositionCallData(
@@ -148,6 +165,19 @@ contract UniversalPosition is UniswapConnector, HelperContract, Deployer {
 
         string memory targetName = getFlashloanData(_flashloanConnector, _position.debt, borrowAmount);
         bytes memory _calldata = _getClosePositionCallbackCallData(_swapConnector, _lendingConnector, _position, _key);
+
+        uint256 chainId = getChainID();
+        if (chainId == 56) {
+            // hardcode becasuse serach pool on the UI side
+            IUniswapFlashloan.FlashParams memory params = IUniswapFlashloan.FlashParams(
+                PoolAddress.PoolKey(0x55d398326f99059fF775485246999027B3197955, _position.debt, 100),
+                0,
+                borrowAmount
+            );
+
+            _calldata = abi.encode(params, _calldata);
+            targetName = 'UniswapFlashloan';
+        }
 
         return (targetName, _calldata);
     }

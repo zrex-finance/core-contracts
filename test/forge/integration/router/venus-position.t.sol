@@ -9,7 +9,7 @@ import { UniversalERC20 } from 'contracts/lib/UniversalERC20.sol';
 
 import { UniversalPosition } from './universal-position.sol';
 
-contract PositionAaveV2 is UniversalPosition {
+contract PositionVenus is UniversalPosition {
     address public user = makeAddr('user');
 
     uint256 public leverage = 21000; // 2.1x
@@ -17,21 +17,21 @@ contract PositionAaveV2 is UniversalPosition {
     function test_OpenPosition_ClosePosition() public {
         (DataTypes.Position memory position, uint256 index) = openPosition(
             user,
+            getToken('usdc'),
             getToken('dai'),
-            getToken('weth'),
-            1000 ether,
+            1000000000,
             leverage,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan)
+            address(venusConnector),
+            address(uniswapFlashloan)
         );
 
         closePosition(
             user,
             index,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan),
+            address(venusConnector),
+            address(uniswapFlashloan),
             position
         );
     }
@@ -39,40 +39,40 @@ contract PositionAaveV2 is UniversalPosition {
     function test_OpenAndClose_TwoPosition() public {
         (DataTypes.Position memory position1, uint256 index1) = openPosition(
             user,
+            getToken('usdc'),
             getToken('dai'),
-            getToken('weth'),
-            1000 ether,
+            1000000000,
             leverage,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan)
+            address(venusConnector),
+            address(uniswapFlashloan)
         );
 
         (DataTypes.Position memory position2, uint256 index2) = openPosition(
             user,
+            getToken('usdc'),
             getToken('dai'),
-            getToken('weth'),
-            1000 ether,
+            1000000000,
             leverage,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan)
+            address(venusConnector),
+            address(uniswapFlashloan)
         );
 
         closePosition(
             user,
             index1,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan),
+            address(venusConnector),
+            address(uniswapFlashloan),
             position1
         );
         closePosition(
             user,
             index2,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan),
+            address(venusConnector),
+            address(uniswapFlashloan),
             position2
         );
     }
@@ -81,14 +81,14 @@ contract PositionAaveV2 is UniversalPosition {
         vm.prank(user);
         (DataTypes.Position memory position, uint256 index) = swapAndOpen(
             user,
-            getToken('weth'),
             getToken('usdc'),
             getToken('dai'),
-            2000 ether,
+            getToken('wbnb'),
+            3000000,
             leverage,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan)
+            address(venusConnector),
+            address(uniswapFlashloan)
         );
 
         vm.prank(user);
@@ -96,32 +96,30 @@ contract PositionAaveV2 is UniversalPosition {
             user,
             index,
             address(uniswapConnector),
-            address(aaveV2Connector),
-            address(balancerFlashloan),
+            address(venusConnector),
+            address(uniswapFlashloan),
             position
         );
     }
 
-    // aave v2 connector integration
-
-    uint256 RATE_TYPE = 1;
+    // compound v2 connector integration
 
     function _getDepositCallData(address _collateral) public view override returns (bytes memory) {
-        return abi.encodeWithSelector(aaveV2Connector.deposit.selector, _collateral);
+        return abi.encodeWithSelector(venusConnector.deposit.selector, _collateral);
     }
 
     function _getBorrowCallData(address _debt) public view override returns (bytes memory) {
-        return abi.encodeWithSelector(aaveV2Connector.borrow.selector, _debt, RATE_TYPE);
+        return abi.encodeWithSelector(venusConnector.borrow.selector, _debt);
     }
 
     function _getPaybackCallData(address _debt, uint256 _borrowAmount) public view override returns (bytes memory) {
-        return abi.encodeWithSelector(aaveV2Connector.payback.selector, _debt, _borrowAmount, RATE_TYPE);
+        return abi.encodeWithSelector(venusConnector.payback.selector, _debt, _borrowAmount);
     }
 
     function _getWithdrawCallData(
         address _collateral,
         uint256 _collateralAmount
     ) public view override returns (bytes memory) {
-        return abi.encodeWithSelector(aaveV2Connector.withdraw.selector, _collateral, _collateralAmount);
+        return abi.encodeWithSelector(venusConnector.withdraw.selector, _collateral, _collateralAmount);
     }
 }
