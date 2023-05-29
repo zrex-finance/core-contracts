@@ -84,7 +84,7 @@ contract PositionVenus is UniversalPosition {
             getToken('usdc'),
             getToken('dai'),
             getToken('wbnb'),
-            3000000,
+            300000,
             leverage,
             address(uniswapConnector),
             address(venusConnector),
