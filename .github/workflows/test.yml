@@ -34,7 +34,7 @@ jobs:
 
             - name: Run Forge tests
               run: |
-                  forge test -vv --no-match-contract PositionVenus
+                  forge test
               id: forge-test
 
             - name: Run Forge coverage
