@@ -79,29 +79,21 @@ contract TestAccount is Test {
     }
 
     function test_executeOperation_Revert() public {
-        address[] memory _tokens = new address[](1);
-        _tokens[0] = address(0);
-
-        uint256[] memory _amounts = new uint256[](1);
-        _amounts[0] = uint256(1 ether);
-
-        uint256[] memory _premiums = new uint256[](1);
-        _premiums[0] = uint256(1 ether);
-
         bytes[] memory _bytes = new bytes[](1);
         _bytes[0] = bytes('');
 
         string[] memory _strings = new string[](1);
         _strings[0] = string('');
 
-        vm.expectRevert(bytes(Errors.EXECUTE_OPERATION_FAILED));
+        vm.expectRevert(bytes(Errors.ADDRESS_IS_ZERO));
 
         vm.prank(msg.sender);
         account.executeOperation(
-            _tokens,
-            _amounts,
-            _premiums,
+            address(0),
+            uint256(1 ether),
+            uint256(1 ether),
             address(account),
+            'AaveV2Flashloan',
             abi.encode(bytes4(''), _strings, _bytes, _bytes)
         );
     }

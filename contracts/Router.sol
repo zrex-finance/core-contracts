@@ -158,30 +158,34 @@ contract Router is VersionedInitializable, IRouter {
     /**
      * @dev Exchanges the input token for the necessary token to create a position and opens it.
      * @param _position The structure of the current position.
-     * @param _route The path chosen to take the loan See `FlashAggregator` contract.
+     * @param _targetName The connector name that will be called are.
      * @param _data Calldata for the openPositionCallback.
      * @param _params The additional parameters needed to the exchange.
      * @param _params The additional parameters needed to the exchange.
      */
     function swapAndOpen(
         DataTypes.Position memory _position,
-        uint16 _route,
+        string memory _targetName,
         bytes calldata _data,
         SwapParams memory _params
     ) external payable override {
         _position.amountIn = _swap(_params);
-        _openPosition(_position, _route, _data);
+        _openPosition(_position, _targetName, _data);
     }
 
     /**
      * @dev Create a position on the lendings protocol.
      * @param _position The structure of the current position.
-     * @param _route The path chosen to take the loan See `FlashAggregator` contract.
+     * @param _targetName The connector name that will be called are.
      * @param _data Calldata for the openPositionCallback.
      */
-    function openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) external override {
+    function openPosition(
+        DataTypes.Position memory _position,
+        string memory _targetName,
+        bytes calldata _data
+    ) external override {
         IERC20(_position.debt).universalTransferFrom(msg.sender, address(this), _position.amountIn);
-        _openPosition(_position, _route, _data);
+        _openPosition(_position, _targetName, _data);
     }
 
     /**
@@ -189,14 +193,14 @@ contract Router is VersionedInitializable, IRouter {
      * @param _key The key to obtain the current position.
      * @param _token Flashloan token.
      * @param _amount Flashloan amount.
-     * @param _route The path chosen to take the loan See `FlashAggregator` contract.
+     * @param _targetName The connector name that will be called are.
      * @param _data Calldata for the openPositionCallback.
      */
     function closePosition(
         bytes32 _key,
         address _token,
         uint256 _amount,
-        uint16 _route,
+        string memory _targetName,
         bytes calldata _data
     ) external override {
         DataTypes.Position memory position = positions[_key];
@@ -205,7 +209,7 @@ contract Router is VersionedInitializable, IRouter {
         address account = accounts[msg.sender];
         require(account != address(0), Errors.ACCOUNT_DOES_NOT_EXIST);
 
-        IAccount(account).closePosition(_key, _token, _amount, _route, _data);
+        IAccount(account).closePosition(_key, _token, _amount, _targetName, _data);
 
         emit ClosePosition(_key, account, position);
         delete positions[_key];
@@ -305,7 +309,11 @@ contract Router is VersionedInitializable, IRouter {
      * @dev Create user account if user doesn't have it. Update position index and position state.
      * Call openPosition on the user account proxy contract.
      */
-    function _openPosition(DataTypes.Position memory _position, uint16 _route, bytes calldata _data) private {
+    function _openPosition(
+        DataTypes.Position memory _position,
+        string memory _targetName,
+        bytes calldata _data
+    ) private {
         require(_position.account == msg.sender, Errors.CALLER_NOT_POSITION_OWNER);
         require(_position.leverage > PercentageMath.PERCENTAGE_FACTOR, Errors.LEVERAGE_IS_INVALID);
 
@@ -319,7 +327,7 @@ contract Router is VersionedInitializable, IRouter {
         positions[key] = _position;
 
         IERC20(_position.debt).universalApprove(account, _position.amountIn);
-        IAccount(account).openPosition(_position, _route, _data);
+        IAccount(account).openPosition(_position, _targetName, _data);
 
         uint256 debtPrice = IOracle(ADDRESSES_PROVIDER.getOracle()).getAssetPrice(_position.debt);
         uint256 size = debtPrice * (_position.amountIn.mulTo(_position.leverage));

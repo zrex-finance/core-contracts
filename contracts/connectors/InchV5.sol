@@ -3,21 +3,35 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IInchV5Connector } from '../interfaces/IInchV5Connector.sol';
+import { IBaseSwap } from '../interfaces/IBaseSwap.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
 
-contract InchV5Connector is IInchV5Connector {
+contract InchV5Connector is IBaseSwap {
     using UniversalERC20 for IERC20;
 
     /* ============ Constants ============ */
 
-    string public constant name = 'OneInchV5';
+    /**
+     * @dev Connector name
+     */
+    string public constant NAME = 'OneInchV5';
 
     /**
      * @dev 1Inch Router v5 Address
      */
-    address internal constant oneInchV5 = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+    address internal constant INCH_V5_AGGREGATOR = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+
+    /* ============ Events ============ */
+
+    /**
+     * @dev Emitted when the sender swap tokens.
+     * @param account Address who create operation.
+     * @param fromToken The address of the token to sell.
+     * @param toToken The address of the token to buy.
+     * @param amount The amount of the token to sell.
+     */
+    event LogExchange(address indexed account, address toToken, address fromToken, uint256 amount);
 
     /* ============ External Functions ============ */
 
@@ -56,13 +70,13 @@ contract InchV5Connector is IInchV5Connector {
         uint256 _amount,
         bytes calldata _callData
     ) internal returns (uint256 buyAmount) {
-        IERC20(_fromToken).universalApprove(oneInchV5, _amount);
+        IERC20(_fromToken).universalApprove(INCH_V5_AGGREGATOR, _amount);
 
         uint256 value = IERC20(_fromToken).isETH() ? _amount : 0;
 
         uint256 initalBalalance = IERC20(_toToken).universalBalanceOf(address(this));
 
-        (bool success, bytes memory results) = oneInchV5.call{ value: value }(_callData);
+        (bool success, bytes memory results) = INCH_V5_AGGREGATOR.call{ value: value }(_callData);
 
         if (!success) {
             revert(string(results));
@@ -72,6 +86,4 @@ contract InchV5Connector is IInchV5Connector {
 
         buyAmount = finalBalalance - initalBalalance;
     }
-
-    event LogExchange(address indexed account, address buyAddr, address sellAddr, uint256 sellAmt);
 }

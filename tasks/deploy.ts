@@ -11,13 +11,13 @@ const ROUTER_ADMIN = '0x0000076C91B41d2f872B9b061E75177E51CC1697'; // 0x0000076C
 const TREASURY = '0x3E324D5C62762BCbC9203Ab624d6Cd5d5066d170';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-const FEE = 3;
 const BUMP_GAS_PRECENT = 130;
 const DEFAULT_GAS_LIMIT = 2500000;
 
 const defaultGasParams = {
-  maxFeePerGas: 35e9,
-  maxPriorityFeePerGas: 3e9,
+  gasPrice: 180e9,
+  // maxFeePerGas: 35e9,
+  // maxPriorityFeePerGas: 3e9,
 };
 
 import proxyArtifact from './artifacts/Proxy.json';
@@ -41,13 +41,10 @@ async function deploy() {
 
   await deployConnectors(configurator);
 
-  const flashAggregator = await deployFlashAggregator();
-  await deployFlashResolver(flashAggregator);
-
   const account = await deployAccount(provider);
   const proxy = await deployProxy(provider);
 
-  await setLeftAddressesToAddressesProvider(provider, account, proxy, flashAggregator);
+  await setLeftAddressesToAddressesProvider(provider, account, proxy);
 }
 
 // 1 step
@@ -211,15 +208,30 @@ async function setImplToAddressesProvider(provider: string, router: string, conf
 // 8 step
 async function deployConnectors(configuratorAddress: string) {
   const connectors = [
-    'AaveV2Connector',
-    'AaveV3Connector',
-    'CompoundV2Connector',
+    'contracts/connectors/polygon/AaveV2.sol:AaveV2Connector',
+    'contracts/connectors/polygon/AaveV3.sol:AaveV3Connector',
     'CompoundV3Connector',
     'InchV5Connector',
     'UniswapConnector',
+    'KyberV2Connector',
+    'ParaSwapConnector',
+    'AaveV2Flashloan',
+    'AaveV3Flashloan',
+    'BalancerFlashloan',
   ];
-  const names = ['AaveV2', 'AaveV3', 'CompoundV2', 'CompoundV3', 'OneInchV5', 'UniswapAuto'];
-  // mainnet
+  const names = [
+    'AaveV2',
+    'AaveV3',
+    'CompoundV3',
+    'OneInchV5',
+    'UniswapAuto',
+    'KyberV2',
+    'ParaSwap',
+    'AaveV2Flashloan',
+    'AaveV3Flashloan',
+    'BalancerFlashloan',
+  ];
+
   const addresses = [
     '0x87E82b4E7084F1f6F69775Caf104d81F78b2b335',
     '0xFA5f129591b58ad625a0450251951E7cd2847409',
@@ -227,11 +239,24 @@ async function deployConnectors(configuratorAddress: string) {
     '0xEC9831e9b29C0C65F99aE07464E52a12f8A41170',
     '0x1766C0CB1dDbD82EFe72A6Ab5f18aD92eb1ddCCd',
     '0xcde67DbD46DA8DAAE07301499f2f7349f231927C',
+    '0x9F0aDe5cfD086144a2c0bc4BC14534B98a74Be4e',
+    '0x7ecdc5DA73e3d5B97D1b7aF2a5AEe737a4eEcE9c',
+    '0x8529807Ab32B0470fea76b70f752B011835eC05c',
+    '0x3429E0637d9b32cd2Cc79fD77c491A7449582c7a',
   ];
-  // const addresses = []
+  // let args: any[] = [];
 
   // for await (const name of connectors) {
-  //   const address = await _deploy(name, []);
+
+  //   if (name == 'AaveV2Flashloan') {
+  //     args = ['0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf', '0x7551b5D2763519d4e37e8B81929D336De671d46d']
+  //   } else if (name == 'AaveV3Flashloan') {
+  //     args = ['0x794a61358D6845594F94dc1DB02A252b5b4814aD', '0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654']
+  //   } else  if (name == 'BalancerFlashloan') {
+  //     args = ['0xBA12222222228d8Ba445958a75a0704d566BF2C8']
+  //   }
+
+  //   const address = await _deploy(name, args);
   //   console.log(`${name}: ${address}`);
   //   addresses.push(address);
   // }
@@ -242,27 +267,13 @@ async function deployConnectors(configuratorAddress: string) {
 }
 
 // 9 step
-async function deployFlashAggregator() {
-  const address = await _deploy('FlashAggregator', []);
-  console.log(`FlashAggregator: ${address}`);
-  return address;
-}
-
-// 10 step
-async function deployFlashResolver(flashAggregatorAddress: string) {
-  const address = await _deploy('FlashResolver', [flashAggregatorAddress]);
-  console.log(`FlashResolver: ${address}`);
-  return address;
-}
-
-// 11 step
 async function deployAccount(addressesProvider: string) {
   const address = await _deploy('Account', [addressesProvider]);
   console.log(`Account: ${address}`);
   return address;
 }
 
-// 12 step
+// 10 step
 async function deployProxy(addressesProvider: string) {
   const bytecode = await getDeployByteCode(proxyArtifact.abi, proxyArtifact.bytecode, [addressesProvider]);
   const expectedAddress = getAddress(bytecode);
@@ -273,13 +284,8 @@ async function deployProxy(addressesProvider: string) {
   return expectedAddress;
 }
 
-// 13 step
-async function setLeftAddressesToAddressesProvider(
-  provider: string,
-  account: string,
-  proxy: string,
-  aggregator: string,
-) {
+// 11 step
+async function setLeftAddressesToAddressesProvider(provider: string, account: string, proxy: string) {
   const addressesProvider = await ethers.getContractAt('AddressesProvider', provider);
 
   const accountAddress = await addressesProvider.callStatic.getAccountImpl();
@@ -311,17 +317,6 @@ async function setLeftAddressesToAddressesProvider(
       proxy,
     );
     await addressesProvider.setAddress(ethers.utils.formatBytes32String('ACCOUNT_PROXY'), proxy, {
-      gasLimit: gasLimit.add(gasLimit.mul(BUMP_GAS_PRECENT).div(100)),
-      ...defaultGasParams,
-    });
-  }
-  const aggregatorAddress = await addressesProvider.callStatic.getFlashloanAggregator();
-  if (aggregatorAddress === ZERO_ADDRESS) {
-    const gasLimit = await addressesProvider.estimateGas.setAddress(
-      ethers.utils.formatBytes32String('FLASHLOAN_AGGREGATOR'),
-      aggregator,
-    );
-    await addressesProvider.setAddress(ethers.utils.formatBytes32String('FLASHLOAN_AGGREGATOR'), aggregator, {
       gasLimit: gasLimit.add(gasLimit.mul(BUMP_GAS_PRECENT).div(100)),
       ...defaultGasParams,
     });

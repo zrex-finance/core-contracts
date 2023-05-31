@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { ICompoundV3Connector } from '../interfaces/ICompoundV3Connector.sol';
+import { ICompoundV3Connector } from '../interfaces/connectors/ICompoundV3Connector.sol';
 import { IComet } from '../interfaces/external/compound-v3/IComet.sol';
 
 import { UniversalERC20 } from '../lib/UniversalERC20.sol';
@@ -13,7 +13,10 @@ contract CompoundV3Connector is ICompoundV3Connector {
 
     /* ============ Constants ============ */
 
-    string public constant name = 'CompoundV3';
+    /**
+     * @dev Connector name
+     */
+    string public constant NAME = 'CompoundV3';
 
     /* ============ External Functions ============ */
 

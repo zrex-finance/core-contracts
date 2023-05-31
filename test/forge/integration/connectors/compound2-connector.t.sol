@@ -8,25 +8,17 @@ import { DataTypes } from 'contracts/lib/DataTypes.sol';
 
 import { EthConverter } from 'contracts/mocks/EthConverter.sol';
 
-import { CompoundV2Connector } from 'contracts/connectors/CompoundV2.sol';
+import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
 import { CTokenInterface } from 'contracts/interfaces/external/compound-v2/CTokenInterfaces.sol';
 import { ComptrollerInterface } from 'contracts/interfaces/external/compound-v2/ComptrollerInterface.sol';
 
-import { HelperContract } from '../../utils/helper.sol';
-
-contract Tokens {
-    address usdcC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address daiC = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address ethC = 0x0000000000000000000000000000000000000000;
-    address ethC2 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address wethC = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-}
+import { Tokens } from '../../utils/tokens.sol';
 
 interface AaveOracle {
     function getAssetPrice(address asset) external view returns (uint256);
 }
 
-contract LendingHelper is HelperContract, Tokens {
+contract LendingHelper is Tokens {
     CompoundV2Connector compoundV2Connector;
 
     ComptrollerInterface internal constant troller = ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
@@ -73,45 +65,45 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
     function test_Deposit() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
-        assertGt(getCollateralAmt(daiC, address(this)), 0);
+        assertGt(getCollateralAmt(getToken('dai'), address(this)), 0);
     }
 
     function test_Deposit_Entered() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
         address[] memory toEnter = new address[](1);
-        toEnter[0] = address(compoundV2Connector._getCToken(daiC));
+        toEnter[0] = address(compoundV2Connector._getCToken(getToken('dai')));
         troller.enterMarkets(toEnter);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
-        assertGt(getCollateralAmt(daiC, address(this)), 0);
+        assertGt(getCollateralAmt(getToken('dai'), address(this)), 0);
     }
 
     function test_Deposit_Max() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, type(uint256).max));
+        execute(getDepositData(getToken('dai'), type(uint256).max));
 
-        assertGt(getCollateralAmt(daiC, address(this)), 0);
+        assertGt(getCollateralAmt(getToken('dai'), address(this)), 0);
     }
 
     function test_Deposit_InvalidToken() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
         vm.expectRevert(abi.encodePacked('Unsupported token'));
         execute(getDepositData(address(msg.sender), depositAmount));
@@ -120,96 +112,96 @@ contract CompoundV2Logic is LendingHelper, EthConverter {
     function test_borrow() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
 
-        assertEq(borrowAmount, getBorrowAmt(usdcC, address(this)));
+        assertEq(borrowAmount, getBorrowAmt(getToken('usdc'), address(this)));
     }
 
     function test_Payback() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
 
-        execute(getPaybackData(borrowAmount, usdcC));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
 
-        assertEq(0, getBorrowAmt(usdcC, address(this)));
+        assertEq(0, getBorrowAmt(getToken('usdc'), address(this)));
     }
 
     function test_Payback_NotEnoughToken() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
 
         vm.expectRevert(abi.encodePacked('not enough token'));
-        execute(getPaybackData(borrowAmount + 1000, usdcC));
+        execute(getPaybackData(borrowAmount + 1000, getToken('usdc')));
     }
 
     function test_Payback_Max() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
 
-        execute(getPaybackData(type(uint256).max, usdcC));
+        execute(getPaybackData(type(uint256).max, getToken('usdc')));
 
-        assertEq(0, getCollateralAmt(usdcC, address(this)));
+        assertEq(0, getCollateralAmt(getToken('usdc'), address(this)));
     }
 
     function test_Withdraw() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
 
-        execute(getPaybackData(borrowAmount, usdcC));
-        execute(getWithdrawData(depositAmount, daiC));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
+        execute(getWithdrawData(depositAmount, getToken('dai')));
 
-        assertEq(0, getCollateralAmt(daiC, address(this)));
+        assertEq(0, getCollateralAmt(getToken('dai'), address(this)));
     }
 
     function test_Withdraw_Max() public {
         uint256 depositAmount = 1000 ether;
 
-        vm.prank(daiWhale);
-        ERC20(daiC).transfer(address(this), depositAmount);
+        vm.prank(getToken('dai'));
+        ERC20(getToken('dai')).transfer(address(this), depositAmount);
 
-        execute(getDepositData(daiC, depositAmount));
+        execute(getDepositData(getToken('dai'), depositAmount));
 
         uint256 borrowAmount = 100000000;
-        execute(getBorrowData(usdcC, borrowAmount));
+        execute(getBorrowData(getToken('usdc'), borrowAmount));
 
-        execute(getPaybackData(borrowAmount, usdcC));
-        execute(getWithdrawData(type(uint256).max, daiC));
+        execute(getPaybackData(borrowAmount, getToken('usdc')));
+        execute(getWithdrawData(type(uint256).max, getToken('dai')));
 
-        assertEq(0, getCollateralAmt(daiC, address(this)));
+        assertEq(0, getCollateralAmt(getToken('dai'), address(this)));
     }
 
     function test_GetCToken() public {

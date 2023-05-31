@@ -29,19 +29,19 @@ jobs:
             - name: Run Forge build
               run: |
                   forge --version
-                  forge build --sizes
+                  forge build
               id: build
 
             - name: Run Forge tests
               run: |
-                  forge test -vv
+                  forge test
               id: forge-test
 
             - name: Run Forge coverage
               run: |
                   forge coverage --report lcov
                   sudo apt-get install lcov
-                  lcov --remove lcov.info  -o lcov.info 'test/*' 'contracts/lib/*' 'contracts/mocks/*' 'contracts/dependencies/*' 'contracts/connectors/InchV5.sol'
+                  lcov --remove lcov.info  -o lcov.info 'test/*' 'contracts/lib/*' 'contracts/mocks/*' 'contracts/dependencies/*' 'contracts/connectors/InchV5.sol' 'contracts/connectors/KyberV2.sol' 'contracts/connectors/Paraswap.sol' 'contracts/connectors/polygon/*' 
               id: forge-coverage
 
             - name: Upload coverage reports to Codecov

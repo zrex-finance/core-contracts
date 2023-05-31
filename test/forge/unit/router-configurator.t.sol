@@ -15,7 +15,7 @@ import { Configurator } from 'contracts/Configurator.sol';
 import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 
 contract ConnectorImpl {
-    string public constant name = 'ConnectorImpl';
+    string public constant NAME = 'ConnectorImpl';
 }
 
 contract TestConfigurator is Test {
@@ -42,7 +42,7 @@ contract TestConfigurator is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);
@@ -72,7 +72,7 @@ contract TestConfigurator is Test {
         ConnectorImpl connector = new ConnectorImpl();
 
         string[] memory _names = new string[](1);
-        _names[0] = connector.name();
+        _names[0] = connector.NAME();
 
         address[] memory _connectors = new address[](1);
         _connectors[0] = address(connector);

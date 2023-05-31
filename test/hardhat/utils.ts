@@ -67,6 +67,33 @@ export async function inchCalldata({
   return [resp.tx.data, resp.toTokenAmount];
 }
 
+export async function kyberCalldata({
+  fromToken,
+  toToken,
+  toAddress,
+  amount,
+  slippage,
+}: {
+  toAddress: string;
+  fromToken: string;
+  toToken: string;
+  amount: string;
+  slippage: number;
+}) {
+  const ETH_CONTRACT_E = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+  const ETH_CONTRACT = '0x0000000000000000000000000000000000000000';
+
+  fromToken = fromToken === ETH_CONTRACT ? ETH_CONTRACT_E : fromToken;
+  toToken = toToken === ETH_CONTRACT ? ETH_CONTRACT_E : toToken;
+
+  const call = `https://aggregator-api.kyberswap.com/ethereum/route/encode?tokenIn=${fromToken}&tokenOut=${toToken}&amountIn=${amount}&to=${toAddress}&slippageTolerance=${slippage}`;
+  console.log('call', call);
+
+  const { data: resp } = await axios.get<{ encodedSwapData: string; outputAmount: string }>(call);
+
+  return [resp.encodedSwapData, resp.outputAmount];
+}
+
 const provider = new ethers.providers.JsonRpcProvider(
   'https://mainnet.infura.io/v3/8f786b96d16046b78e0287fa61c6fcf8',
   1,

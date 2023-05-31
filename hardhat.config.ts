@@ -7,7 +7,6 @@ import 'hardhat-tracer';
 import 'hardhat-gas-reporter';
 import 'hardhat-preprocessor';
 import 'solidity-coverage';
-import { HardhatUserConfig, task } from 'hardhat/config';
 import { config as dotEnvConfig } from 'dotenv';
 
 function getRemappings() {
@@ -22,7 +21,7 @@ dotEnvConfig();
 
 const { INFURA_TOKEN, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
-const config: HardhatUserConfig = {
+const config = {
   solidity: {
     version: '0.8.17',
     settings: {
@@ -74,7 +73,7 @@ const config: HardhatUserConfig = {
       chainId: 1,
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q`,
-        blockNumber: 16946459,
+        blockNumber: 17278900,
       },
       initialBaseFeePerGas: 5,
     },
@@ -90,7 +89,7 @@ const config: HardhatUserConfig = {
   },
   // This fully resolves paths for imports in the ./lib directory for Hardhat
   preprocess: {
-    eachLine: hre => ({
+    eachLine: () => ({
       transform: (line: string) => {
         if (line.match(/^\s*import /i)) {
           getRemappings().forEach(([find, replace]) => {
