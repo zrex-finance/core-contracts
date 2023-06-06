@@ -13,8 +13,8 @@ import { Errors } from './lib/Errors.sol';
 
 /**
  * @title Configurator
- * @author FlashFlow
- * @dev Implements the configuration methods for the FlashFlow protocol
+ * @author zRex
+ * @dev Implements the configuration methods for the zRex protocol
  */
 contract Configurator is VersionedInitializable, IConfigurator {
     /* ============ Constants ============ */

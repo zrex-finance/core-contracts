@@ -9,7 +9,7 @@ import { Errors } from './lib/Errors.sol';
 
 /**
  * @title Connectors
- * @author FlashFlow
+ * @author zRex
  * @notice Contract to manage and store auxiliary contracts to work with the necessary protocols
  */
 contract Connectors is IConnectors {

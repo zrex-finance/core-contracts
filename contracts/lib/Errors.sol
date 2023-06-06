@@ -3,8 +3,8 @@ pragma solidity ^0.8.17;
 
 /**
  * @title Errors library
- * @author FlashFlow
- * @notice Defines the error messages emitted by the different contracts of the FlashFlow protocol
+ * @author zRex
+ * @notice Defines the error messages emitted by the different contracts of the zRex protocol
  */
 library Errors {
     // The caller of the function is not a account owner

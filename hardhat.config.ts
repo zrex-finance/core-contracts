@@ -44,6 +44,12 @@ const config = {
             mnemonic: 'test test test test test test test test test test test junk',
           },
     },
+    bsc: {
+      url: 'https://bsc-dataseed.binance.org/',
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : { mnemonic: 'test test test test test test test test test test test junk' },
+    },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_TOKEN}`,
       accounts: PRIVATE_KEY
@@ -70,10 +76,10 @@ const config = {
     },
     hardhat: {
       blockGasLimit: 9500000,
-      chainId: 1,
+      chainId: 56,
       forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q`,
-        blockNumber: 17278900,
+        url: `https://bsc-mainnet.nodereal.io/v1/64a9df0874fb4a93b9d0a3849de012d3`,
+        blockNumber: 28718507,
       },
       initialBaseFeePerGas: 5,
     },

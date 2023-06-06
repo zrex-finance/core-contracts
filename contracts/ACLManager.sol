@@ -10,7 +10,7 @@ import { Errors } from './lib/Errors.sol';
 
 /**
  * @title ACLManager
- * @author FlashFlow
+ * @author zRex
  * @notice Access Control List Manager. Main registry of system roles and permissions.
  */
 contract ACLManager is AccessControl, IACLManager {

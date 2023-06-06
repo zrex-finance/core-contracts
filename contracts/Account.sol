@@ -19,7 +19,7 @@ import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
 
 /**
  * @title Account
- * @author FlashFlow
+ * @author zRex
  * @notice Contract used as implimentation user account.
  * @dev Interaction with contracts is carried out by means of calling the proxy contract.
  */

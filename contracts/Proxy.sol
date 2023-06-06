@@ -6,7 +6,7 @@ import { Errors } from './lib/Errors.sol';
 
 /**
  * @title Proxy
- * @author FlashFlow
+ * @author zRex
  * @notice Contract used as proxy for the user account.
  * @dev This abstract contract provides a fallback function that delegates all calls to another contract using the EVM
  * instruction `delegatecall`.

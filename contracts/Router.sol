@@ -18,8 +18,8 @@ import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
 
 /**
  * @title Router contract
- * @author FlashFlow
- * @notice Main point of interaction with an FlashFlow protocol
+ * @author zRex
+ * @notice Main point of interaction with an zRex protocol
  * - Users can:
  *   # Open position
  *   # Close position

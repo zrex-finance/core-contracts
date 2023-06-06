@@ -8,7 +8,7 @@ import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
 
 /**
  * @title AddressesProvider
- * @author FlashFlow
+ * @author zRex
  * @notice Main registry of addresses part of or connected to the protocol
  * @dev Acts as factory of proxies, so with right to change its implementations
  */

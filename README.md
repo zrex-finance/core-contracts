@@ -1,4 +1,4 @@
-# <img src="logo.svg" alt="NFTxCards" height="40px">
+🦖 Contracts
 [![codecov](https://codecov.io/gh/Flash-Flow/core-contracts/branch/master/graph/badge.svg?token=94VIK7W295)](https://codecov.io/gh/Flash-Flow/core-contracts)
 
 ## Overview of the protocol
@@ -86,8 +86,8 @@ If the user does not have a token from the list, the flash flow protocol will be
 
 ### Configurator
 
-- implements the configuration methods for the FlashFlow protocol.
+- implements the configuration methods for the zRex protocol.
 
 ### License
 
-Smart contracts for FlashFlow protocol are available under the [MIT License](LICENSE.md).
+Smart contracts for zRex protocol are available under the [MIT License](LICENSE.md).
