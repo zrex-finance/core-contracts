@@ -1,5 +1,5 @@
 🦖 Contracts
-[![codecov](https://codecov.io/gh/Flash-Flow/core-contracts/branch/master/graph/badge.svg?token=94VIK7W295)](https://codecov.io/gh/Flash-Flow/core-contracts)
+[![codecov](https://codecov.io/gh/zrex-finance/core-contracts/branch/master/graph/badge.svg?token=94VIK7W295)](https://codecov.io/gh/zrex-finance/core-contracts)
 
 ## Overview of the protocol
 
