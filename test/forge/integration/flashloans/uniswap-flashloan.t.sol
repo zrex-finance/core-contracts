@@ -27,11 +27,23 @@ contract TestUniswapFlashloan is Test, Script {
 
     uint256 public fee0 = (amount0 * fee) / 1e6;
 
-    function test_flashloan() public {
+    function test_flashloan_amount0() public {
         IUniswapFlashloan.FlashParams memory params = IUniswapFlashloan.FlashParams(
             PoolAddress.PoolKey(token0, token1, fee),
             amount0,
             amount1
+        );
+
+        bytes memory data = abi.encode(params, bytes(''));
+
+        connector.flashLoan(address(0), 0, data);
+    }
+
+    function test_flashloan_amount1() public {
+        IUniswapFlashloan.FlashParams memory params = IUniswapFlashloan.FlashParams(
+            PoolAddress.PoolKey(token0, token1, fee),
+            amount1,
+            amount0
         );
 
         bytes memory data = abi.encode(params, bytes(''));

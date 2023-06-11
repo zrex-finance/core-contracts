@@ -65,6 +65,17 @@ contract TestMakerFlashloan is Test {
         connector.onFlashLoan(address(connector), address(0), type(uint256).max, type(uint256).max, data);
     }
 
+    function test_getAvailability_true() public {
+        // 0 because maker disable flashloan
+        bool isAvailability = connector.getAvailability(token, 0);
+        assertEq(isAvailability, true);
+    }
+
+    function test_getAvailability_false() public {
+        bool isAvailability = connector.getAvailability(address(0), amount);
+        assertEq(isAvailability, false);
+    }
+
     function executeOperation(
         address _token,
         uint256 _amount,

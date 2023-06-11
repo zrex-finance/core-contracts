@@ -64,6 +64,21 @@ contract TestBalancerFlashloan is Test {
         connector.receiveFlashLoan(tokens, amounts, fees, data);
     }
 
+    function test_calculateFeeBPS() public {
+        uint256 flashLoanFee = connector.calculateFeeBPS();
+        assertGe(flashLoanFee, 0);
+    }
+
+    function test_getAvailability_true() public {
+        bool isAvailability = connector.getAvailability(token, amount);
+        assertEq(isAvailability, true);
+    }
+
+    function test_getAvailability_false() public {
+        bool isAvailability = connector.getAvailability(token, type(uint256).max);
+        assertEq(isAvailability, false);
+    }
+
     function executeOperation(
         address _token,
         uint256 _amount,

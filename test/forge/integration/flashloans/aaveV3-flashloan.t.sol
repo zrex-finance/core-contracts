@@ -65,6 +65,21 @@ contract TestAaveV3Flashloan is Test {
         connector.executeOperation(token, amount, fee, address(connector), data);
     }
 
+    function test_calculateFeeBPS() public {
+        uint256 flashLoanFee = connector.calculateFeeBPS();
+        assertGt(flashLoanFee, 0);
+    }
+
+    function test_getAvailability_true() public {
+        bool isAvailability = connector.getAvailability(token, amount);
+        assertEq(isAvailability, true);
+    }
+
+    function test_getAvailability_false() public {
+        bool isAvailability = connector.getAvailability(address(0), amount);
+        assertEq(isAvailability, false);
+    }
+
     function executeOperation(
         address _token,
         uint256 _amount,
