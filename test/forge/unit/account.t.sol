@@ -11,10 +11,10 @@ import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol'
 import { Errors } from 'contracts/lib/Errors.sol';
 import { ERC20Mock } from 'contracts/mocks/ERC20Mock.sol';
 
-import { Account } from 'contracts/Account.sol';
+import { AccountV1 } from 'contracts/Account.sol';
 
 contract TestAccount is Test {
-    Account account;
+    AccountV1 account;
     ERC20Mock tokenMock;
 
     mapping(uint => address) public test2;
@@ -108,7 +108,7 @@ contract TestAccount is Test {
         // need for execute operation revert test
         AddressesProvider(addressesProvider).setAddress(bytes32('FLASHLOAN_AGGREGATOR'), msg.sender);
 
-        account = new Account(addressesProvider);
+        account = new AccountV1(addressesProvider);
         account.initialize(msg.sender, IAddressesProvider(addressesProvider));
     }
 }

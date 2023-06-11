@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
 
 import { Proxy } from 'contracts/Proxy.sol';
-import { Account } from 'contracts/Account.sol';
+import { AccountV1 } from 'contracts/Account.sol';
 
 import { IRouter } from 'contracts/interfaces/IRouter.sol';
 
@@ -19,7 +19,7 @@ import { Tokens } from '../tokens.sol';
 
 contract DeployCoreContracts is Tokens {
     Router public router;
-    Account public accountImpl;
+    AccountV1 public accountImpl;
 
     address public owner = makeAddr('owner');
 
@@ -55,7 +55,7 @@ contract DeployCoreContracts is Tokens {
         configurator = Configurator(addressesProvider.getConfigurator());
         router = Router(payable(addressesProvider.getRouter()));
 
-        accountImpl = new Account(address(addressesProvider));
+        accountImpl = new AccountV1(address(addressesProvider));
         Proxy accountProxy = new Proxy(address(addressesProvider));
 
         addressesProvider.setAddress(bytes32('ACCOUNT'), address(accountImpl));
