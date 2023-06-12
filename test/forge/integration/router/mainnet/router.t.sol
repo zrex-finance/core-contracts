@@ -21,6 +21,16 @@ import { AddressesProvider } from 'contracts/AddressesProvider.sol';
 import { Tokens } from '../../../utils/tokens.sol';
 import { UniswapHelper } from '../../../utils/deployer/mainnet/uniswap-helper.sol';
 
+contract RouterV2 is Router {
+    uint256 public constant ROUTER_REVISION_2 = 0x2;
+
+    constructor(IAddressesProvider _provider) Router(_provider) {}
+
+    function getRevision() internal pure override returns (uint256) {
+        return ROUTER_REVISION_2;
+    }
+}
+
 contract TestRouterSwapMainnet is UniswapHelper, Tokens {
     Router router;
     Connectors connectors;
@@ -62,6 +72,16 @@ contract TestRouterSwapMainnet is UniswapHelper, Tokens {
 
         vm.expectRevert(bytes(''));
         router.swap(IRouter.SwapParams(fromToken, toToken, amount, 'UniswapAuto', abi.encode(uint(123), data)));
+    }
+
+    function test_initialize() public {
+        configurator.setFee(100);
+
+        RouterV2 routerV2 = new RouterV2(IAddressesProvider(address(addressesProvider)));
+        addressesProvider.setRouterImpl(address(routerV2));
+
+        uint256 fee = router.fee();
+        assertEq(fee, 50);
     }
 
     receive() external payable {}

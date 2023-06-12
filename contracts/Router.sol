@@ -336,7 +336,7 @@ contract Router is VersionedInitializable, IRouter {
      * @notice Returns the version of the Router contract.
      * @return The version is needed to update the proxy.
      */
-    function getRevision() internal pure override returns (uint256) {
+    function getRevision() internal pure virtual override returns (uint256) {
         return ROUTER_REVISION;
     }
 }
