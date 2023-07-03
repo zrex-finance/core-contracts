@@ -17,7 +17,9 @@ contract AddressesProvider is Ownable, IAddressesProvider {
 
     // Main identifiers
     bytes32 private constant ROUTER = 'ROUTER';
+    bytes32 private constant ORACLE = 'ORACLE';
     bytes32 private constant ACCOUNT = 'ACCOUNT';
+    bytes32 private constant REFERRAL = 'REFERRAL';
     bytes32 private constant TREASURY = 'TREASURY';
     bytes32 private constant ACL_ADMIN = 'ACL_ADMIN';
     bytes32 private constant CONNECTORS = 'CONNECTORS';
@@ -108,11 +110,38 @@ contract AddressesProvider is Ownable, IAddressesProvider {
     }
 
     /**
+     * @notice Updates the implementation of the Referral, or creates a proxy
+     * setting the new `Referral` implementation when the function is called for the first time.
+     * @param _newReferralImpl The new Configurator implementation
+     */
+    function setReferralImpl(address _newReferralImpl) external override onlyOwner {
+        address oldConfiguratorImpl = _getProxyImplementation(REFERRAL);
+        _updateImpl(REFERRAL, _newReferralImpl);
+        emit ConfiguratorUpdated(oldConfiguratorImpl, _newReferralImpl);
+    }
+
+    /**
      * @notice Returns the address of the Router proxy.
      * @return The Router proxy address
      */
     function getRouter() external view override returns (address) {
         return getAddress(ROUTER);
+    }
+
+    /**
+     * @notice Returns the address of the Router proxy.
+     * @return The Router proxy address
+     */
+    function getReferral() external view override returns (address) {
+        return getAddress(REFERRAL);
+    }
+
+    /**
+     * @notice Returns the address of the Router proxy.
+     * @return The Router proxy address
+     */
+    function getOracle() external view override returns (address) {
+        return getAddress(ORACLE);
     }
 
     /**

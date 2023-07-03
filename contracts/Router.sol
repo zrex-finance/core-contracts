@@ -12,7 +12,9 @@ import { PercentageMath } from './lib/PercentageMath.sol';
 import { UniversalERC20 } from './lib/UniversalERC20.sol';
 
 import { IRouter } from './interfaces/IRouter.sol';
+import { IOracle } from './interfaces/IOracle.sol';
 import { IAccount } from './interfaces/IAccount.sol';
+import { IReferral } from './interfaces/IReferral.sol';
 import { IConnectors } from './interfaces/IConnectors.sol';
 import { IAddressesProvider } from './interfaces/IAddressesProvider.sol';
 
@@ -98,6 +100,15 @@ contract Router is VersionedInitializable, IRouter {
      */
     event ClosePosition(bytes32 indexed key, address indexed account, DataTypes.Position position);
 
+    /**
+     * @dev Emitted when the user close position.
+     * @param account The address of the owner position.
+     * @param size The USD value of the change in position size.
+     * @param referralCode The referrer code.
+     * @param referrer The referrer address.
+     */
+    event IncreasePositionReferral(address account, uint256 size, bytes32 referralCode, address referrer);
+
     /* ============ Modifiers ============ */
 
     /**
@@ -149,6 +160,7 @@ contract Router is VersionedInitializable, IRouter {
      * @param _position The structure of the current position.
      * @param _targetName The connector name that will be called are.
      * @param _data Calldata for the openPositionCallback.
+     * @param _params The additional parameters needed to the exchange.
      * @param _params The additional parameters needed to the exchange.
      */
     function swapAndOpen(
@@ -317,6 +329,11 @@ contract Router is VersionedInitializable, IRouter {
         IERC20(_position.debt).universalApprove(account, _position.amountIn);
         IAccount(account).openPosition(_position, _targetName, _data);
 
+        uint256 debtPrice = IOracle(ADDRESSES_PROVIDER.getOracle()).getAssetPrice(_position.debt);
+        uint256 size = debtPrice * (_position.amountIn.mulTo(_position.leverage));
+
+        _emitPositionReferral(_position.account, size);
+
         // Get the position on the key because, update it in the process of creating
         emit OpenPosition(key, account, index, positions[key]);
     }
@@ -330,6 +347,18 @@ contract Router is VersionedInitializable, IRouter {
         IERC20(_params.fromToken).universalTransferFrom(msg.sender, address(this), _params.amount);
         bytes memory response = ADDRESSES_PROVIDER.connectorCall(_params.targetName, _params.data);
         value = abi.decode(response, (uint256));
+    }
+
+    function _emitPositionReferral(address _account, uint256 size) internal {
+        (bytes32 referralCode, address referrer) = IReferral(ADDRESSES_PROVIDER.getReferral()).getTraderReferralInfo(
+            _account
+        );
+
+        if (referrer == address(0) || referralCode == bytes32(0)) {
+            return;
+        }
+
+        emit IncreasePositionReferral(_account, size, referralCode, referrer);
     }
 
     /**

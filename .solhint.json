@@ -4,6 +4,8 @@
     "max-states-count": ["off", 15],
     "compiler-version": "off",
     "not-rely-on-time": "off",
+    "private-vars-leading-underscore": "off",
+    "var-name-mixedcase": "off",
     "func-visibility": ["warn", { "ignoreConstructors": true }],
     "quotes": ["error", "single"],
     "max-line-length": ["warn", 120]

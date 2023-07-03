@@ -17,7 +17,9 @@ contract ACLManager is AccessControl, IACLManager {
     /* ============ Constants ============ */
 
     bytes32 public constant ROUTER_ADMIN_ROLE = keccak256('ROUTER_ADMIN_ROLE');
+    bytes32 public constant REFERRAL_ADMIN_ROLE = keccak256('REFERRAL_ADMIN_ROLE');
     bytes32 public constant CONNECTOR_ADMIN_ROLE = keccak256('CONNECTOR_ADMIN_ROLE');
+    bytes32 public constant ASSET_LISTING_ADMIN_ROLE = keccak256('ASSET_LISTING_ADMIN');
 
     /* ============ Immutables ============ */
 
@@ -59,11 +61,35 @@ contract ACLManager is AccessControl, IACLManager {
         revokeRole(ROUTER_ADMIN_ROLE, admin);
     }
 
+    function addReferralAdmin(address admin) external override {
+        grantRole(REFERRAL_ADMIN_ROLE, admin);
+    }
+
+    function removeReferralAdmin(address admin) external override {
+        revokeRole(REFERRAL_ADMIN_ROLE, admin);
+    }
+
     function isConnectorAdmin(address admin) external view override returns (bool) {
         return hasRole(CONNECTOR_ADMIN_ROLE, admin);
     }
 
     function isRouterAdmin(address admin) external view override returns (bool) {
         return hasRole(ROUTER_ADMIN_ROLE, admin);
+    }
+
+    function isReferralAdmin(address admin) external view override returns (bool) {
+        return hasRole(REFERRAL_ADMIN_ROLE, admin);
+    }
+
+    function addAssetListingAdmin(address admin) external override {
+        grantRole(ASSET_LISTING_ADMIN_ROLE, admin);
+    }
+
+    function removeAssetListingAdmin(address admin) external override {
+        revokeRole(ASSET_LISTING_ADMIN_ROLE, admin);
+    }
+
+    function isAssetListingAdmin(address admin) external view override returns (bool) {
+        return hasRole(ASSET_LISTING_ADMIN_ROLE, admin);
     }
 }
