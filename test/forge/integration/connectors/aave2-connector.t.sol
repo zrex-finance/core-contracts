@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { Connectors } from 'contracts/Connectors.sol';
-import { EthConverter } from 'contracts/mocks/EthConverter.sol';
-import { AaveV2Connector } from 'contracts/connectors/mainnet/AaveV2.sol';
+import { Connectors } from 'src/Connectors.sol';
+import { EthConverter } from 'src/mocks/EthConverter.sol';
+import { AaveV2Connector } from 'src/connectors/mainnet/AaveV2.sol';
 
-import { DataTypes } from 'contracts/lib/DataTypes.sol';
-import { ILendingPool } from 'contracts/interfaces/external/aave-v2/ILendingPool.sol';
-import { IProtocolDataProvider } from 'contracts/interfaces/external/aave-v2/IProtocolDataProvider.sol';
-import { ILendingPoolAddressesProvider } from 'contracts/interfaces/external/aave-v2/ILendingPoolAddressesProvider.sol';
+import { DataTypes } from 'src/lib/DataTypes.sol';
+import { ILendingPool } from 'src/interfaces/external/aave-v2/ILendingPool.sol';
+import { IProtocolDataProvider } from 'src/interfaces/external/aave-v2/IProtocolDataProvider.sol';
+import { ILendingPoolAddressesProvider } from 'src/interfaces/external/aave-v2/ILendingPoolAddressesProvider.sol';
 
 import { Tokens } from '../../utils/tokens.sol';
 

@@ -2,16 +2,16 @@
 pragma solidity ^0.8.17;
 
 import 'forge-std/Test.sol';
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { EthConverter } from 'contracts/mocks/EthConverter.sol';
-import { AaveV3Connector } from 'contracts/connectors/mainnet/AaveV3.sol';
+import { EthConverter } from 'src/mocks/EthConverter.sol';
+import { AaveV3Connector } from 'src/connectors/mainnet/AaveV3.sol';
 
-import { DataTypes } from 'contracts/lib/DataTypes.sol';
+import { DataTypes } from 'src/lib/DataTypes.sol';
 
-import { IPool } from 'contracts/interfaces/external/aave-v3/IPool.sol';
-import { IPoolDataProvider } from 'contracts/interfaces/external/aave-v3/IPoolDataProvider.sol';
-import { IPoolAddressesProvider } from 'contracts/interfaces/external/aave-v3/IPoolAddressesProvider.sol';
+import { IPool } from 'src/interfaces/external/aave-v3/IPool.sol';
+import { IPoolDataProvider } from 'src/interfaces/external/aave-v3/IPoolDataProvider.sol';
+import { IPoolAddressesProvider } from 'src/interfaces/external/aave-v3/IPoolAddressesProvider.sol';
 
 import { Tokens } from '../../utils/tokens.sol';
 

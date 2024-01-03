@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from 'contracts/lib/DataTypes.sol';
-import { IRouter } from 'contracts/interfaces/IRouter.sol';
-import { UniversalERC20 } from 'contracts/lib/UniversalERC20.sol';
+import { DataTypes } from 'src/lib/DataTypes.sol';
+import { IRouter } from 'src/interfaces/IRouter.sol';
+import { UniversalERC20 } from 'src/lib/UniversalERC20.sol';
 
 import { UniversalPosition } from '../universal-position.sol';
 import { DeployBscContracts } from '../../../utils/deployer/bsc/bsc.sol';

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { IBaseSwap } from 'contracts/interfaces/IBaseSwap.sol';
+import { IBaseSwap } from 'src/interfaces/IBaseSwap.sol';
 
-import { IQuoter } from 'contracts/interfaces/external/uniswap-v3/IQuoter.sol';
-import { IAutoRouter } from 'contracts/interfaces/external/uniswap-v3/IAutoRouter.sol';
-import { IUniswapV3Pool } from 'contracts/interfaces/external/uniswap-v3/IUniswapV3Pool.sol';
-import { IUniswapV3Factory } from 'contracts/interfaces/external/uniswap-v3/IUniswapV3Factory.sol';
+import { IQuoter } from 'src/interfaces/external/uniswap-v3/IQuoter.sol';
+import { IAutoRouter } from 'src/interfaces/external/uniswap-v3/IAutoRouter.sol';
+import { IUniswapV3Pool } from 'src/interfaces/external/uniswap-v3/IUniswapV3Pool.sol';
+import { IUniswapV3Factory } from 'src/interfaces/external/uniswap-v3/IUniswapV3Factory.sol';
 
 contract UniswapHelper {
     uint24 internal constant FEE_LOW = 500;

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.17;
 
 import 'forge-std/Test.sol';
-import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
+import { IERC20 } from 'src/dependencies/openzeppelin/contracts/IERC20.sol';
 
-import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
+import { IBaseFlashloan } from 'src/interfaces/IBaseFlashloan.sol';
 
-import { AaveV3Flashloan } from 'contracts/flashloan/AaveV3Flashloan.sol';
+import { AaveV3Flashloan } from 'src/flashloan/AaveV3Flashloan.sol';
 
 contract TestAaveV3Flashloan is Test {
     AaveV3Flashloan public connector;

@@ -3,13 +3,13 @@ pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
 import { Script } from 'forge-std/Script.sol';
-import { IERC20 } from 'contracts/dependencies/openzeppelin/contracts/IERC20.sol';
-import { PoolAddress } from 'contracts/dependencies/uniswap/libraries/PoolAddress.sol';
+import { IERC20 } from 'src/dependencies/openzeppelin/contracts/IERC20.sol';
+import { PoolAddress } from 'src/dependencies/uniswap/libraries/PoolAddress.sol';
 
-import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
-import { IUniswapFlashloan } from 'contracts/interfaces/connectors/IUniswapFlashloan.sol';
+import { IBaseFlashloan } from 'src/interfaces/IBaseFlashloan.sol';
+import { IUniswapFlashloan } from 'src/interfaces/connectors/IUniswapFlashloan.sol';
 
-import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
+import { UniswapFlashloan } from 'src/flashloan/UniswapFlashloan.sol';
 
 contract TestUniswapFlashloan is Test, Script {
     UniswapFlashloan public connector;

@@ -31,7 +31,7 @@ describe('OneInch v5 connector', async () => {
     [owner, other] = await ethers.getSigners();
 
     daiContract = (await ethers.getContractAt(
-      'contracts/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
+      'src/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
       DAI_CONTRACT,
     )) as ERC20;
 

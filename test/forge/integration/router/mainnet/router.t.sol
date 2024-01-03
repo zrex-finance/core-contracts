@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
-import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from 'src/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { DataTypes } from 'contracts/lib/DataTypes.sol';
-import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
+import { DataTypes } from 'src/lib/DataTypes.sol';
+import { IAddressesProvider } from 'src/interfaces/IAddressesProvider.sol';
 
-import { IRouter } from 'contracts/interfaces/IRouter.sol';
-import { IBaseSwap } from 'contracts/interfaces/IBaseSwap.sol';
+import { IRouter } from 'src/interfaces/IRouter.sol';
+import { IBaseSwap } from 'src/interfaces/IBaseSwap.sol';
 
-import { UniswapConnector } from 'contracts/connectors/mainnet/Uniswap.sol';
+import { UniswapConnector } from 'src/connectors/mainnet/Uniswap.sol';
 
-import { Router } from 'contracts/Router.sol';
-import { Connectors } from 'contracts/Connectors.sol';
-import { ACLManager } from 'contracts/ACLManager.sol';
-import { Configurator } from 'contracts/Configurator.sol';
-import { AddressesProvider } from 'contracts/AddressesProvider.sol';
+import { Router } from 'src/Router.sol';
+import { Connectors } from 'src/Connectors.sol';
+import { ACLManager } from 'src/ACLManager.sol';
+import { Configurator } from 'src/Configurator.sol';
+import { AddressesProvider } from 'src/AddressesProvider.sol';
 
 import { Tokens } from '../../../utils/tokens.sol';
 import { UniswapHelper } from '../../../utils/deployer/mainnet/uniswap-helper.sol';

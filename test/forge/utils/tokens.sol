@@ -46,6 +46,20 @@ contract Tokens is Test, Script {
             } else if (compare(_name, 'busd')) {
                 return 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
             }
+        } else if (chainId == 324) {
+            if (compare(_name, 'usdc')) {
+                return 0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4;
+            } else if (compare(_name, 'eth')) {
+                return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+            }
+        } else if (chainId == 1101) {
+            if (compare(_name, 'usdc')) {
+                return 0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035;
+            } else if (compare(_name, 'usdt')) {
+                return 0x1E4a5963aBFD975d8c9021ce480b42188849D41d;
+            } else if (compare(_name, 'matic')) {
+                return 0xa2036f0538221a77A3937F1379699f44945018d0;
+            }
         }
         revert('dont have token');
     }

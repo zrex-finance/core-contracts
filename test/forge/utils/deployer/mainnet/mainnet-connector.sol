@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { InchV5Connector } from 'contracts/connectors/InchV5.sol';
-import { UniswapConnector } from 'contracts/connectors/mainnet/Uniswap.sol';
+import { InchV5Connector } from 'src/connectors/InchV5.sol';
+import { UniswapConnector } from 'src/connectors/mainnet/Uniswap.sol';
 
-import { AaveV2Connector } from 'contracts/connectors/mainnet/AaveV2.sol';
-import { AaveV3Connector } from 'contracts/connectors/mainnet/AaveV3.sol';
-import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
-import { CompoundV3Connector } from 'contracts/connectors/CompoundV3.sol';
+import { AaveV2Connector } from 'src/connectors/mainnet/AaveV2.sol';
+import { AaveV3Connector } from 'src/connectors/mainnet/AaveV3.sol';
+import { CompoundV2Connector } from 'src/connectors/mainnet/CompoundV2.sol';
+import { CompoundV3Connector } from 'src/connectors/CompoundV3.sol';
 
-import { AaveV2Flashloan } from 'contracts/flashloan/AaveV2Flashloan.sol';
-import { AaveV3Flashloan } from 'contracts/flashloan/AaveV3Flashloan.sol';
-import { MakerFlashloan } from 'contracts/flashloan/MakerFlashloan.sol';
-import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
-import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
+import { AaveV2Flashloan } from 'src/flashloan/AaveV2Flashloan.sol';
+import { AaveV3Flashloan } from 'src/flashloan/AaveV3Flashloan.sol';
+import { MakerFlashloan } from 'src/flashloan/MakerFlashloan.sol';
+import { BalancerFlashloan } from 'src/flashloan/BalancerFlashloan.sol';
+import { UniswapFlashloan } from 'src/flashloan/UniswapFlashloan.sol';
 
 contract DeployMainnetConnectors {
     InchV5Connector public inchV5Connector;

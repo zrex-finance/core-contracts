@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { UniswapConnector } from 'contracts/connectors/polygon/Uniswap.sol';
+import { UniswapConnector } from 'src/connectors/polygon/Uniswap.sol';
 
-import { AaveV2Connector } from 'contracts/connectors/polygon/AaveV2.sol';
-import { AaveV3Connector } from 'contracts/connectors/polygon/AaveV3.sol';
+import { AaveV2Connector } from 'src/connectors/polygon/AaveV2.sol';
+import { AaveV3Connector } from 'src/connectors/polygon/AaveV3.sol';
 
-import { AaveV2Flashloan } from 'contracts/flashloan/AaveV2Flashloan.sol';
-import { AaveV3Flashloan } from 'contracts/flashloan/AaveV3Flashloan.sol';
-import { BalancerFlashloan } from 'contracts/flashloan/BalancerFlashloan.sol';
-import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
+import { AaveV2Flashloan } from 'src/flashloan/AaveV2Flashloan.sol';
+import { AaveV3Flashloan } from 'src/flashloan/AaveV3Flashloan.sol';
+import { BalancerFlashloan } from 'src/flashloan/BalancerFlashloan.sol';
+import { UniswapFlashloan } from 'src/flashloan/UniswapFlashloan.sol';
 
 contract DeployPolygonConnectors {
     UniswapConnector public uniswapConnector;

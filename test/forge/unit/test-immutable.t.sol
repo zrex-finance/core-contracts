@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import 'forge-std/Test.sol';
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
 contract Base is Test {
     address public immutable addr;

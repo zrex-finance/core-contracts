@@ -2,19 +2,19 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
-import { Clones } from 'contracts/dependencies/openzeppelin/upgradeability/Clones.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
+import { Clones } from 'src/dependencies/openzeppelin/upgradeability/Clones.sol';
 
-import { AddressesProvider } from 'contracts/AddressesProvider.sol';
-import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
+import { AddressesProvider } from 'src/AddressesProvider.sol';
+import { IAddressesProvider } from 'src/interfaces/IAddressesProvider.sol';
 
-import { Errors } from 'contracts/lib/Errors.sol';
-import { ERC20Mock } from 'contracts/mocks/ERC20Mock.sol';
+import { Errors } from 'src/lib/Errors.sol';
+import { ERC20Mock } from 'src/mocks/ERC20Mock.sol';
 
-import { AccountV1 } from 'contracts/Account.sol';
+import { Account as AccountContract } from 'src/Account.sol';
 
 contract TestAccount is Test {
-    AccountV1 account;
+    AccountContract account;
     ERC20Mock tokenMock;
 
     mapping(uint => address) public test2;
@@ -108,7 +108,7 @@ contract TestAccount is Test {
         // need for execute operation revert test
         AddressesProvider(addressesProvider).setAddress(bytes32('FLASHLOAN_AGGREGATOR'), msg.sender);
 
-        account = new AccountV1(addressesProvider);
+        account = new AccountContract(addressesProvider);
         account.initialize(msg.sender, IAddressesProvider(addressesProvider));
     }
 }

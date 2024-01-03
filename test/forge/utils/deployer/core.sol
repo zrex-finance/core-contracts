@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { IAddressesProvider } from 'contracts/interfaces/IAddressesProvider.sol';
+import { IAddressesProvider } from 'src/interfaces/IAddressesProvider.sol';
 
-import { Proxy } from 'contracts/Proxy.sol';
-import { AccountV1 } from 'contracts/Account.sol';
+import { Proxy } from 'src/Proxy.sol';
+import { Account as AccountContract } from 'src/Account.sol';
 
-import { IRouter } from 'contracts/interfaces/IRouter.sol';
+import { IRouter } from 'src/interfaces/IRouter.sol';
 
-import { Router } from 'contracts/Router.sol';
-import { Configurator } from 'contracts/Configurator.sol';
+import { Router } from 'src/Router.sol';
+import { Configurator } from 'src/Configurator.sol';
 
-import { ACLManager } from 'contracts/ACLManager.sol';
-import { Connectors } from 'contracts/Connectors.sol';
-import { AddressesProvider } from 'contracts/AddressesProvider.sol';
+import { ACLManager } from 'src/ACLManager.sol';
+import { Connectors } from 'src/Connectors.sol';
+import { AddressesProvider } from 'src/AddressesProvider.sol';
 
 import { Tokens } from '../tokens.sol';
 
 contract DeployCoreContracts is Tokens {
     Router public router;
-    AccountV1 public accountImpl;
+    AccountContract public accountImpl;
 
     address public owner = makeAddr('owner');
 
@@ -55,7 +55,7 @@ contract DeployCoreContracts is Tokens {
         configurator = Configurator(addressesProvider.getConfigurator());
         router = Router(payable(addressesProvider.getRouter()));
 
-        accountImpl = new AccountV1(address(addressesProvider));
+        accountImpl = new AccountContract(address(addressesProvider));
         Proxy accountProxy = new Proxy(address(addressesProvider));
 
         addressesProvider.setAddress(bytes32('ACCOUNT'), address(accountImpl));

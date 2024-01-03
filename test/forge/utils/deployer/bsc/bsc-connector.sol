@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { UniswapConnector } from 'contracts/connectors/bsc/Uniswap.sol';
+import { UniswapConnector } from 'src/connectors/bsc/Uniswap.sol';
 
-import { VenusConnector } from 'contracts/connectors/bsc/Venus.sol';
+import { VenusConnector } from 'src/connectors/bsc/Venus.sol';
 
-import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
+import { UniswapFlashloan } from 'src/flashloan/UniswapFlashloan.sol';
 
 import { UniswapHelper } from './uniswap-helper.sol';
 

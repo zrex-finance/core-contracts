@@ -2,15 +2,15 @@
 pragma solidity ^0.8.17;
 
 import { Test } from 'forge-std/Test.sol';
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from 'contracts/lib/DataTypes.sol';
+import { DataTypes } from 'src/lib/DataTypes.sol';
 
-import { EthConverter } from 'contracts/mocks/EthConverter.sol';
+import { EthConverter } from 'src/mocks/EthConverter.sol';
 
-import { CompoundV2Connector } from 'contracts/connectors/mainnet/CompoundV2.sol';
-import { CTokenInterface } from 'contracts/interfaces/external/compound-v2/CTokenInterfaces.sol';
-import { ComptrollerInterface } from 'contracts/interfaces/external/compound-v2/ComptrollerInterface.sol';
+import { CompoundV2Connector } from 'src/connectors/mainnet/CompoundV2.sol';
+import { CTokenInterface } from 'src/interfaces/external/compound-v2/CTokenInterfaces.sol';
+import { ComptrollerInterface } from 'src/interfaces/external/compound-v2/ComptrollerInterface.sol';
 
 import { Tokens } from '../../utils/tokens.sol';
 

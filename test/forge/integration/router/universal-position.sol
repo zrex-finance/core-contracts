@@ -2,19 +2,19 @@
 pragma solidity ^0.8.17;
 
 import 'forge-std/Test.sol';
-import { ERC20 } from 'contracts/dependencies/openzeppelin/contracts/ERC20.sol';
+import { ERC20 } from 'src/dependencies/openzeppelin/contracts/ERC20.sol';
 
-import { DataTypes } from 'contracts/lib/DataTypes.sol';
-import { PercentageMath } from 'contracts/lib/PercentageMath.sol';
-import { PoolAddress } from 'contracts/dependencies/uniswap/libraries/PoolAddress.sol';
+import { DataTypes } from 'src/lib/DataTypes.sol';
+import { PercentageMath } from 'src/lib/PercentageMath.sol';
+import { PoolAddress } from 'src/dependencies/uniswap/libraries/PoolAddress.sol';
 
-import { IRouter } from 'contracts/interfaces/IRouter.sol';
-import { IBaseSwap } from 'contracts/interfaces/IBaseSwap.sol';
-import { IConnector } from 'contracts/interfaces/IConnector.sol';
-import { IBaseFlashloan } from 'contracts/interfaces/IBaseFlashloan.sol';
-import { IUniswapFlashloan } from 'contracts/interfaces/connectors/IUniswapFlashloan.sol';
+import { IRouter } from 'src/interfaces/IRouter.sol';
+import { IBaseSwap } from 'src/interfaces/IBaseSwap.sol';
+import { IConnector } from 'src/interfaces/IConnector.sol';
+import { IBaseFlashloan } from 'src/interfaces/IBaseFlashloan.sol';
+import { IUniswapFlashloan } from 'src/interfaces/connectors/IUniswapFlashloan.sol';
 
-import { UniswapFlashloan } from 'contracts/flashloan/UniswapFlashloan.sol';
+import { UniswapFlashloan } from 'src/flashloan/UniswapFlashloan.sol';
 
 import { DeployCoreContracts } from '../../utils/deployer/core.sol';
 

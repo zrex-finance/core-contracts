@@ -46,12 +46,12 @@ describe('Open and close (inchv5 - aave2)', async () => {
     [owner, other] = await ethers.getSigners();
 
     daiContract = (await ethers.getContractAt(
-      'contracts/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
+      'src/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
       DAI_CONTRACT,
     )) as ERC20;
 
     wethContract = (await ethers.getContractAt(
-      'contracts/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
+      'src/dependencies/openzeppelin/contracts/IERC20.sol:IERC20',
       WETH_CONTRACT,
     )) as unknown as ERC20;
 
@@ -163,7 +163,7 @@ describe('Open and close (inchv5 - aave2)', async () => {
     await account.deployed();
     accountContract = account;
 
-    const proxyFactory = await ethers.getContractFactory('contracts/Proxy.sol:Proxy');
+    const proxyFactory = await ethers.getContractFactory('src/Proxy.sol:Proxy');
     const proxy = await proxyFactory.deploy(addressesProvider.address);
     await proxy.deployed();
 
